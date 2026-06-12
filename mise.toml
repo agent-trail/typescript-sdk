@@ -1,4 +1,5 @@
 [tools]
+bun = "1.2.17"
 "aqua:jdx/hk" = "1.47.0"
 "aqua:rhysd/actionlint" = "1.7.12"
 "aqua:zizmorcore/zizmor" = "1.25.2"

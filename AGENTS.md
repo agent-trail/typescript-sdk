@@ -15,6 +15,10 @@ This repo owns the TypeScript SDK for Agent Trail libraries and generated/public
 - Use `mise run check` before opening or updating a pull request.
 - Use `mise run check:actions` after editing GitHub Actions workflows.
 
+## Dependencies and Tools
+
+- Before introducing a package, tool, or GitHub Action, check the latest upstream stable version and use it unless there is a documented reason not to.
+
 ## Pull Requests
 
 - Use `.github/PULL_REQUEST_TEMPLATE.md`.

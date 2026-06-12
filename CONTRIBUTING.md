@@ -1,14 +1,12 @@
 # Contributing
 
-Agent Trail work is tracked in Linear and implemented through pull requests.
+Thanks for helping improve Agent Trail.
 
-## Workflow
+## Before You Start
 
-- Start from a Linear issue or accepted maintainer direction.
-- Keep changes scoped to the active issue.
-- Use Conventional Commit subjects for commits and pull request titles.
-- Do not include agent attribution in commits, pull request bodies, generated docs, or code comments.
-- Do not commit real local sessions, secrets, credentials, tokens, private logs, or unredacted user data.
+- Open or pick up a Linear issue before starting larger changes.
+- Keep pull requests focused on one problem.
+- Avoid committing real local sessions, secrets, credentials, tokens, private logs, or unredacted user data.
 
 ## Local Setup
 
@@ -26,7 +24,11 @@ mise run lint
 mise run test
 ```
 
-`mise` is the repo entrypoint for tools and tasks. `hk` owns Git hooks and project lint gates.
+`mise` installs repo tools and runs tasks. `hk` owns local Git hooks.
+
+## Dependencies and Tools
+
+When adding a package, tool, or GitHub Action, check the latest stable upstream version first. Use the latest version by default; if you pin an older version, explain why in the pull request.
 
 ## Pull Requests
 
@@ -34,7 +36,7 @@ Before opening a pull request:
 
 - Run `mise run check`.
 - Link the Linear issue.
-- State public spec, schema, package API, CLI, or URL impact.
+- Summarize public package API, generated type, or runtime behavior impact.
 - Include exact verification commands and results.
 
 Pull requests are squash-merged. Keep branches narrow and delete them after merge.

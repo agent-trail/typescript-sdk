@@ -1,5 +1,6 @@
-# typescript-sdk
-TypeScript SDK packages for Agent Trail readers, writers, adapters, redaction, store, and sessions.
+# Agent Trail TypeScript SDK
+
+TypeScript packages for working with Agent Trail readers, writers, adapters, redaction, store, and sessions.
 
 ## Development
 
@@ -9,3 +10,7 @@ mise run check
 ```
 
 See `CONTRIBUTING.md` for workflow and PR expectations.
+
+## License
+
+MIT. See `LICENSE`.

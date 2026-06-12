@@ -1,0 +1,44 @@
+name: Bug report
+description: Report behavior that is broken, incorrect, or unexpectedly failing.
+title: "fix: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for reproducible defects. Keep secrets, real local session data, and private logs out of public issues.
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: Current behavior
+      description: What happens now?
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: What should happen instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Minimal steps a maintainer can run to reproduce the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, runtime versions, branch/commit, and affected package or command.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: Observable outcomes that prove the bug is fixed.
+    validations:
+      required: false
+

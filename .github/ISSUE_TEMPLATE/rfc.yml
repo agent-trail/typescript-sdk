@@ -1,0 +1,44 @@
+name: RFC / spec decision
+description: Propose a load-bearing Agent Trail format, schema, validation, package layout, or architecture decision.
+title: "rfc: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this before changing load-bearing shape such as normative format or schema semantics, validation terminology or behavior, versioning, hash semantics, artifact identity, package layout, durable architecture, or public URL shape.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or decision
+      description: What decision needs to be made, and why now?
+    validations:
+      required: true
+  - type: textarea
+    id: affected-surface
+    attributes:
+      label: Affected contract surface
+      description: Name the spec section, schema path, package API, CLI behavior, docs, ADRs, fixtures, or public URLs affected.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: State the exact rule or direction to adopt.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: List plausible options and tradeoffs.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: Observable outcomes that prove the decision has been implemented.
+    validations:
+      required: true
+

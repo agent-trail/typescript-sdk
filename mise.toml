@@ -1,0 +1,29 @@
+[tools]
+"aqua:jdx/hk" = "1.47.0"
+"aqua:rhysd/actionlint" = "1.7.12"
+"aqua:zizmorcore/zizmor" = "1.25.2"
+
+[tasks.setup]
+description = "Install tools and configure Git hooks"
+depends = ["hooks:install"]
+
+[tasks."hooks:install"]
+description = "Install hk Git hooks"
+run = "hk install"
+
+[tasks.check]
+description = "Run all repository checks"
+depends = ["lint", "test"]
+
+[tasks.lint]
+description = "Run project lint gates"
+run = "hk check"
+
+[tasks.test]
+description = "Run tests for this repository"
+run = "echo 'No tests configured yet.'"
+
+[tasks."check:actions"]
+description = "Validate GitHub Actions workflows"
+run = "actionlint && zizmor .github/workflows"
+

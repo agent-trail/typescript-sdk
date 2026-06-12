@@ -4,7 +4,7 @@ Thanks for helping improve Agent Trail.
 
 ## Before You Start
 
-- Open or pick up a Linear issue before starting larger changes.
+- For larger changes, open a GitHub issue or discussion first so maintainers can agree on scope.
 - Keep pull requests focused on one problem.
 - Avoid committing real local sessions, secrets, credentials, tokens, private logs, or unredacted user data.
 
@@ -35,7 +35,7 @@ When adding a package, tool, or GitHub Action, check the latest stable upstream 
 Before opening a pull request:
 
 - Run `mise run check`.
-- Link the Linear issue.
+- Link the relevant GitHub issue or discussion, if one exists.
 - Summarize public package API, generated type, or runtime behavior impact.
 - Include exact verification commands and results.
 

@@ -4,6 +4,10 @@
 
 - 
 
+## Related Issue
+
+- 
+
 ## Public Impact
 
 - [ ] No public contract change
@@ -11,6 +15,10 @@
 - [ ] Public package API change
 - [ ] CLI behavior change
 - [ ] Public URL or docs behavior change
+
+Impact description:
+
+- 
 
 ## Verification
 

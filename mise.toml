@@ -14,7 +14,7 @@ run = "hk install"
 
 [tasks.check]
 description = "Run all repository checks"
-depends = ["lint", "test"]
+depends = ["lint", "test", "check:actions"]
 
 [tasks.lint]
 description = "Run project lint gates"

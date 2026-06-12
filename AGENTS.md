@@ -8,7 +8,6 @@ This repo owns the TypeScript SDK for Agent Trail libraries and generated/public
 - Keep changes scoped to this repo's TypeScript package surface.
 - Treat schema-derived types as generated from the canonical Agent Trail schema, not as the source of truth.
 - Do not commit real local sessions, secrets, credentials, private logs, or unredacted user data.
-- Do not include agent attribution in commits, pull request bodies, generated docs, or code comments.
 
 ## Commands
 

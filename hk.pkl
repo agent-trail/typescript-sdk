@@ -1,22 +1,19 @@
 amends "package://github.com/jdx/hk/releases/download/v1.48.0/hk@1.48.0#/Config.pkl"
-import "package://github.com/jdx/hk/releases/download/v1.48.0/hk@1.48.0#/Builtins.pkl"
 
-local linters = new Mapping {
-  ["actionlint"] = Builtins.actionlint
-  ["zizmor"] {
-    glob = List(".github/workflows/*.yml", ".github/workflows/*.yaml")
-    check = "zizmor .github/workflows"
+local checks = new Mapping {
+  ["repo-check"] {
+    check = "mise run check"
   }
 }
 
 hooks {
   ["pre-commit"] {
-    steps = linters
+    steps = checks
   }
   ["pre-push"] {
-    steps = linters
+    steps = checks
   }
   ["check"] {
-    steps = linters
+    steps = checks
   }
 }

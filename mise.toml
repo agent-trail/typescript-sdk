@@ -14,15 +14,39 @@ run = "hk install"
 
 [tasks.check]
 description = "Run all repository checks"
-depends = ["lint", "test", "check:actions"]
+run = """
+bun install --frozen-lockfile
+bun run check
+if [ -d .github/workflows ]; then actionlint && zizmor .github/workflows; else echo 'No GitHub Actions workflows configured.'; fi
+"""
+
+[tasks.install]
+description = "Install Bun dependencies with lockfile enforcement"
+run = "bun install --frozen-lockfile"
 
 [tasks.lint]
 description = "Run project lint gates"
-run = "hk check"
+run = """
+bun run check:biome
+bun run check:types
+bun run check:fallow
+"""
+
+[tasks."check:biome"]
+description = "Run Biome checks"
+run = "bun run check:biome"
+
+[tasks."check:types"]
+description = "Run TypeScript checks"
+run = "bun run check:types"
+
+[tasks."check:fallow"]
+description = "Run Fallow checks"
+run = "bun run check:fallow"
 
 [tasks.test]
 description = "Run tests for this repository"
-run = "echo 'No tests configured yet.'"
+run = "bun run test"
 
 [tasks."check:actions"]
 description = "Validate GitHub Actions workflows"

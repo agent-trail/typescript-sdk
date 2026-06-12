@@ -4,8 +4,7 @@ TypeScript SDK packages for Agent Trail readers, writers, adapters, redaction, s
 ## Development
 
 ```sh
-mise install
-mise run hooks:install
+mise run setup
 mise run check
 ```
 

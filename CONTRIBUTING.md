@@ -15,8 +15,7 @@ Agent Trail work is tracked in Linear and implemented through pull requests.
 Install tools and hooks:
 
 ```sh
-mise install
-mise run hooks:install
+mise run setup
 ```
 
 Common tasks:
@@ -39,4 +38,3 @@ Before opening a pull request:
 - Include exact verification commands and results.
 
 Pull requests are squash-merged. Keep branches narrow and delete them after merge.
-

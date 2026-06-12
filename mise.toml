@@ -25,5 +25,4 @@ run = "echo 'No tests configured yet.'"
 
 [tasks."check:actions"]
 description = "Validate GitHub Actions workflows"
-run = "actionlint && zizmor .github/workflows"
-
+run = "if [ -d .github/workflows ]; then actionlint && zizmor .github/workflows; else echo 'No GitHub Actions workflows configured.'; fi"

@@ -41,4 +41,3 @@ body:
       description: Observable outcomes that prove the bug is fixed.
     validations:
       required: false
-

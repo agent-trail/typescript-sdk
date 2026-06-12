@@ -41,4 +41,3 @@ body:
       description: Commands or checks that should pass.
     validations:
       required: true
-

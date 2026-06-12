@@ -41,4 +41,3 @@ body:
       description: Observable outcomes that prove the decision has been implemented.
     validations:
       required: true
-

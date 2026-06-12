@@ -1,0 +1,45 @@
+src/index.ts
+  s_93d09067b5968d::t_2b85026b882967 1
+bun.lock
+  s_93d09067b5968d::t_ebbb06d32d17ff 1-64
+package.json
+  s_93d09067b5968d::t_2b85026b882967 1-9,11-22
+  s_93d09067b5968d::t_ba45a12841c26a 10
+tests/scaffold.test.ts
+  s_93d09067b5968d::t_2b85026b882967 1-5
+.fallowrc.json
+  s_93d09067b5968d::t_2b85026b882967 1-2,5-15
+  s_93d09067b5968d::t_e4ab02fa68746f 3-4
+hk.pkl
+  s_93d09067b5968d::t_2b85026b882967 3-5,11,14,17
+tsconfig.json
+  s_93d09067b5968d::t_2b85026b882967 1-7,9-22,24-25,27
+  s_93d09067b5968d::t_e4ab02fa68746f 8,23,26
+.gitignore
+  s_93d09067b5968d::t_2b85026b882967 1-13
+mise.toml
+  s_93d09067b5968d::t_2b85026b882967 23-25,34-45,49
+  s_93d09067b5968d::t_ba45a12841c26a 19
+  s_93d09067b5968d::t_860e25cb00987e 17-18,20-21,29-33
+biome.json
+  s_93d09067b5968d::t_e4ab02fa68746f 9,19
+  s_93d09067b5968d::t_2b85026b882967 1-8,10-18,20-29
+scripts/check.mjs
+  s_93d09067b5968d::t_ba45a12841c26a 1-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "b0da9f63a3dafa6b277ef189c207cda346e24f05",
+  "prompts": {},
+  "sessions": {
+    "s_93d09067b5968d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ebd73-06f4-7aa1-98d2-bd703953f2b2",
+        "model": "gpt-5.5"
+      },
+      "human_author": null
+    }
+  }
+}

@@ -182,13 +182,9 @@ export interface CapabilityChange {
 // @public (undocumented)
 export interface CapabilityChangedItem {
     field: string;
-    from?: {
-        [k: string]: unknown | undefined;
-    };
+    from?: unknown;
     name: string;
-    to?: {
-        [k: string]: unknown | undefined;
-    };
+    to?: unknown;
 }
 
 // @public (undocumented)
@@ -404,12 +400,8 @@ export interface SessionMetadataUpdate {
         }) & string;
     } | {
         field: string;
-        value: {
-            [k: string]: unknown | undefined;
-        };
-        previous_value?: {
-            [k: string]: unknown | undefined;
-        };
+        value: unknown;
+        previous_value?: unknown;
         reason: (("ai_generated" | "user_set" | "runtime_inferred" | "external") | {
             [k: string]: unknown | undefined;
         }) & string;

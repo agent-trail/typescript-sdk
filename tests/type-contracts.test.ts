@@ -56,6 +56,27 @@ const validCapabilityChange: TrailEntry = {
   },
 };
 
+const validCapabilityChangeWithPrimitiveValues: TrailEntry = {
+  ...base,
+  type: "capability_change",
+  payload: {
+    scope: "tool",
+    reason: "instructions_updated",
+    changed: [{ name: "file_read", field: "enabled", from: false, to: true }],
+  },
+};
+
+const validSessionMetadataExtension: TrailEntry = {
+  ...base,
+  type: "session_metadata_update",
+  payload: {
+    field: "x-acme/reviewers",
+    value: ["alice", "bob"],
+    previous_value: null,
+    reason: "external",
+  },
+};
+
 const validTaskPlanUpdate: TrailEntry = {
   ...base,
   type: "task_plan_update",
@@ -102,6 +123,8 @@ void [
   validToolCallAborted,
   validToolCallScopedAbort,
   validCapabilityChange,
+  validCapabilityChangeWithPrimitiveValues,
+  validSessionMetadataExtension,
   validTaskPlanUpdate,
   invalidToolCall,
   invalidFileReadToolCall,

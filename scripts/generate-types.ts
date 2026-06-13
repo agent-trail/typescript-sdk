@@ -83,9 +83,21 @@ function tightenGeneratedTypes(generated: string): string {
     "",
     "TaskPlanUpdate.payload.minItems",
   );
-  tightened = replaceRequiredRegex(
+  tightened = replaceRequired(
     tightened,
-    /export interface ToolCall \{[\s\S]*?\n\}\nexport interface ToolResult /,
+    `export interface ToolCall {
+  /**
+   * Tool call event discriminator.
+   */
+  type?: "tool_call";
+  /**
+   * Tool call event payload.
+   */
+  payload?: {
+    [k: string]: unknown | undefined;
+  };
+  [k: string]: unknown | undefined;
+}`,
     `export interface ToolCall {
   type?: "tool_call";
   payload?: ToolCallPayload;
@@ -256,12 +268,24 @@ export type ToolCallPayloadByTool =
         };
       };
     };
-export interface ToolResult `,
+`,
     "ToolCall.payload",
   );
-  tightened = replaceRequiredRegex(
+  tightened = replaceRequired(
     tightened,
-    /export interface ToolCallAborted \{[\s\S]*?\n\}\nexport interface UserQuery /,
+    `export interface ToolCallAborted {
+  /**
+   * Tool-call abort event discriminator.
+   */
+  type?: "tool_call_aborted";
+  /**
+   * Tool-call abort event payload.
+   */
+  payload?: {
+    [k: string]: unknown | undefined;
+  };
+  [k: string]: unknown | undefined;
+}`,
     `export interface ToolCallAborted {
   type?: "tool_call_aborted";
   payload?: ToolCallAbortedPayload;
@@ -299,12 +323,79 @@ export type ToolCallAbortedPayload = {
       for_id?: never;
     }
 );
-export interface UserQuery `,
+`,
     "ToolCallAborted.payload",
   );
-  tightened = replaceRequiredRegex(
+  tightened = replaceRequired(
     tightened,
-    /export interface CapabilityChange \{[\s\S]*?\n\}\nexport interface CapabilityAddedItem /,
+    `export interface CapabilityChange {
+  /**
+   * Capability change event discriminator.
+   */
+  type?: "capability_change";
+  /**
+   * Capability change event payload.
+   */
+  payload?: {
+    /**
+     * Capability domain changed by this event.
+     */
+    scope: (
+      | ("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin")
+      | {
+          [k: string]: unknown | undefined;
+        }
+    ) &
+      string;
+    /**
+     * Reason the capability set changed.
+     */
+    reason: (
+      | (
+          | "initial"
+          | "registered"
+          | "deregistered"
+          | "connected"
+          | "disconnected"
+          | "loaded"
+          | "unloaded"
+          | "error"
+          | "instructions_updated"
+        )
+      | {
+          [k: string]: unknown | undefined;
+        }
+    ) &
+      string;
+    /**
+     * Capabilities added by this change.
+     *
+     * @minItems 1
+     */
+    added?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+    /**
+     * Capabilities removed by this change.
+     *
+     * @minItems 1
+     */
+    removed?: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
+    /**
+     * Capabilities modified by this change.
+     *
+     * @minItems 1
+     */
+    changed?: [CapabilityChangedItem, ...CapabilityChangedItem[]];
+    /**
+     * Full capability snapshot after this change.
+     *
+     * @minItems 1
+     */
+    snapshot?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+  } & {
+    [k: string]: unknown | undefined;
+  };
+  [k: string]: unknown | undefined;
+}`,
     `export interface CapabilityChange {
   type?: "capability_change";
   payload?: {
@@ -364,8 +455,60 @@ export interface UserQuery `,
   );
   [k: string]: unknown | undefined;
 }
-export interface CapabilityAddedItem `,
+`,
     "CapabilityChange.payload",
+  );
+  tightened = replaceRequired(
+    tightened,
+    `  /**
+   * Previous capability field value.
+   */
+  from?: {
+    [k: string]: unknown | undefined;
+  };`,
+    `  /**
+   * Previous capability field value.
+   */
+  from?: unknown;`,
+    "CapabilityChangedItem.from",
+  );
+  tightened = replaceRequired(
+    tightened,
+    `  /**
+   * New capability field value.
+   */
+  to?: {
+    [k: string]: unknown | undefined;
+  };`,
+    `  /**
+   * New capability field value.
+   */
+  to?: unknown;`,
+    "CapabilityChangedItem.to",
+  );
+  tightened = replaceRequired(
+    tightened,
+    `        /**
+         * New session metadata value.
+         */
+        value: {
+          [k: string]: unknown | undefined;
+        };
+        /**
+         * Previous session metadata value when known.
+         */
+        previous_value?: {
+          [k: string]: unknown | undefined;
+        };`,
+    `        /**
+         * New session metadata value.
+         */
+        value: unknown;
+        /**
+         * Previous session metadata value when known.
+         */
+        previous_value?: unknown;`,
+    "SessionMetadataUpdate.extensionValue",
   );
   return tightened;
 }
@@ -377,18 +520,6 @@ function replaceRequired(
   label: string,
 ): string {
   if (!text.includes(searchValue)) {
-    throw new Error(`generated type tightening target not found: ${label}`);
-  }
-  return text.replace(searchValue, replaceValue);
-}
-
-function replaceRequiredRegex(
-  text: string,
-  searchValue: RegExp,
-  replaceValue: string,
-  label: string,
-): string {
-  if (!searchValue.test(text)) {
     throw new Error(`generated type tightening target not found: ${label}`);
   }
   return text.replace(searchValue, replaceValue);

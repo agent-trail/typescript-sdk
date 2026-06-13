@@ -1111,6 +1111,7 @@ export type ToolCallPayloadByTool =
         };
       };
     };
+
 export interface ToolResult {
   /**
    * Tool result event discriminator.
@@ -1300,6 +1301,7 @@ export type ToolCallAbortedPayload = {
       for_id?: never;
     }
 );
+
 export interface UserQuery {
   /**
    * User query event discriminator.
@@ -1953,6 +1955,7 @@ export interface CapabilityChange {
   );
   [k: string]: unknown | undefined;
 }
+
 export interface CapabilityAddedItem {
   /**
    * Name of the added capability.
@@ -1983,15 +1986,11 @@ export interface CapabilityChangedItem {
   /**
    * Previous capability field value.
    */
-  from?: {
-    [k: string]: unknown | undefined;
-  };
+  from?: unknown;
   /**
    * New capability field value.
    */
-  to?: {
-    [k: string]: unknown | undefined;
-  };
+  to?: unknown;
 }
 export interface SessionMetadataUpdate {
   /**
@@ -2076,15 +2075,11 @@ export interface SessionMetadataUpdate {
         /**
          * New session metadata value.
          */
-        value: {
-          [k: string]: unknown | undefined;
-        };
+        value: unknown;
         /**
          * Previous session metadata value when known.
          */
-        previous_value?: {
-          [k: string]: unknown | undefined;
-        };
+        previous_value?: unknown;
         /**
          * Reason the session metadata changed.
          */

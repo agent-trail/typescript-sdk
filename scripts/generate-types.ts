@@ -79,21 +79,175 @@ function tightenGeneratedTypes(generated: string): string {
 }`,
       `export interface ToolCall {
   type?: "tool_call";
-  payload?: {
-    tool: ToolKind;
-    args: {
-      [k: string]: unknown | undefined;
-    };
-    usage?: AgentMessageUsage;
-    truncated?: boolean;
-    /**
-     * UTF-8 byte length of the original args object before truncation. Required when truncated is true.
-     */
-    args_size?: number;
-    overflow_ref?: string | null;
-  };
+  payload?: ToolCallPayload;
   [k: string]: unknown | undefined;
-}`,
+}
+export type ToolCallPayload = ToolCallPayloadByTool & ToolCallPayloadCommon & ToolCallTruncation;
+export type ToolCallPayloadCommon = {
+  usage?: AgentMessageUsage;
+  overflow_ref?: string | null;
+};
+export type ToolCallTruncation =
+  | {
+      truncated: true;
+      /**
+       * UTF-8 byte length of the original args object before truncation. Required when truncated is true.
+       */
+      args_size: number;
+    }
+  | {
+      truncated?: false;
+      /**
+       * UTF-8 byte length of the original args object before truncation. Required when truncated is true.
+       */
+      args_size?: number;
+    };
+export type ToolCallPayloadByTool =
+  | {
+      tool: "file_read";
+      args: {
+        path: string;
+        range?: [number, number];
+      };
+    }
+  | {
+      tool: "file_write";
+      args: {
+        path: string;
+        content: string;
+      };
+    }
+  | {
+      tool: "file_edit";
+      args:
+        | {
+            path: string;
+            diff: string;
+          }
+        | {
+            path: string;
+            old: string;
+            new: string;
+            replace_all?: boolean;
+          };
+    }
+  | {
+      tool: "file_patch";
+      args: {
+        files: [
+          {
+            path: string;
+            diff: string;
+          },
+          ...{
+            path: string;
+            diff: string;
+          }[],
+        ];
+        atomic?: boolean;
+      };
+    }
+  | {
+      tool: "file_list";
+      args: {
+        path: string;
+        recursive?: boolean;
+        glob?: string;
+      };
+    }
+  | {
+      tool: "file_search";
+      args: {
+        query: string;
+        path?: string;
+        glob?: string;
+      };
+    }
+  | {
+      tool: "shell_command";
+      args: {
+        command: string;
+        cwd?: string;
+        timeout?: number;
+      };
+    }
+  | {
+      tool: "shell_output";
+      args: {
+        command_id?: string;
+      };
+    }
+  | {
+      tool: "shell_input";
+      args: {
+        input: string;
+        session_id?: string;
+        command_id?: string;
+      };
+    }
+  | {
+      tool: "mcp_call";
+      args: {
+        server: string;
+        tool: string;
+        args?: {
+          [k: string]: unknown | undefined;
+        };
+        headers?: {
+          [k: string]: unknown | undefined;
+        };
+      };
+    }
+  | {
+      tool: "web_fetch";
+      args: {
+        url: string;
+        method?: string;
+        headers?: {
+          [k: string]: unknown | undefined;
+        };
+      };
+    }
+  | {
+      tool: "web_search";
+      args: {
+        query: string;
+      };
+    }
+  | {
+      tool: "tool_search";
+      args: {
+        query: string;
+        limit?: number;
+      };
+    }
+  | {
+      tool: "notebook_edit";
+      args: {
+        path: string;
+        cell_id?: string;
+        diff?: string;
+        content?: string;
+      };
+    }
+  | {
+      tool: "subagent_invoke";
+      args: {
+        task: string;
+        agent_type?: string;
+        session_id?: string;
+      };
+    }
+  | {
+      tool: "other";
+      args: {
+        name: string;
+        args?: {
+          [k: string]: unknown | undefined;
+        };
+      };
+    };
+`,
     )
     .replace(
       `export interface ToolCallAborted {
@@ -105,25 +259,42 @@ function tightenGeneratedTypes(generated: string): string {
 }`,
       `export interface ToolCallAborted {
   type?: "tool_call_aborted";
-  payload?: {
-    /**
-     * Abort granularity. tool_call aborts reference a specific tool_call by for_id; turn aborts describe a broader turn-level stop when the source cannot identify one call.
-     */
-    scope: (("tool_call" | "turn") | { [k: string]: unknown | undefined }) & string;
-    /**
-     * Globally-unique identifier shape: canonical uppercase ULID (26 Crockford base32 chars), lowercase hyphenated UUID (36 chars), or lowercase unhyphenated UUID (32 hex chars). Header ids, event ids, and envelope ids share this shape so cross-segment reconciliation can dedup by exact string equality (spec §9.5).
-     */
-    for_id?: string;
-    /**
-     * Why execution stopped before a normal tool_result.
-     */
-    reason:
-      | ("user_interrupt" | "hook_blocked" | "timeout" | "permission_denied" | "runtime_error")
-      | string;
-    blocked_by?: string;
-  };
+  payload?: ToolCallAbortedPayload;
   [k: string]: unknown | undefined;
-}`,
+}
+export type ToolCallAbortedReason =
+  | "user_interrupt"
+  | "hook_blocked"
+  | "timeout"
+  | "permission_denied"
+  | "runtime_error"
+  | \`x-\${string}/\${string}\`;
+export type ToolCallAbortedPayload = {
+  /**
+   * Why execution stopped before a normal tool_result.
+   */
+  reason: ToolCallAbortedReason;
+  blocked_by?: string;
+} & (
+  | {
+      /**
+       * Abort granularity. tool_call aborts reference a specific tool_call by for_id; turn aborts describe a broader turn-level stop when the source cannot identify one call.
+       */
+      scope: "tool_call";
+      /**
+       * Globally-unique identifier shape: canonical uppercase ULID (26 Crockford base32 chars), lowercase hyphenated UUID (36 chars), or lowercase unhyphenated UUID (32 hex chars). Header ids, event ids, and envelope ids share this shape so cross-segment reconciliation can dedup by exact string equality (spec §9.5).
+       */
+      for_id: string;
+    }
+  | {
+      /**
+       * Abort granularity. tool_call aborts reference a specific tool_call by for_id; turn aborts describe a broader turn-level stop when the source cannot identify one call.
+       */
+      scope: "turn" | \`x-\${string}/\${string}\`;
+      for_id?: never;
+    }
+);
+`,
     )
     .replace(
       `  payload?: {

@@ -44,7 +44,7 @@
           "type": "object",
           "required": ["seq"],
           "properties": {
-            "seq": { "const": 1 }
+            "seq": { "const": 1, "description": "Segment sequence number within a source session." }
           },
           "additionalProperties": false
         },
@@ -52,12 +52,13 @@
           "type": "object",
           "required": ["seq", "prev_content_hash"],
           "properties": {
-            "seq": { "type": "integer", "minimum": 2 },
+            "seq": { "type": "integer", "minimum": 2, "description": "Segment sequence number within a source session." },
             "prev_content_hash": {
               "oneOf": [
                 { "$ref": "#/$defs/sha256Hex" },
                 { "type": "null" }
-              ]
+              ],
+              "description": "Content hash of the previous segment, or null when unavailable."
             }
           },
           "additionalProperties": false
@@ -135,10 +136,10 @@
       "type": "object",
       "required": ["id", "content", "status"],
       "properties": {
-        "id": { "type": "string", "minLength": 1 },
-        "content": { "type": "string" },
-        "status": { "$ref": "#/$defs/taskPlanStatus" },
-        "active_form": { "type": "string" }
+        "id": { "type": "string", "minLength": 1, "description": "Stable identifier for this task plan item." },
+        "content": { "type": "string", "description": "User-visible task plan item text." },
+        "status": { "$ref": "#/$defs/taskPlanStatus", "description": "Current status of this task plan item." },
+        "active_form": { "type": "string", "description": "Active-progress phrasing for this task plan item." }
       },
       "additionalProperties": false
     },
@@ -149,11 +150,11 @@
           "type": "object",
           "required": ["kind", "item_id", "to_content", "to_status"],
           "properties": {
-            "kind": { "const": "added" },
-            "item_id": { "type": "string", "minLength": 1 },
-            "to_content": { "type": "string" },
-            "to_status": { "$ref": "#/$defs/taskPlanStatus" },
-            "to_active_form": { "type": "string" }
+            "kind": { "const": "added", "description": "Task plan delta discriminator." },
+            "item_id": { "type": "string", "minLength": 1, "description": "Identifier of the task plan item affected by this delta." },
+            "to_content": { "type": "string", "description": "Task plan item text after this delta." },
+            "to_status": { "$ref": "#/$defs/taskPlanStatus", "description": "Task plan item status after this delta." },
+            "to_active_form": { "type": "string", "description": "Active-progress phrasing after this delta." }
           },
           "additionalProperties": false
         },
@@ -161,11 +162,11 @@
           "type": "object",
           "required": ["kind", "item_id", "from_content", "from_status"],
           "properties": {
-            "kind": { "const": "removed" },
-            "item_id": { "type": "string", "minLength": 1 },
-            "from_content": { "type": "string" },
-            "from_status": { "$ref": "#/$defs/taskPlanStatus" },
-            "from_active_form": { "type": "string" }
+            "kind": { "const": "removed", "description": "Task plan delta discriminator." },
+            "item_id": { "type": "string", "minLength": 1, "description": "Identifier of the task plan item affected by this delta." },
+            "from_content": { "type": "string", "description": "Task plan item text before this delta." },
+            "from_status": { "$ref": "#/$defs/taskPlanStatus", "description": "Task plan item status before this delta." },
+            "from_active_form": { "type": "string", "description": "Active-progress phrasing before this delta." }
           },
           "additionalProperties": false
         },
@@ -173,10 +174,10 @@
           "type": "object",
           "required": ["kind", "item_id", "from_status", "to_status"],
           "properties": {
-            "kind": { "const": "status_changed" },
-            "item_id": { "type": "string", "minLength": 1 },
-            "from_status": { "$ref": "#/$defs/taskPlanStatus" },
-            "to_status": { "$ref": "#/$defs/taskPlanStatus" }
+            "kind": { "const": "status_changed", "description": "Task plan delta discriminator." },
+            "item_id": { "type": "string", "minLength": 1, "description": "Identifier of the task plan item affected by this delta." },
+            "from_status": { "$ref": "#/$defs/taskPlanStatus", "description": "Task plan item status before this delta." },
+            "to_status": { "$ref": "#/$defs/taskPlanStatus", "description": "Task plan item status after this delta." }
           },
           "additionalProperties": false
         },
@@ -184,10 +185,10 @@
           "type": "object",
           "required": ["kind", "item_id", "from_content", "to_content"],
           "properties": {
-            "kind": { "const": "content_changed" },
-            "item_id": { "type": "string", "minLength": 1 },
-            "from_content": { "type": "string" },
-            "to_content": { "type": "string" }
+            "kind": { "const": "content_changed", "description": "Task plan delta discriminator." },
+            "item_id": { "type": "string", "minLength": 1, "description": "Identifier of the task plan item affected by this delta." },
+            "from_content": { "type": "string", "description": "Task plan item text before this delta." },
+            "to_content": { "type": "string", "description": "Task plan item text after this delta." }
           },
           "additionalProperties": false
         }
@@ -204,8 +205,8 @@
         {
           "required": ["branch"],
           "properties": {
-            "revision": { "type": "null" },
-            "branch": { "type": "string", "minLength": 1 }
+            "revision": { "type": "null", "description": "Version control revision at session capture, or null for an unborn head." },
+            "branch": { "type": "string", "minLength": 1, "description": "Active branch name required when revision is null." }
           },
           "not": { "properties": { "head_commit": {} }, "required": ["head_commit"] }
         }
@@ -221,9 +222,10 @@
               "type": "string",
               "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$"
             }
-          ]
+          ],
+          "description": "Version control system kind or vendor-namespaced extension."
         },
-        "revision": { "type": ["string", "null"] },
+        "revision": { "type": ["string", "null"], "description": "Version control revision at session capture, or null for an unborn head." },
         "remote_url": {
           "type": "string",
           "description": "Canonical remote URL for the working tree. Adapters MUST normalize before emission: strip embedded credentials, strip trailing .git for git URLs, and normalize SSH/HTTPS variants to a single canonical form (https://host/path)."
@@ -237,7 +239,7 @@
           "pattern": "^[a-f0-9]{7,64}$",
           "description": "Commit hash at session start (lowercase hex, 7-64 chars). For git this is typically the same value as `revision`; the field exists as an explicit, version-control-neutral alias and survives across VCS migrations."
         },
-        "worktree": { "$ref": "#/$defs/worktree" }
+        "worktree": { "$ref": "#/$defs/worktree", "description": "Worktree context for the captured session." }
       },
       "additionalProperties": false
     },
@@ -248,8 +250,8 @@
       "additionalProperties": false,
       "description": "Worktree context when the session ran inside a working-tree clone or worktree (git worktree, jj workspace, etc.).",
       "properties": {
-        "name": { "type": "string" },
-        "path": { "type": "string" },
+        "name": { "type": "string", "description": "Worktree name reported by the source." },
+        "path": { "type": "string", "description": "Filesystem path of the worktree." },
         "original_cwd": {
           "type": "string",
           "description": "Working directory of the parent repository at the time the worktree was created."
@@ -270,20 +272,20 @@
       "type": "object",
       "description": "Adapter-provided metadata about the source event.",
       "properties": {
-        "agent": { "$ref": "#/$defs/agentName" },
-        "original_type": { "type": "string" },
-        "schema_version": { "type": "string" },
+        "agent": { "$ref": "#/$defs/agentName", "description": "Source agent that produced the original event." },
+        "original_type": { "type": "string", "description": "Original source event type before Agent Trail normalization." },
+        "schema_version": { "type": "string", "description": "Source schema or format version when reported." },
         "raw": {
           "description": "Opaque source object preserved verbatim. If an object, may use envelope_ref to reference an earlier entry's inlined envelope.",
           "if": { "type": "object" },
           "then": {
             "type": "object",
             "properties": {
-              "envelope_ref": { "type": "string" }
+              "envelope_ref": { "type": "string", "description": "Entry ID containing the inlined source envelope referenced by this raw object." }
             }
           }
         },
-        "synthesized": { "type": "boolean", "default": false }
+        "synthesized": { "type": "boolean", "default": false, "description": "Whether the adapter synthesized this metadata rather than copying it from source input." }
       },
       "additionalProperties": false
     },
@@ -292,9 +294,9 @@
       "type": "object",
       "description": "Semantic linking for cross-event references when explicit IDs are unreliable.",
       "properties": {
-        "group_id": { "type": "string" },
-        "call_id": { "type": "string" },
-        "tool_kind": { "$ref": "#/$defs/toolKind" }
+        "group_id": { "type": "string", "description": "Source semantic group identifier used for related events." },
+        "call_id": { "type": "string", "description": "Source semantic tool-call identifier used for pairing." },
+        "tool_kind": { "$ref": "#/$defs/toolKind", "description": "Canonical tool kind associated with this semantic link." }
       },
       "additionalProperties": false
     },
@@ -303,17 +305,17 @@
       "type": "object",
       "description": "Token usage for this source agent envelope. May appear on agent_message, agent_thinking, or tool_call when that entry is the first entry derived from the envelope. input_tokens/output_tokens are deltas for this envelope; *_cumulative variants are running totals through this point. total_tokens/total_tokens_cumulative are source-reported inclusive totals for exact total-token analytics. cache_read_tokens and cache_creation_tokens are independent billing categories. context_input_tokens captures source-reported prompt/context pressure for this request, cache-inclusive when the source exposes enough detail; context_window_tokens captures the model context-window size when exposed. When present, usage must include either input/output coverage or total-token coverage.",
       "properties": {
-        "input_tokens": { "type": "integer", "minimum": 0 },
-        "output_tokens": { "type": "integer", "minimum": 0 },
-        "input_tokens_cumulative": { "type": "integer", "minimum": 0 },
-        "output_tokens_cumulative": { "type": "integer", "minimum": 0 },
-        "total_tokens": { "type": "integer", "minimum": 0 },
-        "total_tokens_cumulative": { "type": "integer", "minimum": 0 },
-        "cache_read_tokens": { "type": "integer", "minimum": 0 },
-        "cache_creation_tokens": { "type": "integer", "minimum": 0 },
-        "reasoning_tokens": { "type": "integer", "minimum": 0 },
-        "context_input_tokens": { "type": "integer", "minimum": 0 },
-        "context_window_tokens": { "type": "integer", "minimum": 1 }
+        "input_tokens": { "type": "integer", "minimum": 0, "description": "Input token count reported for this source envelope." },
+        "output_tokens": { "type": "integer", "minimum": 0, "description": "Output token count reported for this source envelope." },
+        "input_tokens_cumulative": { "type": "integer", "minimum": 0, "description": "Cumulative input token count through this source envelope." },
+        "output_tokens_cumulative": { "type": "integer", "minimum": 0, "description": "Cumulative output token count through this source envelope." },
+        "total_tokens": { "type": "integer", "minimum": 0, "description": "Total token count reported for this source envelope." },
+        "total_tokens_cumulative": { "type": "integer", "minimum": 0, "description": "Cumulative total token count through this source envelope." },
+        "cache_read_tokens": { "type": "integer", "minimum": 0, "description": "Tokens read from model cache for this source envelope." },
+        "cache_creation_tokens": { "type": "integer", "minimum": 0, "description": "Tokens written to model cache for this source envelope." },
+        "reasoning_tokens": { "type": "integer", "minimum": 0, "description": "Reasoning token count reported for this source envelope." },
+        "context_input_tokens": { "type": "integer", "minimum": 0, "description": "Source-reported context input token pressure for this request." },
+        "context_window_tokens": { "type": "integer", "minimum": 1, "description": "Model context window size reported by the source." }
       },
       "anyOf": [
         {
@@ -361,13 +363,14 @@
       "description": "An image or file carried by a message or tool result, by reference. v0.1.0 uri schemes are references only (https:, local file:, content-addressed sha256:); inline data: payloads are deferred.",
       "required": ["kind"],
       "properties": {
-        "kind": { "type": "string", "enum": ["image", "file", "other"] },
-        "media_type": { "type": "string" },
+        "kind": { "type": "string", "enum": ["image", "file", "other"], "description": "Attachment kind carried by the message or tool result." },
+        "media_type": { "type": "string", "description": "Media type reported for the attachment." },
         "uri": {
           "type": "string",
-          "pattern": "^(https:|file:|sha256:)"
+          "pattern": "^(https:|file:|sha256:)",
+          "description": "Reference URI for attachment content."
         },
-        "name": { "type": "string" }
+        "name": { "type": "string", "description": "Display or source name for the attachment." }
       },
       "anyOf": [
         {
@@ -413,40 +416,44 @@
       "description": "Optional trail envelope record (line 1). File-level metadata; not part of the event graph. When present, MUST appear at line 1 and the first session header MUST follow on line 2. At most one per file. Multi-session files (spec §9.6) carry one envelope followed by N session groups in file order.",
       "required": ["type", "schema_version", "id", "ts", "producer"],
       "properties": {
-        "type": { "const": "trail" },
-        "schema_version": { "const": "0.1.0" },
-        "id": { "$ref": "#/$defs/id" },
-        "name": { "type": "string" },
-        "description": { "type": "string" },
-        "ts": { "$ref": "#/$defs/iso8601" },
-        "producer": { "type": "string", "minLength": 1 },
+        "type": { "const": "trail", "description": "Trail envelope discriminator." },
+        "schema_version": { "const": "0.1.0", "description": "Agent Trail schema version for the envelope record." },
+        "id": { "$ref": "#/$defs/id", "description": "Globally unique identifier for this trail envelope." },
+        "name": { "type": "string", "description": "Human-readable trail name." },
+        "description": { "type": "string", "description": "Human-readable trail description." },
+        "ts": { "$ref": "#/$defs/iso8601", "description": "Writer timestamp for the trail envelope." },
+        "producer": { "type": "string", "minLength": 1, "description": "Producer name and version that wrote the trail file." },
         "content_hash": {
           "oneOf": [
             { "$ref": "#/$defs/sha256Hex" },
             { "const": "<pending>" }
-          ]
+          ],
+          "description": "Content hash for the finalized trail file, or pending marker while open."
         },
         "tags": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": { "type": "string" },
+          "description": "User-visible tags associated with the trail file."
         },
-        "vcs": { "$ref": "#/$defs/vcs" },
+        "vcs": { "$ref": "#/$defs/vcs", "description": "Version control context for the trail file." },
         "fork_from": {
           "type": "object",
           "required": ["trail_id"],
           "properties": {
-            "trail_id": { "$ref": "#/$defs/id" },
-            "content_hash": { "$ref": "#/$defs/sha256Hex" }
+            "trail_id": { "$ref": "#/$defs/id", "description": "Identifier of the prior trail artifact." },
+            "content_hash": { "$ref": "#/$defs/sha256Hex", "description": "Content hash for the finalized trail file, or pending marker while open." }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "description": "Prior trail artifact this trail was forked from."
         },
         "redacted_from": {
           "type": "object",
           "required": ["content_hash"],
           "properties": {
-            "content_hash": { "$ref": "#/$defs/sha256Hex" }
+            "content_hash": { "$ref": "#/$defs/sha256Hex", "description": "Content hash for the finalized trail file, or pending marker while open." }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "description": "Prior content hash this redacted artifact derives from."
         },
         "sessions": {
           "type": "array",
@@ -455,8 +462,8 @@
             "type": "object",
             "required": ["id", "agent"],
             "properties": {
-              "id": { "$ref": "#/$defs/id" },
-              "agent": { "$ref": "#/$defs/agentName" }
+              "id": { "$ref": "#/$defs/id", "description": "Globally unique identifier for this trail envelope." },
+              "agent": { "$ref": "#/$defs/agentName", "description": "Canonical agent name for the session manifest entry." }
             },
             "additionalProperties": false
           }
@@ -474,29 +481,32 @@
       "description": "Session header. The first session header is required at line 1, or at line 2 when a trail envelope occupies line 1. Multi-session files (spec §9.6) carry additional session headers later in the file; each opens a new (header, events*) group. Not part of the event graph.",
       "required": ["type", "schema_version", "id", "ts", "agent"],
       "properties": {
-        "type": { "const": "session" },
+        "type": { "const": "session", "description": "Session header discriminator." },
         "schema_version": {
-          "const": "0.1.0"
+          "const": "0.1.0",
+          "description": "Agent Trail schema version for the session header."
         },
-        "id": { "$ref": "#/$defs/id" },
-        "name": { "type": "string" },
-        "description": { "type": "string" },
+        "id": { "$ref": "#/$defs/id", "description": "Globally unique identifier for this session header." },
+        "name": { "type": "string", "description": "Human-readable session name." },
+        "description": { "type": "string", "description": "Human-readable session description." },
         "tags": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": { "type": "string" },
+          "description": "User-visible tags associated with the session."
         },
         "session_uid": {
           "$ref": "#/$defs/sessionUid",
           "description": "Globally-unique source-session identifier. Stable across all segments of one source session (spec §9.5). Reconcilers group segments by session_uid. Optional in v0.1 single-segment trails; writers SHOULD emit it for forward-compat. Required (and enforced by the header allOf if/then) when segment.seq > 1. ULID is recommended (lexicographic tie-breaker); UUID accepted."
         },
-        "segment": { "$ref": "#/$defs/segment" },
+        "segment": { "$ref": "#/$defs/segment", "description": "Multi-segment marker for this session group." },
         "content_hash": {
           "oneOf": [
             { "$ref": "#/$defs/sha256Hex" },
             { "const": "<pending>" }
-          ]
+          ],
+          "description": "Content hash for the finalized session group, or pending marker while open."
         },
-        "ts": { "$ref": "#/$defs/iso8601" },
+        "ts": { "$ref": "#/$defs/iso8601", "description": "Writer timestamp for the session header." },
         "stream": {
           "type": "object",
           "description": "Live-capture marker. Present means writer is actively appending or last appended in streaming mode. Absent means non-streaming or unaware writer.",
@@ -504,9 +514,10 @@
           "properties": {
             "state": {
               "type": "string",
-              "enum": ["open", "closed"]
+              "enum": ["open", "closed"],
+              "description": "Current live-capture state for the session stream."
             },
-            "started_at": { "$ref": "#/$defs/iso8601" }
+            "started_at": { "$ref": "#/$defs/iso8601", "description": "Writer timestamp when live capture started." }
           },
           "additionalProperties": false
         },
@@ -514,41 +525,45 @@
           "type": "object",
           "required": ["name"],
           "properties": {
-            "name": { "$ref": "#/$defs/agentName" },
-            "version": { "type": "string" },
-            "model_default": { "type": "string" }
+            "name": { "$ref": "#/$defs/agentName", "description": "Human-readable session name." },
+            "version": { "type": "string", "description": "Agent runtime version when reported." },
+            "model_default": { "type": "string", "description": "Default model configured for the agent at session start." }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "description": "Agent runtime that produced the session."
         },
-        "cwd": { "type": "string" },
-        "vcs": { "$ref": "#/$defs/vcs" },
+        "cwd": { "type": "string", "description": "Working directory where the session ran." },
+        "vcs": { "$ref": "#/$defs/vcs", "description": "Version control context for the session." },
         "fork_from": {
           "type": "object",
           "required": ["session_id"],
           "properties": {
-            "session_id": { "$ref": "#/$defs/id" },
-            "content_hash": { "$ref": "#/$defs/sha256Hex" },
-            "entry_id": { "$ref": "#/$defs/id" }
+            "session_id": { "$ref": "#/$defs/id", "description": "Identifier of the parent session." },
+            "content_hash": { "$ref": "#/$defs/sha256Hex", "description": "Content hash for the finalized session group, or pending marker while open." },
+            "entry_id": { "$ref": "#/$defs/id", "description": "Entry identifier in the parent session that spawned this session." }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "description": "Parent session artifact this session was forked from."
         },
         "redacted_from": {
           "type": "object",
           "required": ["content_hash"],
           "properties": {
-            "content_hash": { "$ref": "#/$defs/sha256Hex" }
+            "content_hash": { "$ref": "#/$defs/sha256Hex", "description": "Content hash for the finalized session group, or pending marker while open." }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "description": "Prior content hash this redacted session derives from."
         },
-        "parse_fidelity": { "$ref": "#/$defs/parseFidelity" },
+        "parse_fidelity": { "$ref": "#/$defs/parseFidelity", "description": "Parse fidelity summary for this session group." },
         "source": {
           "type": "object",
           "properties": {
-            "agent": { "$ref": "#/$defs/agentName" },
-            "path": { "type": "string" },
-            "format_version": { "type": "string" }
+            "agent": { "$ref": "#/$defs/agentName", "description": "Source agent name reported for imported session input." },
+            "path": { "type": "string", "description": "Source file path for imported session input." },
+            "format_version": { "type": "string", "description": "Source format version for imported session input." }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "description": "Source file metadata for imported session input."
         },
         "meta": {
           "type": "object",
@@ -576,7 +591,7 @@
             "type": "object",
             "required": ["session_uid"],
             "properties": {
-              "session_uid": { "$ref": "#/$defs/sessionUid" }
+              "session_uid": { "$ref": "#/$defs/sessionUid", "description": "Source-session identifier required for continuation segments." }
             }
           }
         }
@@ -587,18 +602,19 @@
       "type": "object",
       "required": ["type", "id", "ts", "payload"],
       "properties": {
-        "type": { "type": "string" },
-        "id": { "$ref": "#/$defs/id" },
+        "type": { "type": "string", "description": "Event type discriminator." },
+        "id": { "$ref": "#/$defs/id", "description": "Globally unique identifier for this event entry." },
         "parent_id": {
           "oneOf": [
             { "$ref": "#/$defs/id" },
             { "type": "null" }
-          ]
+          ],
+          "description": "Parent event ID in the session tree, or null for a root event."
         },
-        "ts": { "$ref": "#/$defs/iso8601" },
-        "payload": { "type": "object" },
-        "semantic": { "$ref": "#/$defs/semanticMetadata" },
-        "source": { "$ref": "#/$defs/sourceMetadata" },
+        "ts": { "$ref": "#/$defs/iso8601", "description": "Writer timestamp for this event entry." },
+        "payload": { "type": "object", "description": "Event-specific payload object." },
+        "semantic": { "$ref": "#/$defs/semanticMetadata", "description": "Semantic linking metadata for this event." },
+        "source": { "$ref": "#/$defs/sourceMetadata", "description": "Source metadata for this event." },
         "meta": {
           "type": "object",
           "properties": {
@@ -607,7 +623,8 @@
               "minimum": 0,
               "description": "Number of redactor mutations applied to this event entry."
             }
-          }
+          },
+          "description": "Agent Trail metadata for this event."
         }
       },
       "additionalProperties": false
@@ -651,12 +668,12 @@
       "user_message": {
         "type": "object",
         "properties": {
-          "type": { "const": "user_message" },
+          "type": { "const": "user_message", "description": "User message event discriminator." },
           "payload": {
             "type": "object",
             "required": ["text"],
             "properties": {
-              "text": { "type": "string" },
+              "text": { "type": "string", "description": "User-role message text." },
               "origin": {
                 "type": "string",
                 "description": "Authorship marker for user-role text. Absent means user-authored.",
@@ -669,10 +686,12 @@
               },
               "attachments": {
                 "type": "array",
-                "items": { "$ref": "#/$defs/attachment" }
+                "items": { "$ref": "#/$defs/attachment" },
+                "description": "Attachments carried by the user message."
               }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "User message event payload."
           }
         }
       },
@@ -680,21 +699,23 @@
       "agent_message": {
         "type": "object",
         "properties": {
-          "type": { "const": "agent_message" },
+          "type": { "const": "agent_message", "description": "Agent message event discriminator." },
           "payload": {
             "type": "object",
             "required": ["text"],
             "properties": {
-              "text": { "type": "string" },
-              "model": { "type": "string" },
-              "stop_reason": { "type": "string" },
-              "usage": { "$ref": "#/$defs/agentMessageUsage" },
+              "text": { "type": "string", "description": "Assistant-role message text." },
+              "model": { "type": "string", "description": "Model that produced this agent message." },
+              "stop_reason": { "type": "string", "description": "Source-reported reason generation stopped." },
+              "usage": { "$ref": "#/$defs/agentMessageUsage", "description": "Token usage attached to this agent message." },
               "attachments": {
                 "type": "array",
-                "items": { "$ref": "#/$defs/attachment" }
+                "items": { "$ref": "#/$defs/attachment" },
+                "description": "Attachments carried by the agent message."
               }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "Agent message event payload."
           }
         }
       },
@@ -702,22 +723,25 @@
       "task_plan_update": {
         "type": "object",
         "properties": {
-          "type": { "const": "task_plan_update" },
+          "type": { "const": "task_plan_update", "description": "Task plan update event discriminator." },
           "payload": {
             "type": "object",
             "required": ["items"],
             "properties": {
-              "explanation": { "type": "string" },
+              "explanation": { "type": "string", "description": "Optional explanation accompanying the task plan update." },
               "items": {
                 "type": "array",
-                "items": { "$ref": "#/$defs/taskPlanItem" }
+                "items": { "$ref": "#/$defs/taskPlanItem" },
+                "description": "Full task plan state after the update."
               },
               "deltas": {
                 "type": "array",
-                "items": { "$ref": "#/$defs/taskPlanDelta" }
+                "items": { "$ref": "#/$defs/taskPlanDelta" },
+                "description": "Incremental task plan changes represented by this update."
               }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "Task plan update event payload."
           }
         }
       },
@@ -725,15 +749,15 @@
       "tool_call": {
         "type": "object",
         "properties": {
-          "type": { "const": "tool_call" },
+          "type": { "const": "tool_call", "description": "Tool call event discriminator." },
           "payload": {
             "type": "object",
             "required": ["tool", "args"],
             "properties": {
-              "tool": { "$ref": "#/$defs/toolKind" },
-              "args": { "type": "object" },
-              "usage": { "$ref": "#/$defs/agentMessageUsage" },
-              "truncated": { "type": "boolean" },
+              "tool": { "$ref": "#/$defs/toolKind", "description": "Canonical kind of tool requested by the agent." },
+              "args": { "type": "object", "description": "Arguments supplied to the requested tool." },
+              "usage": { "$ref": "#/$defs/agentMessageUsage", "description": "Token usage attached to this tool call when it is the first usage-capable derived entry." },
+              "truncated": { "type": "boolean", "description": "Whether tool-call arguments were truncated before emission." },
               "args_size": {
                 "type": "integer",
                 "minimum": 0,
@@ -743,7 +767,8 @@
                 "oneOf": [
                   { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
                   { "type": "null" }
-                ]
+                ],
+                "description": "Content-addressed reference to full arguments when arguments are truncated."
               }
             },
             "additionalProperties": false,
@@ -775,15 +800,17 @@
                       "type": "object",
                       "required": ["path"],
                       "properties": {
-                        "path": { "type": "string" },
+                        "path": { "type": "string", "description": "Path of the file to read." },
                         "range": {
                           "type": "array",
                           "items": { "type": "integer" },
                           "minItems": 2,
-                          "maxItems": 2
+                          "maxItems": 2,
+                          "description": "Optional inclusive line range requested from the file."
                         }
                       },
-                      "additionalProperties": false
+                      "additionalProperties": false,
+                      "description": "Arguments for a file read tool call."
                     }
                   }
                 }
@@ -796,10 +823,11 @@
                       "type": "object",
                       "required": ["path", "content"],
                       "properties": {
-                        "path": { "type": "string" },
-                        "content": { "type": "string" }
+                        "path": { "type": "string", "description": "Path of the file to write." },
+                        "content": { "type": "string", "description": "Full file content to write." }
                       },
-                      "additionalProperties": false
+                      "additionalProperties": false,
+                      "description": "Arguments for a file write tool call."
                     }
                   }
                 }
@@ -814,8 +842,8 @@
                           "type": "object",
                           "required": ["path", "diff"],
                           "properties": {
-                            "path": { "type": "string" },
-                            "diff": { "type": "string" }
+                            "path": { "type": "string", "description": "Path of the file to edit." },
+                            "diff": { "type": "string", "description": "Patch or diff content describing the edit." }
                           },
                           "additionalProperties": false
                         },
@@ -823,14 +851,15 @@
                           "type": "object",
                           "required": ["path", "old", "new"],
                           "properties": {
-                            "path": { "type": "string" },
-                            "old": { "type": "string" },
-                            "new": { "type": "string" },
-                            "replace_all": { "type": "boolean" }
+                            "path": { "type": "string", "description": "Path of the file to edit." },
+                            "old": { "type": "string", "description": "Original text expected in the target file." },
+                            "new": { "type": "string", "description": "Replacement text for the target file." },
+                            "replace_all": { "type": "boolean", "description": "Whether all matching occurrences are replaced." }
                           },
                           "additionalProperties": false
                         }
-                      ]
+                      ],
+                      "description": "Arguments for a file edit tool call."
                     }
                   }
                 }
@@ -850,15 +879,17 @@
                             "type": "object",
                             "required": ["path", "diff"],
                             "properties": {
-                              "path": { "type": "string" },
-                              "diff": { "type": "string" }
+                              "path": { "type": "string", "description": "Path of the file changed by this patch entry." },
+                              "diff": { "type": "string", "description": "Patch content for this file." }
                             },
                             "additionalProperties": false
-                          }
+                          },
+                          "description": "Files changed by this patch request."
                         },
-                        "atomic": { "type": "boolean" }
+                        "atomic": { "type": "boolean", "description": "Whether the patch should be applied atomically." }
                       },
-                      "additionalProperties": false
+                      "additionalProperties": false,
+                      "description": "Arguments for an atomic multi-file patch tool call."
                     }
                   }
                 }
@@ -871,11 +902,12 @@
                       "type": "object",
                       "required": ["path"],
                       "properties": {
-                        "path": { "type": "string" },
-                        "recursive": { "type": "boolean" },
-                        "glob": { "type": "string" }
+                        "path": { "type": "string", "description": "Directory path to list." },
+                        "recursive": { "type": "boolean", "description": "Whether nested directories are included." },
+                        "glob": { "type": "string", "description": "Optional glob filter for listed paths." }
                       },
-                      "additionalProperties": false
+                      "additionalProperties": false,
+                      "description": "Arguments for a file listing tool call."
                     }
                   }
                 }
@@ -888,11 +920,12 @@
                       "type": "object",
                       "required": ["query"],
                       "properties": {
-                        "query": { "type": "string" },
-                        "path": { "type": "string" },
-                        "glob": { "type": "string" }
+                        "query": { "type": "string", "description": "Search query or pattern." },
+                        "path": { "type": "string", "description": "Root path to search within." },
+                        "glob": { "type": "string", "description": "Optional glob filter for searched paths." }
                       },
-                      "additionalProperties": false
+                      "additionalProperties": false,
+                      "description": "Arguments for a file search tool call."
                     }
                   }
                 }
@@ -905,11 +938,12 @@
                       "type": "object",
                       "required": ["command"],
                       "properties": {
-                        "command": { "type": "string" },
-                        "cwd": { "type": "string" },
-                        "timeout": { "type": "integer" }
+                        "command": { "type": "string", "description": "Shell command requested by the agent." },
+                        "cwd": { "type": "string", "description": "Working directory for the shell command." },
+                        "timeout": { "type": "integer", "description": "Requested command timeout." }
                       },
-                      "additionalProperties": false
+                      "additionalProperties": false,
+                      "description": "Arguments for a shell command tool call."
                     }
                   }
                 }
@@ -921,9 +955,10 @@
                     "args": {
                       "type": "object",
                       "properties": {
-                        "command_id": { "type": "string" }
+                        "command_id": { "type": "string", "description": "Source command identifier whose output is requested." }
                       },
-                      "additionalProperties": false
+                      "additionalProperties": false,
+                      "description": "Arguments for polling shell command output."
                     }
                   }
                 }
@@ -936,11 +971,12 @@
                       "type": "object",
                       "required": ["input"],
                       "properties": {
-                        "input": { "type": "string" },
-                        "session_id": { "type": "string" },
-                        "command_id": { "type": "string" }
+                        "input": { "type": "string", "description": "Input text sent to the running command." },
+                        "session_id": { "type": "string", "description": "Source shell session identifier." },
+                        "command_id": { "type": "string", "description": "Source command identifier receiving input." }
                       },
-                      "additionalProperties": false
+                      "additionalProperties": false,
+                      "description": "Arguments for sending input to a running shell command."
                     }
                   }
                 }
@@ -953,12 +989,13 @@
                       "type": "object",
                       "required": ["server", "tool"],
                       "properties": {
-                        "server": { "type": "string" },
-                        "tool": { "type": "string" },
-                        "args": { "type": "object" },
-                        "headers": { "type": "object" }
+                        "server": { "type": "string", "description": "MCP server name or identifier." },
+                        "tool": { "type": "string", "description": "MCP tool name invoked on the server." },
+                        "args": { "type": "object", "description": "Tool-specific argument object passed to the MCP tool." },
+                        "headers": { "type": "object", "description": "Request headers supplied to the MCP call." }
                       },
-                      "additionalProperties": false
+                      "additionalProperties": false,
+                      "description": "Arguments for an MCP tool call."
                     }
                   }
                 }
@@ -971,11 +1008,12 @@
                       "type": "object",
                       "required": ["url"],
                       "properties": {
-                        "url": { "type": "string" },
-                        "method": { "type": "string" },
-                        "headers": { "type": "object" }
+                        "url": { "type": "string", "description": "URL requested by the fetch." },
+                        "method": { "type": "string", "description": "HTTP method requested by the fetch." },
+                        "headers": { "type": "object", "description": "Request headers supplied to the fetch." }
                       },
-                      "additionalProperties": false
+                      "additionalProperties": false,
+                      "description": "Arguments for a web fetch tool call."
                     }
                   }
                 }
@@ -988,9 +1026,10 @@
                       "type": "object",
                       "required": ["query"],
                       "properties": {
-                        "query": { "type": "string" }
+                        "query": { "type": "string", "description": "Search query submitted to the web search tool." }
                       },
-                      "additionalProperties": false
+                      "additionalProperties": false,
+                      "description": "Arguments for a web search tool call."
                     }
                   }
                 }
@@ -1003,10 +1042,11 @@
                       "type": "object",
                       "required": ["query"],
                       "properties": {
-                        "query": { "type": "string" },
-                        "limit": { "type": "integer" }
+                        "query": { "type": "string", "description": "Search query used to discover tools." },
+                        "limit": { "type": "integer", "description": "Maximum number of tool results requested." }
                       },
-                      "additionalProperties": false
+                      "additionalProperties": false,
+                      "description": "Arguments for a tool discovery search."
                     }
                   }
                 }
@@ -1019,12 +1059,13 @@
                       "type": "object",
                       "required": ["path"],
                       "properties": {
-                        "path": { "type": "string" },
-                        "cell_id": { "type": "string" },
-                        "diff": { "type": "string" },
-                        "content": { "type": "string" }
+                        "path": { "type": "string", "description": "Notebook path to edit." },
+                        "cell_id": { "type": "string", "description": "Notebook cell identifier to edit." },
+                        "diff": { "type": "string", "description": "Patch content for the notebook edit." },
+                        "content": { "type": "string", "description": "Replacement notebook cell content." }
                       },
-                      "additionalProperties": false
+                      "additionalProperties": false,
+                      "description": "Arguments for a notebook edit tool call."
                     }
                   }
                 }
@@ -1037,11 +1078,12 @@
                       "type": "object",
                       "required": ["task"],
                       "properties": {
-                        "task": { "type": "string" },
-                        "agent_type": { "type": "string" },
-                      "session_id": { "$ref": "#/$defs/id" }
+                        "task": { "type": "string", "description": "Task prompt or instruction given to the subagent." },
+                        "agent_type": { "type": "string", "description": "Requested subagent type or role." },
+                      "session_id": { "$ref": "#/$defs/id", "description": "Child session identifier when known." }
                     },
-                      "additionalProperties": false
+                      "additionalProperties": false,
+                      "description": "Arguments for invoking a subagent."
                     }
                   }
                 }
@@ -1054,15 +1096,17 @@
                       "type": "object",
                       "required": ["name"],
                       "properties": {
-                        "name": { "type": "string" },
-                        "args": { "type": "object" }
+                        "name": { "type": "string", "description": "Tool name reported by the source agent." },
+                        "args": { "type": "object", "description": "Opaque arguments for the unclassified tool call." }
                       },
-                      "additionalProperties": false
+                      "additionalProperties": false,
+                      "description": "Opaque arguments for the unclassified tool call."
                     }
                   }
                 }
               }
-            ]
+            ],
+            "description": "Tool call event payload."
           }
         }
       },
@@ -1070,17 +1114,18 @@
       "tool_result": {
         "type": "object",
         "properties": {
-          "type": { "const": "tool_result" },
+          "type": { "const": "tool_result", "description": "Tool result event discriminator." },
           "payload": {
             "type": "object",
             "required": ["ok"],
             "properties": {
               "for_id": {
-                "$ref": "#/$defs/id"
+                "$ref": "#/$defs/id",
+                "description": "Tool call ID this result answers."
               },
-              "ok": { "type": "boolean" },
-              "output": { "type": "string" },
-              "truncated": { "type": "boolean" },
+              "ok": { "type": "boolean", "description": "Whether the tool call completed successfully." },
+              "output": { "type": "string", "description": "Human-readable tool output." },
+              "truncated": { "type": "boolean", "description": "Whether tool output was truncated before emission." },
               "output_size": {
                 "type": "integer",
                 "minimum": 0,
@@ -1090,14 +1135,17 @@
                 "oneOf": [
                   { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
                   { "type": "null" }
-                ]
+                ],
+                "description": "Content-addressed reference to full output when output is truncated."
               },
               "error": {
-                "oneOf": [{ "type": "string" }, { "type": "null" }]
+                "oneOf": [{ "type": "string" }, { "type": "null" }],
+                "description": "Error detail when the tool result failed, or null when unavailable."
               },
               "attachments": {
                 "type": "array",
-                "items": { "$ref": "#/$defs/attachment" }
+                "items": { "$ref": "#/$defs/attachment" },
+                "description": "Attachments produced by the tool result."
               },
               "meta": {
                 "type": "object",
@@ -1112,21 +1160,23 @@
                           "type": "object",
                           "required": ["type"],
                           "properties": {
-                            "type": { "type": "string", "enum": ["text", "image", "resource"] },
-                            "text": { "type": "string" },
-                            "data": { "type": "string" },
-                            "mime_type": { "type": "string" },
-                            "uri": { "type": "string" }
+                            "type": { "type": "string", "enum": ["text", "image", "resource"], "description": "MCP content block kind." },
+                            "text": { "type": "string", "description": "Text payload for a text MCP content block." },
+                            "data": { "type": "string", "description": "Encoded data for a binary MCP content block." },
+                            "mime_type": { "type": "string", "description": "Media type for the MCP content block data." },
+                            "uri": { "type": "string", "description": "Resource URI for an MCP resource content block." }
                           },
                           "additionalProperties": false
-                        }
+                        },
+                        "description": "Structured MCP content blocks returned by the tool."
                       },
-                      "is_error": { "type": "boolean" }
+                      "is_error": { "type": "boolean", "description": "Whether the MCP tool result represents an error." }
                     },
                     "patternProperties": {
                       "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$": {}
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "description": "Structured output for an MCP tool result."
                   },
                   "file_read": {
                     "type": "object",
@@ -1135,36 +1185,42 @@
                         "type": "array",
                         "items": { "type": "integer" },
                         "minItems": 2,
-                        "maxItems": 2
+                        "maxItems": 2,
+                        "description": "Line range represented by the file read output."
                       },
-                      "total_lines": { "type": "integer", "minimum": 0 },
-                      "encoding": { "type": "string" },
+                      "total_lines": { "type": "integer", "minimum": 0, "description": "Total line count reported for the read file." },
+                      "encoding": { "type": "string", "description": "Text encoding reported for the read output." },
                       "truncated_at_line": {
-                        "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }]
+                        "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }],
+                        "description": "Line where file output was truncated, or null when not line-truncated."
                       }
                     },
                     "patternProperties": {
                       "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$": {}
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "description": "Structured output for a file read result."
                   },
                   "shell_command": {
                     "type": "object",
                     "properties": {
-                      "stdout": { "type": "string" },
-                      "stderr": { "type": "string" },
+                      "stdout": { "type": "string", "description": "Standard output captured from the shell command." },
+                      "stderr": { "type": "string", "description": "Standard error captured from the shell command." },
                       "exit_code": {
-                        "oneOf": [{ "type": "integer" }, { "type": "null" }]
+                        "oneOf": [{ "type": "integer" }, { "type": "null" }],
+                        "description": "Process exit code, or null when unavailable."
                       },
                       "signal": {
-                        "oneOf": [{ "type": "string" }, { "type": "null" }]
+                        "oneOf": [{ "type": "string" }, { "type": "null" }],
+                        "description": "Termination signal, or null when unavailable."
                       },
-                      "duration_ms": { "type": "integer", "minimum": 0 }
+                      "duration_ms": { "type": "integer", "minimum": 0, "description": "Shell command duration in milliseconds." }
                     },
                     "patternProperties": {
                       "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$": {}
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "description": "Structured output for a shell command result."
                   }
                 },
                 "propertyNames": {
@@ -1192,7 +1248,8 @@
                   "required": ["output_size"]
                 }
               }
-            }
+            },
+            "description": "Tool result event payload."
           }
         }
       },
@@ -1200,7 +1257,7 @@
       "tool_call_aborted": {
         "type": "object",
         "properties": {
-          "type": { "const": "tool_call_aborted" },
+          "type": { "const": "tool_call_aborted", "description": "Tool-call abort event discriminator." },
           "payload": {
             "type": "object",
             "required": ["scope", "reason"],
@@ -1215,7 +1272,7 @@
                   }
                 ]
               },
-              "for_id": { "$ref": "#/$defs/id" },
+              "for_id": { "$ref": "#/$defs/id", "description": "Tool call ID affected by this abort." },
               "reason": {
                 "description": "Why execution stopped before a normal tool_result.",
                 "oneOf": [
@@ -1235,7 +1292,7 @@
                   }
                 ]
               },
-              "blocked_by": { "type": "string" }
+              "blocked_by": { "type": "string", "description": "Source component or policy that blocked the tool call." }
             },
             "additionalProperties": false,
             "allOf": [
@@ -1249,7 +1306,7 @@
                 "then": {
                   "required": ["for_id"],
                   "properties": {
-                    "for_id": { "$ref": "#/$defs/id" }
+                    "for_id": { "$ref": "#/$defs/id", "description": "Tool call ID affected by this abort." }
                   }
                 }
               },
@@ -1264,7 +1321,8 @@
                   "not": { "required": ["for_id"] }
                 }
               }
-            ]
+            ],
+            "description": "Tool-call abort event payload."
           }
         }
       },
@@ -1272,7 +1330,7 @@
       "user_query": {
         "type": "object",
         "properties": {
-          "type": { "const": "user_query" },
+          "type": { "const": "user_query", "description": "User query event discriminator." },
           "payload": {
             "type": "object",
             "required": ["questions"],
@@ -1284,31 +1342,34 @@
                   "type": "object",
                   "required": ["id", "question"],
                   "properties": {
-                    "id": { "type": "string" },
-                    "question": { "type": "string" },
-                    "header": { "type": "string" },
-                    "multi_select": { "type": "boolean" },
-                    "is_secret": { "type": "boolean" },
-                    "allow_other": { "type": "boolean" },
+                    "id": { "type": "string", "description": "Stable question identifier." },
+                    "question": { "type": "string", "description": "Question text presented to the user." },
+                    "header": { "type": "string", "description": "Short user-visible question header." },
+                    "multi_select": { "type": "boolean", "description": "Whether multiple options may be selected." },
+                    "is_secret": { "type": "boolean", "description": "Whether the answer should be treated as secret input." },
+                    "allow_other": { "type": "boolean", "description": "Whether a free-form other answer is allowed." },
                     "options": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "required": ["label"],
                         "properties": {
-                          "id": { "type": "string", "minLength": 1 },
-                          "label": { "type": "string" },
-                          "description": { "type": "string" }
+                          "id": { "type": "string", "minLength": 1, "description": "Stable option identifier." },
+                          "label": { "type": "string", "description": "User-visible option label." },
+                          "description": { "type": "string", "description": "User-visible option description." }
                         },
                         "additionalProperties": false
-                      }
+                      },
+                      "description": "Predefined answer options for the question."
                     }
                   },
                   "additionalProperties": false
-                }
+                },
+                "description": "Questions presented to the user."
               }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "User query event payload."
           }
         }
       },
@@ -1316,12 +1377,12 @@
       "user_query_response": {
         "type": "object",
         "properties": {
-          "type": { "const": "user_query_response" },
+          "type": { "const": "user_query_response", "description": "User query response event discriminator." },
           "payload": {
             "type": "object",
             "required": ["for_id", "answers"],
             "properties": {
-              "for_id": { "$ref": "#/$defs/id" },
+              "for_id": { "$ref": "#/$defs/id", "description": "User query ID this response answers." },
               "answers": {
                 "type": "object",
                 "additionalProperties": {
@@ -1330,15 +1391,18 @@
                   "properties": {
                     "selected": {
                       "type": "array",
-                      "items": { "type": "string" }
+                      "items": { "type": "string" },
+                      "description": "Selected option IDs or labels for this answer."
                     },
-                    "other": { "type": "string" }
+                    "other": { "type": "string", "description": "Free-form other answer text." }
                   },
                   "additionalProperties": false
-                }
+                },
+                "description": "Answers keyed by user query question ID."
               }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "User query response event payload."
           }
         }
       },
@@ -1346,16 +1410,17 @@
       "session_summary": {
         "type": "object",
         "properties": {
-          "type": { "const": "session_summary" },
+          "type": { "const": "session_summary", "description": "Session summary event discriminator." },
           "payload": {
             "type": "object",
             "required": ["scope", "text"],
             "properties": {
-              "scope": { "type": "string", "enum": ["session"] },
-              "text": { "type": "string" },
-              "model": { "type": "string" }
+              "scope": { "type": "string", "enum": ["session"], "description": "Summary scope covered by this event." },
+              "text": { "type": "string", "description": "Summary text for the session." },
+              "model": { "type": "string", "description": "Model that produced the summary when reported." }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "Session summary event payload."
           }
         }
       },
@@ -1363,7 +1428,7 @@
       "system_event": {
         "type": "object",
         "properties": {
-          "type": { "const": "system_event" },
+          "type": { "const": "system_event", "description": "System event event discriminator." },
           "payload": {
             "type": "object",
             "required": ["kind"],
@@ -1411,10 +1476,11 @@
                   }
                 ]
               },
-              "text": { "type": "string" },
-              "data": { "type": "object" }
+              "text": { "type": "string", "description": "Human-readable system event text." },
+              "data": { "type": "object", "description": "Structured data associated with the system event." }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "System event event payload."
           }
         }
       },
@@ -1422,17 +1488,18 @@
       "agent_thinking": {
         "type": "object",
         "properties": {
-          "type": { "const": "agent_thinking" },
+          "type": { "const": "agent_thinking", "description": "Agent thinking event discriminator." },
           "payload": {
             "type": "object",
             "required": ["text"],
             "properties": {
-              "text": { "type": "string" },
-              "model": { "type": "string" },
-              "level": { "type": "string", "minLength": 1 },
-              "usage": { "$ref": "#/$defs/agentMessageUsage" }
+              "text": { "type": "string", "description": "Agent reasoning or thinking text." },
+              "model": { "type": "string", "description": "Model that produced the thinking block." },
+              "level": { "type": "string", "minLength": 1, "description": "Source-defined thinking effort or visibility level." },
+              "usage": { "$ref": "#/$defs/agentMessageUsage", "description": "Token usage attached to this thinking block." }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "Agent thinking event payload."
           }
         }
       },
@@ -1440,11 +1507,12 @@
       "user_interrupt": {
         "type": "object",
         "properties": {
-          "type": { "const": "user_interrupt" },
+          "type": { "const": "user_interrupt", "description": "User interrupt event discriminator." },
           "payload": {
             "type": "object",
-            "properties": { "reason": { "type": "string" } },
-            "additionalProperties": false
+            "properties": { "reason": { "type": "string", "description": "Reason for the user interrupt when reported." } },
+            "additionalProperties": false,
+            "description": "User interrupt event payload."
           }
         }
       },
@@ -1452,28 +1520,30 @@
       "context_compact": {
         "type": "object",
         "properties": {
-          "type": { "const": "context_compact" },
+          "type": { "const": "context_compact", "description": "Context compaction event discriminator." },
           "payload": {
             "type": "object",
             "required": ["summary"],
             "properties": {
-              "summary": { "type": "string" },
+              "summary": { "type": "string", "description": "Compaction summary that replaces earlier context." },
               "trigger": {
                 "type": "string",
                 "anyOf": [
                   { "enum": ["manual", "auto"] },
                   { "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$" }
-                ]
+                ],
+                "description": "Trigger that caused context compaction."
               },
-              "tokens_before": { "type": "integer", "minimum": 0 },
-              "tokens_after": { "type": "integer", "minimum": 0 },
+              "tokens_before": { "type": "integer", "minimum": 0, "description": "Token count before context compaction." },
+              "tokens_after": { "type": "integer", "minimum": 0, "description": "Token count after context compaction." },
               "replaced_message_ids": {
                 "type": "array",
                 "items": { "$ref": "#/$defs/id" },
                 "description": "Agent Trail entry IDs folded or replaced by this compaction summary. Provenance-only; readers must not require same-file resolution."
               }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "Context compaction event payload."
           }
         }
       },
@@ -1481,15 +1551,16 @@
       "branch_point": {
         "type": "object",
         "properties": {
-          "type": { "const": "branch_point" },
+          "type": { "const": "branch_point", "description": "Branch point event discriminator." },
           "payload": {
             "type": "object",
             "required": ["from_id"],
             "properties": {
-              "from_id": { "$ref": "#/$defs/id" },
-              "reason": { "type": "string" }
+              "from_id": { "$ref": "#/$defs/id", "description": "Entry ID where a branch starts." },
+              "reason": { "type": "string", "description": "Reason the branch was created." }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "Branch point event payload."
           }
         }
       },
@@ -1497,16 +1568,17 @@
       "branch_summary": {
         "type": "object",
         "properties": {
-          "type": { "const": "branch_summary" },
+          "type": { "const": "branch_summary", "description": "Branch summary event discriminator." },
           "payload": {
             "type": "object",
             "required": ["abandoned_branch_id", "summary"],
             "properties": {
-              "abandoned_branch_id": { "$ref": "#/$defs/id" },
-              "summary": { "type": "string" },
-              "model": { "type": "string" }
+              "abandoned_branch_id": { "$ref": "#/$defs/id", "description": "Entry ID of the abandoned branch being summarized." },
+              "summary": { "type": "string", "description": "Summary of the abandoned branch." },
+              "model": { "type": "string", "description": "Model that produced the branch summary when reported." }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "Branch summary event payload."
           }
         }
       },
@@ -1514,16 +1586,16 @@
       "model_change": {
         "type": "object",
         "properties": {
-          "type": { "const": "model_change" },
+          "type": { "const": "model_change", "description": "Model change event discriminator." },
           "payload": {
             "type": "object",
             "required": ["to_model"],
             "properties": {
-              "from_model": { "type": "string" },
-              "to_model": { "type": "string" },
-              "from_provider": { "type": "string" },
-              "to_provider": { "type": "string" },
-              "reason": { "type": "string" },
+              "from_model": { "type": "string", "description": "Model in use before the change when known." },
+              "to_model": { "type": "string", "description": "Model in use after the change." },
+              "from_provider": { "type": "string", "description": "Model provider before the change when known." },
+              "to_provider": { "type": "string", "description": "Model provider after the change when known." },
+              "reason": { "type": "string", "description": "Reason the model changed." },
               "trigger": {
                 "type": "string",
                 "anyOf": [
@@ -1538,11 +1610,13 @@
                     ]
                   },
                   { "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$" }
-                ]
+                ],
+                "description": "Trigger that caused the model change."
               },
-              "turn_id": { "type": "string", "minLength": 1 }
+              "turn_id": { "type": "string", "minLength": 1, "description": "Source turn identifier associated with the model change." }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "Model change event payload."
           }
         }
       },
@@ -1550,7 +1624,7 @@
       "mode_change": {
         "type": "object",
         "properties": {
-          "type": { "const": "mode_change" },
+          "type": { "const": "mode_change", "description": "Mode change event discriminator." },
           "payload": {
             "type": "object",
             "required": ["scope", "to_mode"],
@@ -1560,11 +1634,12 @@
                 "anyOf": [
                   { "enum": ["collaboration", "permission", "execution", "ui"] },
                   { "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$" }
-                ]
+                ],
+                "description": "Mode domain changed by this event."
               },
-              "from_mode": { "type": "string", "minLength": 1 },
-              "to_mode": { "type": "string", "minLength": 1 },
-              "reason": { "type": "string" },
+              "from_mode": { "type": "string", "minLength": 1, "description": "Mode value before the change when known." },
+              "to_mode": { "type": "string", "minLength": 1, "description": "Mode value after the change." },
+              "reason": { "type": "string", "description": "Reason the mode changed." },
               "trigger": {
                 "type": "string",
                 "anyOf": [
@@ -1579,12 +1654,14 @@
                     ]
                   },
                   { "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$" }
-                ]
+                ],
+                "description": "Trigger that caused the mode change."
               },
-              "turn_id": { "type": "string", "minLength": 1 },
-              "data": { "type": "object" }
+              "turn_id": { "type": "string", "minLength": 1, "description": "Source turn identifier associated with the mode change." },
+              "data": { "type": "object", "description": "Structured data associated with the mode change." }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "Mode change event payload."
           }
         }
       },
@@ -1592,14 +1669,14 @@
       "thinking_level_change": {
         "type": "object",
         "properties": {
-          "type": { "const": "thinking_level_change" },
+          "type": { "const": "thinking_level_change", "description": "Thinking-level change event discriminator." },
           "payload": {
             "type": "object",
             "required": ["to_level"],
             "properties": {
-              "from_level": { "type": "string", "minLength": 1 },
-              "to_level": { "type": "string", "minLength": 1 },
-              "reason": { "type": "string" },
+              "from_level": { "type": "string", "minLength": 1, "description": "Thinking level before the change when known." },
+              "to_level": { "type": "string", "minLength": 1, "description": "Thinking level after the change." },
+              "reason": { "type": "string", "description": "Reason the thinking level changed." },
               "trigger": {
                 "type": "string",
                 "anyOf": [
@@ -1614,12 +1691,14 @@
                     ]
                   },
                   { "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$" }
-                ]
+                ],
+                "description": "Trigger that caused the thinking level change."
               },
-              "turn_id": { "type": "string", "minLength": 1 },
-              "data": { "type": "object" }
+              "turn_id": { "type": "string", "minLength": 1, "description": "Source turn identifier associated with the thinking level change." },
+              "data": { "type": "object", "description": "Structured data associated with the thinking level change." }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "Thinking-level change event payload."
           }
         }
       },
@@ -1627,20 +1706,23 @@
       "session_terminated": {
         "type": "object",
         "properties": {
-          "type": { "const": "session_terminated" },
+          "type": { "const": "session_terminated", "description": "Session termination event discriminator." },
           "payload": {
             "type": "object",
             "required": ["reason"],
             "properties": {
               "reason": {
-                "$ref": "#/$defs/sessionTerminationReason"
+                "$ref": "#/$defs/sessionTerminationReason",
+                "description": "Reason the session ended abnormally."
               },
               "open_call_ids": {
                 "type": "array",
-                "items": { "$ref": "#/$defs/id" }
+                "items": { "$ref": "#/$defs/id" },
+                "description": "Tool-call IDs still open when the session ended abnormally."
               }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "Session termination event payload."
           }
         }
       },
@@ -1648,7 +1730,7 @@
       "session_end": {
         "type": "object",
         "properties": {
-          "type": { "const": "session_end" },
+          "type": { "const": "session_end", "description": "Session end event discriminator." },
           "payload": {
             "type": "object",
             "required": ["reason"],
@@ -1658,11 +1740,13 @@
                 "anyOf": [
                   { "enum": ["complete", "user_quit", "agent_idle"] },
                   { "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$" }
-                ]
+                ],
+                "description": "Reason the session ended cleanly."
               },
-              "final_message_id": { "$ref": "#/$defs/id" }
+              "final_message_id": { "$ref": "#/$defs/id", "description": "Final message or header ID associated with session completion." }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "Session end event payload."
           }
         }
       },
@@ -1670,7 +1754,7 @@
       "command_invoke": {
         "type": "object",
         "properties": {
-          "type": { "const": "command_invoke" },
+          "type": { "const": "command_invoke", "description": "Command invocation event discriminator." },
           "payload": {
             "type": "object",
             "required": ["name", "kind", "via"],
@@ -1695,8 +1779,8 @@
                   { "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$" }
                 ]
               },
-              "args": { "type": "object" },
-              "expansion_text": { "type": "string" },
+              "args": { "type": "object", "description": "Structured arguments for the invoked capability." },
+              "expansion_text": { "type": "string", "description": "Text inserted or expanded by the invoked capability." },
               "result_action": {
                 "description": "What the runtime did with the invocation. Either one of the reserved values, a vendor-namespaced extension of the form `x-<vendor>/<name>`, or null.",
                 "oneOf": [
@@ -1712,7 +1796,8 @@
                 ]
               }
             },
-            "additionalProperties": false
+            "additionalProperties": false,
+            "description": "Command invocation event payload."
           }
         }
       },
@@ -1720,7 +1805,7 @@
       "capability_change": {
         "type": "object",
         "properties": {
-          "type": { "const": "capability_change" },
+          "type": { "const": "capability_change", "description": "Capability change event discriminator." },
           "payload": {
             "allOf": [
               {
@@ -1732,7 +1817,8 @@
                     "anyOf": [
                       { "enum": ["tool", "skill", "mcp_server", "mcp_tool", "plugin"] },
                       { "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$" }
-                    ]
+                    ],
+                    "description": "Capability domain changed by this event."
                   },
                   "reason": {
                     "type": "string",
@@ -1751,27 +1837,32 @@
                         ]
                       },
                       { "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$" }
-                    ]
+                    ],
+                    "description": "Reason the capability set changed."
                   },
                   "added": {
                     "type": "array",
                     "minItems": 1,
-                    "items": { "$ref": "#/$defs/capabilityAddedItem" }
+                    "items": { "$ref": "#/$defs/capabilityAddedItem" },
+                    "description": "Capabilities added by this change."
                   },
                   "removed": {
                     "type": "array",
                     "minItems": 1,
-                    "items": { "$ref": "#/$defs/capabilityRemovedItem" }
+                    "items": { "$ref": "#/$defs/capabilityRemovedItem" },
+                    "description": "Capabilities removed by this change."
                   },
                   "changed": {
                     "type": "array",
                     "minItems": 1,
-                    "items": { "$ref": "#/$defs/capabilityChangedItem" }
+                    "items": { "$ref": "#/$defs/capabilityChangedItem" },
+                    "description": "Capabilities modified by this change."
                   },
                   "snapshot": {
                     "type": "array",
                     "minItems": 1,
-                    "items": { "$ref": "#/$defs/capabilityAddedItem" }
+                    "items": { "$ref": "#/$defs/capabilityAddedItem" },
+                    "description": "Full capability snapshot after this change."
                   }
                 },
                 "additionalProperties": false
@@ -1784,7 +1875,8 @@
                   { "type": "object", "required": ["snapshot"] }
                 ]
               }
-            ]
+            ],
+            "description": "Capability change event payload."
           }
         }
       },
@@ -1792,7 +1884,7 @@
       "session_metadata_update": {
         "type": "object",
         "properties": {
-          "type": { "const": "session_metadata_update" },
+          "type": { "const": "session_metadata_update", "description": "Session metadata update event discriminator." },
           "payload": {
             "oneOf": [
               {
@@ -1801,16 +1893,18 @@
                 "properties": {
                   "field": {
                     "type": "string",
-                    "enum": ["name", "description", "agent.model_default", "vcs.branch"]
+                    "enum": ["name", "description", "agent.model_default", "vcs.branch"],
+                    "description": "Session metadata field being updated."
                   },
-                  "value": { "type": "string" },
-                  "previous_value": { "type": "string" },
+                  "value": { "type": "string", "description": "New session metadata value." },
+                  "previous_value": { "type": "string", "description": "Previous session metadata value when known." },
                   "reason": {
                     "type": "string",
                     "anyOf": [
                       { "enum": ["ai_generated", "user_set", "runtime_inferred", "external"] },
                       { "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$" }
-                    ]
+                    ],
+                    "description": "Reason the session metadata changed."
                   }
                 },
                 "additionalProperties": false
@@ -1819,21 +1913,24 @@
                 "type": "object",
                 "required": ["field", "value", "reason"],
                 "properties": {
-                  "field": { "const": "tags" },
+                  "field": { "const": "tags", "description": "Session metadata field being updated." },
                   "value": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": { "type": "string" },
+                    "description": "New session metadata value."
                   },
                   "previous_value": {
                     "type": "array",
-                    "items": { "type": "string" }
+                    "items": { "type": "string" },
+                    "description": "Previous session metadata value when known."
                   },
                   "reason": {
                     "type": "string",
                     "anyOf": [
                       { "enum": ["ai_generated", "user_set", "runtime_inferred", "external"] },
                       { "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$" }
-                    ]
+                    ],
+                    "description": "Reason the session metadata changed."
                   }
                 },
                 "additionalProperties": false
@@ -1842,15 +1939,16 @@
                 "type": "object",
                 "required": ["field", "value", "reason"],
                 "properties": {
-                  "field": { "const": "vcs.worktree" },
-                  "value": { "$ref": "#/$defs/worktree" },
-                  "previous_value": { "$ref": "#/$defs/worktree" },
+                  "field": { "const": "vcs.worktree", "description": "Session metadata field being updated." },
+                  "value": { "$ref": "#/$defs/worktree", "description": "New session metadata value." },
+                  "previous_value": { "$ref": "#/$defs/worktree", "description": "Previous session metadata value when known." },
                   "reason": {
                     "type": "string",
                     "anyOf": [
                       { "enum": ["ai_generated", "user_set", "runtime_inferred", "external"] },
                       { "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$" }
-                    ]
+                    ],
+                    "description": "Reason the session metadata changed."
                   }
                 },
                 "additionalProperties": false
@@ -1861,21 +1959,24 @@
                 "properties": {
                   "field": {
                     "type": "string",
-                    "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$"
+                    "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$",
+                    "description": "Session metadata field being updated."
                   },
-                  "value": {},
-                  "previous_value": {},
+                  "value": { "description": "New session metadata value." },
+                  "previous_value": { "description": "Previous session metadata value when known." },
                   "reason": {
                     "type": "string",
                     "anyOf": [
                       { "enum": ["ai_generated", "user_set", "runtime_inferred", "external"] },
                       { "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$" }
-                    ]
+                    ],
+                    "description": "Reason the session metadata changed."
                   }
                 },
                 "additionalProperties": false
               }
-            ]
+            ],
+            "description": "Session metadata update event payload."
           }
         }
       }
@@ -1885,8 +1986,8 @@
       "type": "object",
       "required": ["name"],
       "properties": {
-        "name": { "type": "string" },
-        "metadata": { "type": "object" }
+        "name": { "type": "string", "description": "Name of the added capability." },
+        "metadata": { "type": "object", "description": "Structured metadata for the added capability." }
       },
       "additionalProperties": false
     },
@@ -1895,7 +1996,7 @@
       "type": "object",
       "required": ["name"],
       "properties": {
-        "name": { "type": "string" }
+        "name": { "type": "string", "description": "Name of the removed capability." }
       },
       "additionalProperties": false
     },
@@ -1904,10 +2005,10 @@
       "type": "object",
       "required": ["name", "field"],
       "properties": {
-        "name": { "type": "string" },
-        "field": { "type": "string" },
-        "from": {},
-        "to": {}
+        "name": { "type": "string", "description": "Name of the changed capability." },
+        "field": { "type": "string", "description": "Capability field that changed." },
+        "from": { "description": "Previous capability field value." },
+        "to": { "description": "New capability field value." }
       },
       "additionalProperties": false
     }

@@ -8,7 +8,6 @@
 export interface AgentMessage {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         text: string;
         model?: string;
@@ -16,27 +15,11 @@ export interface AgentMessage {
         usage?: AgentMessageUsage;
         attachments?: Attachment[];
     };
-    // (undocumented)
     type?: "agent_message";
 }
 
 // @public
-export type AgentMessageUsage = AgentMessageUsage1 & {
-    input_tokens?: number;
-    output_tokens?: number;
-    input_tokens_cumulative?: number;
-    output_tokens_cumulative?: number;
-    total_tokens?: number;
-    total_tokens_cumulative?: number;
-    cache_read_tokens?: number;
-    cache_creation_tokens?: number;
-    reasoning_tokens?: number;
-    context_input_tokens?: number;
-    context_window_tokens?: number;
-};
-
-// @public (undocumented)
-export type AgentMessageUsage1 = (({
+export type AgentMessageUsage = ((({
     input_tokens: unknown;
     [k: string]: unknown | undefined;
 } | {
@@ -54,23 +37,63 @@ export type AgentMessageUsage1 = (({
 } | {
     total_tokens_cumulative: unknown;
     [k: string]: unknown | undefined;
+}) & {
+    input_tokens?: number;
+    output_tokens?: number;
+    input_tokens_cumulative?: number;
+    output_tokens_cumulative?: number;
+    total_tokens?: number;
+    total_tokens_cumulative?: number;
+    cache_read_tokens?: number;
+    cache_creation_tokens?: number;
+    reasoning_tokens?: number;
+    context_input_tokens?: number;
+    context_window_tokens?: number;
 };
 
-// @public (undocumented)
-export type AgentName = ("claude-code" | "pi" | "openclaw" | "codex-cli" | "cursor" | "opencode" | "aider" | "amp" | "cline" | "crush" | "kimi-code" | "qwen-code" | "factory" | "vibe" | "copilot-cli" | "copilot-chat" | "chatgpt" | "clawdbot") | string;
+// @public
+export type AgentMessageUsage1 = ((({
+    input_tokens: unknown;
+    [k: string]: unknown | undefined;
+} | {
+    input_tokens_cumulative: unknown;
+    [k: string]: unknown | undefined;
+}) & ({
+    output_tokens: unknown;
+    [k: string]: unknown | undefined;
+} | {
+    output_tokens_cumulative: unknown;
+    [k: string]: unknown | undefined;
+})) | {
+    total_tokens: unknown;
+    [k: string]: unknown | undefined;
+} | {
+    total_tokens_cumulative: unknown;
+    [k: string]: unknown | undefined;
+}) & {
+    input_tokens?: number;
+    output_tokens?: number;
+    input_tokens_cumulative?: number;
+    output_tokens_cumulative?: number;
+    total_tokens?: number;
+    total_tokens_cumulative?: number;
+    cache_read_tokens?: number;
+    cache_creation_tokens?: number;
+    reasoning_tokens?: number;
+    context_input_tokens?: number;
+    context_window_tokens?: number;
+};
 
 // @public (undocumented)
 export interface AgentThinking {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         text: string;
         model?: string;
         level?: string;
-        usage?: AgentMessageUsage;
+        usage?: AgentMessageUsage1;
     };
-    // (undocumented)
     type?: "agent_thinking";
 }
 
@@ -100,12 +123,10 @@ export type Attachment1 = {
 export interface BranchPoint {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         from_id: string;
         reason?: string;
     };
-    // (undocumented)
     type?: "branch_point";
 }
 
@@ -113,23 +134,19 @@ export interface BranchPoint {
 export interface BranchSummary {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         abandoned_branch_id: string;
         summary: string;
         model?: string;
     };
-    // (undocumented)
     type?: "branch_summary";
 }
 
 // @public (undocumented)
 export interface CapabilityAddedItem {
-    // (undocumented)
     metadata?: {
         [k: string]: unknown | undefined;
     };
-    // (undocumented)
     name: string;
 }
 
@@ -164,19 +181,18 @@ export interface CapabilityChange {
 
 // @public (undocumented)
 export interface CapabilityChangedItem {
-    // (undocumented)
     field: string;
-    // (undocumented)
-    from?: unknown;
-    // (undocumented)
+    from?: {
+        [k: string]: unknown | undefined;
+    };
     name: string;
-    // (undocumented)
-    to?: unknown;
+    to?: {
+        [k: string]: unknown | undefined;
+    };
 }
 
 // @public (undocumented)
 export interface CapabilityRemovedItem {
-    // (undocumented)
     name: string;
 }
 
@@ -184,7 +200,6 @@ export interface CapabilityRemovedItem {
 export interface CommandInvoke {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         name: string;
         kind: (("slash" | "builtin" | "skill" | "custom_prompt" | "plugin") | {
@@ -199,7 +214,6 @@ export interface CommandInvoke {
         expansion_text?: string;
         result_action?: ("compact" | "clear" | "expand" | "load_skill" | "noop") | string | null;
     };
-    // (undocumented)
     type?: "command_invoke";
 }
 
@@ -207,7 +221,6 @@ export interface CommandInvoke {
 export interface ContextCompact {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         summary: string;
         trigger?: (("manual" | "auto") | {
@@ -217,7 +230,6 @@ export interface ContextCompact {
         tokens_after?: number;
         replaced_message_ids?: string[];
     };
-    // (undocumented)
     type?: "context_compact";
 }
 
@@ -229,22 +241,17 @@ export { Entry as TrailEntry }
 // @public (undocumented)
 export interface EntryBase {
     id: string;
-    // (undocumented)
     meta?: {
         redaction_count?: number;
         [k: string]: unknown | undefined;
     };
-    // (undocumented)
     parent_id?: string | null;
-    // (undocumented)
     payload: object;
     // (undocumented)
     semantic?: SemanticMetadata;
     // (undocumented)
     source?: SourceMetadata;
-    // (undocumented)
-    ts: Iso8601;
-    // (undocumented)
+    ts: string;
     type: string;
 }
 
@@ -261,29 +268,29 @@ type Header = {
     session_uid?: string;
     segment?: Segment;
     content_hash?: Sha256Hex | "<pending>";
-    ts: Iso8601;
+    ts: string;
     stream?: {
         state: "open" | "closed";
-        started_at?: Iso8601;
+        started_at?: string;
     };
     agent: {
-        name: AgentName;
+        name: ("claude-code" | "pi" | "openclaw" | "codex-cli" | "cursor" | "opencode" | "aider" | "amp" | "cline" | "crush" | "kimi-code" | "qwen-code" | "factory" | "vibe" | "copilot-cli" | "copilot-chat" | "chatgpt" | "clawdbot") | string;
         version?: string;
         model_default?: string;
     };
     cwd?: string;
-    vcs?: Vcs;
+    vcs?: Vcs1;
     fork_from?: {
         session_id: string;
-        content_hash?: Sha256Hex;
+        content_hash?: string;
         entry_id?: string;
     };
     redacted_from?: {
-        content_hash: Sha256Hex;
+        content_hash: string;
     };
     parse_fidelity?: ParseFidelity;
     source?: {
-        agent?: AgentName;
+        agent?: ("claude-code" | "pi" | "openclaw" | "codex-cli" | "cursor" | "opencode" | "aider" | "amp" | "cline" | "crush" | "kimi-code" | "qwen-code" | "factory" | "vibe" | "copilot-cli" | "copilot-chat" | "chatgpt" | "clawdbot") | string;
         path?: string;
         format_version?: string;
     };
@@ -294,14 +301,10 @@ type Header = {
 export { Header }
 export { Header as SessionHeader }
 
-// @public
-export type Iso8601 = string;
-
 // @public (undocumented)
 export interface ModeChange {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         scope: (("collaboration" | "permission" | "execution" | "ui") | {
             [k: string]: unknown | undefined;
@@ -317,7 +320,6 @@ export interface ModeChange {
             [k: string]: unknown | undefined;
         };
     };
-    // (undocumented)
     type?: "mode_change";
 }
 
@@ -325,7 +327,6 @@ export interface ModeChange {
 export interface ModelChange {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         from_model?: string;
         to_model: string;
@@ -337,7 +338,6 @@ export interface ModelChange {
         }) & string;
         turn_id?: string;
     };
-    // (undocumented)
     type?: "model_change";
 }
 
@@ -359,26 +359,21 @@ export type Segment = {
 
 // @public
 export interface SemanticMetadata {
-    // (undocumented)
     call_id?: string;
-    // (undocumented)
     group_id?: string;
-    // (undocumented)
-    tool_kind?: ToolKind;
+    tool_kind?: "file_read" | "file_write" | "file_edit" | "file_patch" | "file_list" | "file_search" | "shell_command" | "shell_output" | "shell_input" | "mcp_call" | "web_fetch" | "web_search" | "tool_search" | "notebook_edit" | "subagent_invoke" | "other";
 }
 
 // @public (undocumented)
 export interface SessionEnd {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         reason: (("complete" | "user_quit" | "agent_idle") | {
             [k: string]: unknown | undefined;
         }) & string;
         final_message_id?: string;
     };
-    // (undocumented)
     type?: "session_end";
 }
 
@@ -386,7 +381,6 @@ export interface SessionEnd {
 export interface SessionMetadataUpdate {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         field: "name" | "description" | "agent.model_default" | "vcs.branch";
         value: string;
@@ -403,20 +397,23 @@ export interface SessionMetadataUpdate {
         }) & string;
     } | {
         field: "vcs.worktree";
-        value: Worktree;
-        previous_value?: Worktree;
+        value: Worktree1;
+        previous_value?: Worktree2;
         reason: (("ai_generated" | "user_set" | "runtime_inferred" | "external") | {
             [k: string]: unknown | undefined;
         }) & string;
     } | {
         field: string;
-        value: unknown;
-        previous_value?: unknown;
+        value: {
+            [k: string]: unknown | undefined;
+        };
+        previous_value?: {
+            [k: string]: unknown | undefined;
+        };
         reason: (("ai_generated" | "user_set" | "runtime_inferred" | "external") | {
             [k: string]: unknown | undefined;
         }) & string;
     };
-    // (undocumented)
     type?: "session_metadata_update";
 }
 
@@ -424,13 +421,11 @@ export interface SessionMetadataUpdate {
 export interface SessionSummary {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         scope: "session";
         text: string;
         model?: string;
     };
-    // (undocumented)
     type?: "session_summary";
 }
 
@@ -438,38 +433,26 @@ export interface SessionSummary {
 export interface SessionTerminated {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
-        reason: SessionTerminationReason & SessionTerminationReason1;
+        reason: (("eof_with_open_tool_calls" | "process_terminated" | "truncated" | "user_abort") | {
+            [k: string]: unknown | undefined;
+        }) & string;
         open_call_ids?: string[];
     };
-    // (undocumented)
     type?: "session_terminated";
 }
-
-// @public (undocumented)
-export type SessionTerminationReason = ("eof_with_open_tool_calls" | "process_terminated" | "truncated" | "user_abort") | {
-    [k: string]: unknown | undefined;
-};
-
-// @public (undocumented)
-export type SessionTerminationReason1 = string;
 
 // @public
 export type Sha256Hex = string;
 
 // @public
 export interface SourceMetadata {
-    // (undocumented)
-    agent?: AgentName;
-    // (undocumented)
+    agent?: ("claude-code" | "pi" | "openclaw" | "codex-cli" | "cursor" | "opencode" | "aider" | "amp" | "cline" | "crush" | "kimi-code" | "qwen-code" | "factory" | "vibe" | "copilot-cli" | "copilot-chat" | "chatgpt" | "clawdbot") | string;
     original_type?: string;
     raw?: {
         [k: string]: unknown | undefined;
     };
-    // (undocumented)
     schema_version?: string;
-    // (undocumented)
     synthesized?: boolean;
 }
 
@@ -477,7 +460,6 @@ export interface SourceMetadata {
 export interface SystemEvent {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         kind: (("session_start" | "turn_start" | "turn_end" | "subagent_start" | "subagent_end" | "pre_tool_use" | "post_tool_use" | "hook_fired" | "permission_request" | "permission_decision" | "cwd_change" | "env_snapshot" | "task_started" | "task_completed" | "plan_completed" | "turn_aborted" | "tool_decision" | "context_injected" | "hook_progress" | "queue_operation" | "heartbeat" | "agent_error" | "agent_warning" | "api_error" | "stream_error" | "deprecation_notice" | "guardian_alert" | "model_rerouted" | "hook_failed" | "vcs_commit") | {
             [k: string]: unknown | undefined;
@@ -487,7 +469,6 @@ export interface SystemEvent {
             [k: string]: unknown | undefined;
         };
     };
-    // (undocumented)
     type?: "system_event";
 }
 
@@ -496,19 +477,19 @@ export type TaskPlanDelta = {
     kind: "added";
     item_id: string;
     to_content: string;
-    to_status: TaskPlanStatus;
+    to_status: "pending" | "in_progress" | "completed" | "cancelled" | "blocked";
     to_active_form?: string;
 } | {
     kind: "removed";
     item_id: string;
     from_content: string;
-    from_status: TaskPlanStatus;
+    from_status: "pending" | "in_progress" | "completed" | "cancelled" | "blocked";
     from_active_form?: string;
 } | {
     kind: "status_changed";
     item_id: string;
-    from_status: TaskPlanStatus;
-    to_status: TaskPlanStatus;
+    from_status: "pending" | "in_progress" | "completed" | "cancelled" | "blocked";
+    to_status: "pending" | "in_progress" | "completed" | "cancelled" | "blocked";
 } | {
     kind: "content_changed";
     item_id: string;
@@ -518,30 +499,21 @@ export type TaskPlanDelta = {
 
 // @public (undocumented)
 export interface TaskPlanItem {
-    // (undocumented)
     active_form?: string;
-    // (undocumented)
     content: string;
-    // (undocumented)
     id: string;
-    // (undocumented)
-    status: TaskPlanStatus;
+    status: "pending" | "in_progress" | "completed" | "cancelled" | "blocked";
 }
-
-// @public (undocumented)
-export type TaskPlanStatus = "pending" | "in_progress" | "completed" | "cancelled" | "blocked";
 
 // @public (undocumented)
 export interface TaskPlanUpdate {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         explanation?: string;
         items: TaskPlanItem[];
         deltas?: TaskPlanDelta[];
     };
-    // (undocumented)
     type?: "task_plan_update";
 }
 
@@ -549,7 +521,6 @@ export interface TaskPlanUpdate {
 export interface ThinkingLevelChange {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         from_level?: string;
         to_level: string;
@@ -562,7 +533,6 @@ export interface ThinkingLevelChange {
             [k: string]: unknown | undefined;
         };
     };
-    // (undocumented)
     type?: "thinking_level_change";
 }
 
@@ -749,13 +719,9 @@ export type ToolCallTruncation = {
 };
 
 // @public (undocumented)
-export type ToolKind = "file_read" | "file_write" | "file_edit" | "file_patch" | "file_list" | "file_search" | "shell_command" | "shell_output" | "shell_input" | "mcp_call" | "web_fetch" | "web_search" | "tool_search" | "notebook_edit" | "subagent_invoke" | "other";
-
-// @public (undocumented)
 export interface ToolResult {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         for_id?: string;
         ok: boolean;
@@ -797,44 +763,33 @@ export interface ToolResult {
             } | undefined;
         };
     };
-    // (undocumented)
     type?: "tool_result";
 }
 
 // @public
 export interface TrailEnvelope {
-    // (undocumented)
     content_hash?: Sha256Hex | "<pending>";
-    // (undocumented)
     description?: string;
-    // (undocumented)
     fork_from?: {
         trail_id: string;
-        content_hash?: Sha256Hex;
+        content_hash?: string;
     };
     id: string;
     meta?: {
         [k: string]: unknown | undefined;
     };
-    // (undocumented)
     name?: string;
-    // (undocumented)
     producer: string;
-    // (undocumented)
     redacted_from?: {
-        content_hash: Sha256Hex;
+        content_hash: string;
     };
-    // (undocumented)
     schema_version: "0.1.0";
     sessions?: {
         id: string;
-        agent: AgentName;
+        agent: ("claude-code" | "pi" | "openclaw" | "codex-cli" | "cursor" | "opencode" | "aider" | "amp" | "cline" | "crush" | "kimi-code" | "qwen-code" | "factory" | "vibe" | "copilot-cli" | "copilot-chat" | "chatgpt" | "clawdbot") | string;
     }[];
-    // (undocumented)
     tags?: string[];
-    // (undocumented)
-    ts: Iso8601;
-    // (undocumented)
+    ts: string;
     type: "trail";
     // (undocumented)
     vcs?: Vcs;
@@ -844,11 +799,9 @@ export interface TrailEnvelope {
 export interface UserInterrupt {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         reason?: string;
     };
-    // (undocumented)
     type?: "user_interrupt";
 }
 
@@ -856,7 +809,6 @@ export interface UserInterrupt {
 export interface UserMessage {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         text: string;
         origin?: (("user" | "injected" | "mixed") | {
@@ -864,7 +816,6 @@ export interface UserMessage {
         }) & string;
         attachments?: Attachment[];
     };
-    // (undocumented)
     type?: "user_message";
 }
 
@@ -872,7 +823,6 @@ export interface UserMessage {
 export interface UserQuery {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         questions: [
             {
@@ -903,7 +853,6 @@ export interface UserQuery {
         }[]
         ];
     };
-    // (undocumented)
     type?: "user_query";
 }
 
@@ -911,7 +860,6 @@ export interface UserQuery {
 export interface UserQueryResponse {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
         for_id: string;
         answers: {
@@ -921,12 +869,18 @@ export interface UserQueryResponse {
             } | undefined;
         };
     };
-    // (undocumented)
     type?: "user_query_response";
 }
 
-// @public (undocumented)
-export type Vcs = Vcs1 & {
+// @public
+export type Vcs = ({
+    revision?: string;
+    [k: string]: unknown | undefined;
+} | {
+    revision?: null;
+    branch: string;
+    [k: string]: unknown | undefined;
+}) & {
     type: ("git" | "jj" | "hg" | "svn") | string;
     revision: string | null;
     remote_url?: string;
@@ -935,24 +889,47 @@ export type Vcs = Vcs1 & {
     worktree?: Worktree;
 };
 
-// @public (undocumented)
-export type Vcs1 = {
+// @public
+export type Vcs1 = ({
     revision?: string;
     [k: string]: unknown | undefined;
 } | {
     revision?: null;
     branch: string;
     [k: string]: unknown | undefined;
+}) & {
+    type: ("git" | "jj" | "hg" | "svn") | string;
+    revision: string | null;
+    remote_url?: string;
+    branch?: string;
+    head_commit?: string;
+    worktree?: Worktree;
 };
 
 // @public
 export interface Worktree {
-    // (undocumented)
     name: string;
     original_branch?: string;
     original_cwd?: string;
     original_head_commit?: string;
-    // (undocumented)
+    path: string;
+}
+
+// @public
+export interface Worktree1 {
+    name: string;
+    original_branch?: string;
+    original_cwd?: string;
+    original_head_commit?: string;
+    path: string;
+}
+
+// @public
+export interface Worktree2 {
+    name: string;
+    original_branch?: string;
+    original_cwd?: string;
+    original_head_commit?: string;
     path: string;
 }
 

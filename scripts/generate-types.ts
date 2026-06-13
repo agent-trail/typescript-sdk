@@ -83,15 +83,9 @@ function tightenGeneratedTypes(generated: string): string {
     "",
     "TaskPlanUpdate.payload.minItems",
   );
-  tightened = replaceRequired(
+  tightened = replaceRequiredRegex(
     tightened,
-    `export interface ToolCall {
-  type?: "tool_call";
-  payload?: {
-    [k: string]: unknown | undefined;
-  };
-  [k: string]: unknown | undefined;
-}`,
+    /export interface ToolCall \{[\s\S]*?\n\}\nexport interface ToolResult /,
     `export interface ToolCall {
   type?: "tool_call";
   payload?: ToolCallPayload;
@@ -262,18 +256,12 @@ export type ToolCallPayloadByTool =
         };
       };
     };
-`,
+export interface ToolResult `,
     "ToolCall.payload",
   );
-  tightened = replaceRequired(
+  tightened = replaceRequiredRegex(
     tightened,
-    `export interface ToolCallAborted {
-  type?: "tool_call_aborted";
-  payload?: {
-    [k: string]: unknown | undefined;
-  };
-  [k: string]: unknown | undefined;
-}`,
+    /export interface ToolCallAborted \{[\s\S]*?\n\}\nexport interface UserQuery /,
     `export interface ToolCallAborted {
   type?: "tool_call_aborted";
   payload?: ToolCallAbortedPayload;
@@ -311,56 +299,15 @@ export type ToolCallAbortedPayload = {
       for_id?: never;
     }
 );
-`,
+export interface UserQuery `,
     "ToolCallAborted.payload",
   );
-  tightened = replaceRequired(
+  tightened = replaceRequiredRegex(
     tightened,
-    `  payload?: {
-    scope: (
-      | ("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin")
-      | {
-          [k: string]: unknown | undefined;
-        }
-    ) &
-      string;
-    reason: (
-      | (
-          | "initial"
-          | "registered"
-          | "deregistered"
-          | "connected"
-          | "disconnected"
-          | "loaded"
-          | "unloaded"
-          | "error"
-          | "instructions_updated"
-        )
-      | {
-          [k: string]: unknown | undefined;
-        }
-    ) &
-      string;
-    /**
-     * @minItems 1
-     */
-    added?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
-    /**
-     * @minItems 1
-     */
-    removed?: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
-    /**
-     * @minItems 1
-     */
-    changed?: [CapabilityChangedItem, ...CapabilityChangedItem[]];
-    /**
-     * @minItems 1
-     */
-    snapshot?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
-  } & {
-    [k: string]: unknown | undefined;
-  };`,
-    `  payload?: {
+    /export interface CapabilityChange \{[\s\S]*?\n\}\nexport interface CapabilityAddedItem /,
+    `export interface CapabilityChange {
+  type?: "capability_change";
+  payload?: {
     scope: (
       | ("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin")
       | {
@@ -414,7 +361,10 @@ export type ToolCallAbortedPayload = {
     | {
         snapshot: [CapabilityAddedItem, ...CapabilityAddedItem[]];
       }
-  );`,
+  );
+  [k: string]: unknown | undefined;
+}
+export interface CapabilityAddedItem `,
     "CapabilityChange.payload",
   );
   return tightened;
@@ -427,6 +377,18 @@ function replaceRequired(
   label: string,
 ): string {
   if (!text.includes(searchValue)) {
+    throw new Error(`generated type tightening target not found: ${label}`);
+  }
+  return text.replace(searchValue, replaceValue);
+}
+
+function replaceRequiredRegex(
+  text: string,
+  searchValue: RegExp,
+  replaceValue: string,
+  label: string,
+): string {
+  if (!searchValue.test(text)) {
     throw new Error(`generated type tightening target not found: ${label}`);
   }
   return text.replace(searchValue, replaceValue);

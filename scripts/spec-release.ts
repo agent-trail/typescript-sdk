@@ -8,14 +8,14 @@ const RELEASE_DOWNLOAD_URL = `https://github.com/agent-trail/spec/releases/downl
 export const SCHEMA_ASSET: SchemaAsset = {
   name: `schema-${RELEASE_TAG}.json`,
   url: `${RELEASE_DOWNLOAD_URL}/schema-${RELEASE_TAG}.json`,
-  sha256: "6c89c0287a94925b98d228a12336786e76eefbb9b33de8b0ef5b9f8f5ae21a6f",
+  sha256: "b9012b15968b6be0ffe43c998cdf49d88b045176f21a4b5a20570106c79e5ad6",
   targetPath: "schema/v0.1.0.json",
 };
 
 export const FIXTURES_ASSET: FixturesAsset = {
   name: `fixtures-${RELEASE_TAG}.tar.gz`,
   url: `${RELEASE_DOWNLOAD_URL}/fixtures-${RELEASE_TAG}.tar.gz`,
-  sha256: "6f361996a6c7bd0c21fd54655421c8b8e345c376a4c3fbbf0887e59f4bc0c39f",
+  sha256: "89235c13ca3d43c49fccdd474fb30feb74965eadca5924e8f5dd6936054ea7c8",
   targetPath: "fixtures",
 };
 

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { validateTrailJsonl } from "@agent-trail/core";
+import { validateTrailJsonl } from "../src/index.ts";
 import {
   agentMessage,
   baseEnvelope,

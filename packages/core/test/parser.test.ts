@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { parseTrailJsonl, validateTrailJsonl } from "@agent-trail/core";
+import { parseTrailJsonl, validateTrailJsonl } from "../src/index.ts";
 import { baseEnvelope, baseHeader, chunks, jsonl, userMessage } from "./helpers";
 
 test("parses envelope, session group, events, and source line numbers", async () => {

@@ -5,7 +5,7 @@ import {
   reconcileSegments,
   stampContentHashes,
   validateTrailJsonl,
-} from "@agent-trail/core";
+} from "../src/index.ts";
 
 const header = {
   type: "session",

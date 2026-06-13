@@ -1,4 +1,4 @@
-import { type ParsedTrail, parseTrailJsonl } from "@agent-trail/core";
+import { type ParsedTrail, parseTrailJsonl } from "../src/index.ts";
 
 export const baseHeader = {
   type: "session",

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { computeContentHashes, stampContentHashes } from "@agent-trail/core";
+import { computeContentHashes, stampContentHashes } from "../src/index.ts";
 import { baseEnvelope, baseHeader, event, trail, userMessage } from "./helpers";
 
 test("computes stable lowercase sha-256 session hashes", async () => {

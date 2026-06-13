@@ -8,25 +8,49 @@ export function timestampDiagnostics(
   groupIds: Map<string, ParsedTrailRecord>,
   skipParentComparisons: boolean,
 ): TrailDiagnostic[] {
-  const diagnostics: TrailDiagnostic[] = [];
-  for (const record of [group.header, ...group.events]) {
-    const ts = readString(record.record, "ts");
-    if (ts !== undefined && !isoMillisPattern.test(ts)) {
-      diagnostics.push(diagnostic(record.line, "/ts", "error", "schema"));
-    }
-  }
-
+  const diagnostics = timestampSyntaxDiagnostics([group.header, ...group.events]);
   if (skipParentComparisons) return diagnostics;
 
-  for (const event of group.events) {
-    const parentId = readString(event.record, "parent_id");
-    if (parentId === undefined) continue;
-    const parent = groupIds.get(parentId);
-    const eventTs = readString(event.record, "ts");
-    const parentTs = parent === undefined ? undefined : readString(parent.record, "ts");
-    if (eventTs !== undefined && parentTs !== undefined && eventTs < parentTs) {
-      diagnostics.push(diagnostic(event.line, "/ts", "warning", "non_monotonic_event_ts"));
-    }
-  }
+  diagnostics.push(...parentTimestampDiagnostics(group.events, groupIds));
   return diagnostics;
+}
+
+function timestampSyntaxDiagnostics(records: ParsedTrailRecord[]): TrailDiagnostic[] {
+  return records.flatMap((record) => timestampSyntaxDiagnostic(record));
+}
+
+function timestampSyntaxDiagnostic(record: ParsedTrailRecord): TrailDiagnostic[] {
+  const ts = readString(record.record, "ts");
+  if (ts === undefined) return [];
+  if (!isoMillisPattern.test(ts)) return [diagnostic(record.line, "/ts", "error", "schema")];
+  if (!isValidUtcIsoMillis(ts))
+    return [diagnostic(record.line, "/ts", "error", "invalid_timestamp")];
+  return [];
+}
+
+function parentTimestampDiagnostics(
+  events: ParsedTrailRecord[],
+  groupIds: Map<string, ParsedTrailRecord>,
+): TrailDiagnostic[] {
+  return events.flatMap((event) =>
+    isBeforeParentTimestamp(event, groupIds)
+      ? [diagnostic(event.line, "/ts", "warning", "non_monotonic_event_ts")]
+      : [],
+  );
+}
+
+function isBeforeParentTimestamp(
+  event: ParsedTrailRecord,
+  groupIds: Map<string, ParsedTrailRecord>,
+): boolean {
+  const parentId = readString(event.record, "parent_id");
+  const parent = parentId === undefined ? undefined : groupIds.get(parentId);
+  const eventTs = readString(event.record, "ts");
+  const parentTs = parent === undefined ? undefined : readString(parent.record, "ts");
+  return eventTs !== undefined && parentTs !== undefined && eventTs < parentTs;
+}
+
+function isValidUtcIsoMillis(value: string): boolean {
+  const parsed = new Date(value);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString() === value;
 }

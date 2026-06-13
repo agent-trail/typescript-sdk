@@ -3,6 +3,8 @@ import { diagnostic, findValues, hasUnpairedSurrogate } from "../shared.js";
 
 const secretPattern =
   /(authorization:\s*bearer\s+[A-Za-z0-9._~+/=-]+|^bearer\s+[A-Za-z0-9._~+/=-]+$|api[_-]?key\s*[=:]\s*[A-Za-z0-9._~+/=-]+|token\s*[=:]\s*[A-Za-z0-9._~+/=-]+)/i;
+const credentialKeyPattern = /(?:^|\/)(?:api[_-]?key|authorization|password|secret|token)$/i;
+const redactedPattern = /^(?:<redacted>|\[redacted\]|\*\*\*)$/i;
 
 export function wellFormedStringDiagnostics(
   records: ParsedTrailRecord[],
@@ -43,9 +45,14 @@ export function secretDiagnostics(
   code: string,
 ): TrailDiagnostic[] {
   return findValues(value, basePath).flatMap(({ path, value: leaf }) => {
-    if (typeof leaf === "string" && secretPattern.test(leaf)) {
+    if (typeof leaf === "string" && isUnredactedSecret(path, leaf)) {
       return [diagnostic(line, path, "warning", code)];
     }
     return [];
   });
+}
+
+function isUnredactedSecret(path: string, value: string): boolean {
+  if (redactedPattern.test(value)) return false;
+  return secretPattern.test(value) || credentialKeyPattern.test(path);
 }

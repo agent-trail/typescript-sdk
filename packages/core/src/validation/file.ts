@@ -19,6 +19,7 @@ import { streamDiagnostics } from "./stream.js";
 import { timestampDiagnostics } from "./timestamps.js";
 import { toolPairingDiagnostics } from "./tool-pairing.js";
 import { userQueryDiagnostics } from "./user-query.js";
+import { vcsDiagnostics } from "./vcs.js";
 
 export function wholeFileDiagnostics(
   trail: ParsedTrail,
@@ -72,6 +73,7 @@ function groupDiagnostics(
     ...timestampDiagnostics(group, groupIds, parentCycleDiagnosticsForGroup.length > 0),
   );
   diagnostics.push(...parseFidelityDiagnostics(group));
+  diagnostics.push(...vcsDiagnostics(group));
   diagnostics.push(...toolPairingDiagnostics(group));
   diagnostics.push(...branchReferenceDiagnostics(group));
   diagnostics.push(...userQueryDiagnostics(group));

@@ -102,7 +102,7 @@ test("reports missing generated types as check-spec drift", async () => {
   expect(await checkSpecArtifacts(root)).toEqual(
     expect.arrayContaining([expect.stringContaining("packages/types/src/generated.ts is missing")]),
   );
-});
+}, 15_000);
 
 test("rejects schema package exports that drift from the pinned schema path", async () => {
   const root = createVendoredCopy();

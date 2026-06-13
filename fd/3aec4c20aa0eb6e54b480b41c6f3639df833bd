@@ -1,0 +1,40 @@
+packages/core/src/reconciliation/grouping.ts
+  s_1276b0959ffd41::t_3e891ef85fb11e 2,10-11,13,30-34
+packages/core/test/reconciliation.test.ts
+  s_1276b0959ffd41::t_d675c1202a33c2 353-354,463,470,473-478
+  s_1276b0959ffd41::t_0d45743530156f 274,347,357,461-462,464-469,471-472,479
+  s_1276b0959ffd41::t_c19c41da7b2d6d 438
+  s_1276b0959ffd41::t_a7267b81ac8b26 326-346,348-352,355-356,358-401
+  s_1276b0959ffd41::t_5d8271b08c0c68 4-13,214-273,275-325,402-437
+  s_1276b0959ffd41::t_c1b9de52226af4 57
+packages/core/src/reconciliation/events.ts
+  s_1276b0959ffd41::t_6837c7924d14f8 1-51
+packages/core/src/reconciliation/metadata.ts
+  s_1276b0959ffd41::t_b59d1d6fd4aabc 24-31,73,78,86-87,129-136,176-184
+  s_1276b0959ffd41::t_8637bf1bb315bc 1-23,32-72,74-77,79-85,88-128,137-152,154-175,185-189
+  s_1276b0959ffd41::t_383d7d34907121 153
+packages/core/src/reconciliation/merge.ts
+  s_1276b0959ffd41::t_ec78a2badfe6c6 12
+  s_1276b0959ffd41::t_be9f7c819008cf 1,3-6,11
+  s_1276b0959ffd41::t_2f470fce056300 13
+packages/core/src/reconciliation/parse-fidelity.ts
+  s_1276b0959ffd41::t_9eeebfd740bbba 1-50
+packages/core/test/helpers.ts
+  s_1276b0959ffd41::t_d7052aa7e92199 59-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "fd3aec4c20aa0eb6e54b480b41c6f3639df833bd",
+  "prompts": {},
+  "sessions": {
+    "s_1276b0959ffd41": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec0f1-1d7c-7ba1-a721-447a182bf364",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

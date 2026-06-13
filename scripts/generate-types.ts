@@ -69,6 +69,8 @@ function collectSchemaRefs(value: unknown): string[] {
 
 function tightenGeneratedTypes(generated: string): string {
   let tightened = generated;
+  // entryBase.payload is specified as an object-valued event payload. json-schema-to-typescript
+  // expands that into an anonymous index-signature object, which is noisier but not more precise.
   tightened = replaceRequired(
     tightened,
     `  payload: {
@@ -77,12 +79,18 @@ function tightenGeneratedTypes(generated: string): string {
     "  payload: object;",
     "EntryBase.payload",
   );
+  // This minItems member is a schema keyword leaked into the generated task_plan_update payload.
+  // It is not a JSON property accepted by the schema.
   tightened = replaceRequired(
     tightened,
     "\n    minItems?: 0;",
     "",
     "TaskPlanUpdate.payload.minItems",
   );
+  // json-schema-to-typescript widens the vendor extension pattern in scope to plain string.
+  // That erases the distinction between the reserved "tool_call" scope, which requires for_id,
+  // and vendor/turn scopes, which forbid it. Keep this exact guarded replacement until the
+  // generator can express pattern strings without swallowing reserved literals.
   tightened = replaceRequired(
     tightened,
     `export interface ToolCallAborted {

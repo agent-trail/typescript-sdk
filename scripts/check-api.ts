@@ -3,11 +3,13 @@ import path from "node:path";
 import { Extractor } from "@microsoft/api-extractor";
 import { readPackageJson, workspacePackageDirs } from "./workspaces.ts";
 
-type ApiPackage = {
+export type ApiPackage = {
   name: string;
   dir: string;
   declarationEntrypoint: string;
 };
+
+type ApiExtractorRunner = (packageInfo: ApiPackage) => boolean;
 
 const API_EXTRACTOR_CONFIG = "api-extractor.json";
 
@@ -39,7 +41,7 @@ function isPresent<T>(value: T | undefined): value is T {
   return value !== undefined;
 }
 
-function discoverApiPackages(root: string): ApiPackage[] {
+export function discoverApiPackages(root: string): ApiPackage[] {
   return workspacePackageDirs(root).flatMap((dir) => {
     const packageJson = readPackageJson(path.join(dir, "package.json"));
     if (packageJson.name === undefined) return [];
@@ -76,14 +78,47 @@ function runApiExtractor(packageInfo: ApiPackage): boolean {
   return result.succeeded;
 }
 
-function main(root = process.cwd()): number {
+export function checkApiPackages(
+  root: string,
+  runExtractor: ApiExtractorRunner = runApiExtractor,
+): string[] {
   const apiPackages = discoverApiPackages(root);
-  if (apiPackages.length === 0) {
+  const errors: string[] = [];
+
+  for (const packageInfo of apiPackages) {
+    const configPath = path.join(packageInfo.dir, API_EXTRACTOR_CONFIG);
+    const declarationPath = path.join(packageInfo.dir, packageInfo.declarationEntrypoint);
+
+    if (!existsSync(configPath)) {
+      errors.push(`${packageInfo.name}: missing ${API_EXTRACTOR_CONFIG}`);
+      continue;
+    }
+
+    if (!existsSync(declarationPath)) {
+      errors.push(
+        `${packageInfo.name}: declaration entrypoint missing: ${packageInfo.declarationEntrypoint}`,
+      );
+      continue;
+    }
+
+    if (!runExtractor(packageInfo)) {
+      errors.push(`${packageInfo.name}: API Extractor failed`);
+    }
+  }
+
+  return errors;
+}
+
+function main(root = process.cwd()): number {
+  if (discoverApiPackages(root).length === 0) {
     console.log("check-api: no TS API packages found");
     return 0;
   }
 
-  return apiPackages.map(runApiExtractor).every(Boolean) ? 0 : 1;
+  const errors = checkApiPackages(root);
+  for (const error of errors) console.error(error);
+
+  return errors.length === 0 ? 0 : 1;
 }
 
 if (import.meta.main) {

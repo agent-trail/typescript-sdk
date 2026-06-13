@@ -37,6 +37,8 @@ function createWorkspace(): string {
       "./v0.1.0": {
         default: "./schema.json",
       },
+      "./fixtures/*": "./fixtures/*",
+      "./fixtures/private/*": null,
       "./conformance/fixtures/*": "./conformance/fixtures/*",
       "./package.json": "./package.json",
     },
@@ -99,6 +101,38 @@ test("rejects undeclared package subpaths", () => {
       filePath,
       specifier: "@agent-trail/core/hash",
       message: "workspace import must match @agent-trail/core exports map",
+    },
+  ]);
+});
+
+test("rejects subpaths denied by null package exports", () => {
+  const root = createWorkspace();
+  const filePath = writeSource(
+    root,
+    'import secret from "@agent-trail/schema/fixtures/private/secret.json";\n',
+  );
+
+  expect(checkWorkspacePackageImports(root)).toEqual([
+    {
+      filePath,
+      specifier: "@agent-trail/schema/fixtures/private/secret.json",
+      message: "workspace import must match @agent-trail/schema exports map",
+    },
+  ]);
+});
+
+test("rejects workspace packages without explicit exports", () => {
+  const root = createWorkspace();
+  mkdirSync(path.join(root, "packages", "store"), { recursive: true });
+  writeJson(path.join(root, "packages", "store", "package.json"), {
+    name: "@agent-trail/store",
+  });
+
+  expect(checkWorkspacePackageImports(root)).toEqual([
+    {
+      filePath: path.join(root, "packages", "store", "package.json"),
+      specifier: "@agent-trail/store",
+      message: "workspace package must define an explicit package.json exports map",
     },
   ]);
 });

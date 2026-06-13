@@ -6,7 +6,7 @@ import { readPackageJson, workspacePackageDirs } from "./workspaces.ts";
 export type WorkspacePackage = {
   name: string;
   dir: string;
-  exportedSubpaths: string[];
+  exportRules: ExportRule[];
 };
 
 export type ExportViolation = {
@@ -20,19 +20,27 @@ type ImportSite = {
   specifier: string;
 };
 
+type ExportRule = {
+  subpath: string;
+  target: unknown;
+  order: number;
+};
+
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".mts", ".cts"]);
 const IGNORED_DIRS = new Set([".git", ".fallow", "coverage", "dist", "node_modules"]);
 
-function collectExportSubpaths(exportsField: unknown): string[] {
+function collectExportRules(exportsField: unknown): ExportRule[] {
   if (exportsField === undefined) return [];
-  if (typeof exportsField === "string") return ["."];
+  if (typeof exportsField === "string") return [{ subpath: ".", target: exportsField, order: 0 }];
   if (exportsField === null || typeof exportsField !== "object") return [];
 
-  const entries = Object.keys(exportsField);
-  const explicitSubpaths = entries.filter((key) => key.startsWith("."));
-  if (explicitSubpaths.length > 0) return explicitSubpaths.sort();
+  const entries = Object.entries(exportsField);
+  const explicitSubpaths = entries.filter(([key]) => key.startsWith("."));
+  if (explicitSubpaths.length > 0) {
+    return explicitSubpaths.map(([subpath, target], order) => ({ subpath, target, order }));
+  }
 
-  return ["."];
+  return [{ subpath: ".", target: exportsField, order: 0 }];
 }
 
 export function discoverWorkspacePackages(root: string): WorkspacePackage[] {
@@ -44,7 +52,7 @@ export function discoverWorkspacePackages(root: string): WorkspacePackage[] {
       {
         name: packageJson.name,
         dir,
-        exportedSubpaths: collectExportSubpaths(packageJson.exports),
+        exportRules: collectExportRules(packageJson.exports),
       },
     ];
   });
@@ -87,6 +95,25 @@ function subpathMatches(exportedSubpath: string, requestedSubpath: string): bool
   return requestedSubpath.startsWith(prefix) && requestedSubpath.endsWith(suffix);
 }
 
+function exportRulePrecedence(rule: ExportRule): number {
+  const wildcardIndex = rule.subpath.indexOf("*");
+  if (wildcardIndex === -1) return Number.MAX_SAFE_INTEGER;
+
+  return rule.subpath.slice(0, wildcardIndex).length;
+}
+
+function isAllowedByExports(exportRules: ExportRule[], subpath: string): boolean {
+  const matchingRules = exportRules
+    .filter((rule) => subpathMatches(rule.subpath, subpath))
+    .sort((a, b) => {
+      const precedence = exportRulePrecedence(b) - exportRulePrecedence(a);
+      return precedence === 0 ? a.order - b.order : precedence;
+    });
+
+  const selectedRule = matchingRules[0];
+  return selectedRule !== undefined && selectedRule.target !== null;
+}
+
 function requestedSubpath(packageName: string, specifier: string): string | undefined {
   if (specifier === packageName) return ".";
   if (!specifier.startsWith(`${packageName}/`)) return undefined;
@@ -101,7 +128,7 @@ export function checkWorkspacePackageImports(
   const violations: ExportViolation[] = [];
 
   for (const packageInfo of workspacePackages) {
-    if (packageInfo.exportedSubpaths.length === 0) {
+    if (packageInfo.exportRules.length === 0) {
       violations.push({
         filePath: path.join(packageInfo.dir, "package.json"),
         specifier: packageInfo.name,
@@ -120,9 +147,7 @@ export function checkWorkspacePackageImports(
       const subpath = requestedSubpath(matchingPackage.name, importSite.specifier);
       if (subpath === undefined) continue;
 
-      const isAllowed = matchingPackage.exportedSubpaths.some((exportedSubpath) =>
-        subpathMatches(exportedSubpath, subpath),
-      );
+      const isAllowed = isAllowedByExports(matchingPackage.exportRules, subpath);
       if (isAllowed) continue;
 
       violations.push({

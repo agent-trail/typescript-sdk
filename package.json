@@ -7,14 +7,18 @@
     "packages/*"
   ],
   "scripts": {
-    "check": "bun run --parallel check:biome check:types test check:fallow",
+    "check": "bun run --parallel check:biome check:types test check:exports check:api check:fallow",
+    "check:api": "bun run build:declarations && bun run scripts/check-api.ts",
     "check:biome": "biome check .",
+    "check:exports": "bun run scripts/check-exports.ts",
     "check:fallow": "fallow --fail-on-issues --format compact",
     "check:types": "tsc --noEmit",
+    "build:declarations": "bun run scripts/build-api-declarations.ts",
     "test": "bun test"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.0",
+    "@microsoft/api-extractor": "7.58.9",
     "@types/bun": "1.3.14",
     "fallow": "2.95.0",
     "typescript": "6.0.3"

@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { generateTypes } from "./generate-types.ts";
@@ -47,16 +47,63 @@ async function main(root = process.cwd()): Promise<number> {
   await writeFile(path.join(packageDir, SCHEMA_ASSET.targetPath), await readFile(schemaAssetPath));
 
   const fixturesDir = path.join(packageDir, FIXTURES_ASSET.targetPath);
+  const extractedFixturesDir = path.join(tempDir, "extracted", FIXTURES_ASSET.targetPath);
+  await validateFixtureArchive(fixturesAssetPath);
+  await extractFixtureArchive(fixturesAssetPath, path.join(tempDir, "extracted"));
+  await listRegularFiles(extractedFixturesDir);
   await rm(fixturesDir, { force: true, recursive: true });
-  await mkdir(packageDir, { recursive: true });
-  const tarResult = Bun.spawnSync(["tar", "-xzf", fixturesAssetPath, "-C", packageDir]);
-  if (!tarResult.success) throw new Error("failed to extract fixtures release asset");
+  await cp(extractedFixturesDir, fixturesDir, { recursive: true });
 
   await writeManifest(root, await buildManifest(root));
   await generateTypes(root);
 
   console.log(`vendor-spec: vendored ${RELEASE_TAG}`);
   return 0;
+}
+
+export function validateFixtureTarListing(listing: string): void {
+  for (const line of listing.split("\n")) {
+    if (line.trim() === "") continue;
+    const match = line.match(/^(\S)\S*\s+\d+\s+\S+\s+\S+\s+\d+\s+\S+\s+\d+\s+\S+\s+(.+)$/);
+    if (match === null) throw new Error(`unable to parse tar member: ${line}`);
+
+    const type = match[1];
+    const rawMemberPath = match[2];
+    if (rawMemberPath === undefined) throw new Error(`unable to parse tar member path: ${line}`);
+    if (type !== "-" && type !== "d") {
+      throw new Error(`unsupported tar member type: ${rawMemberPath}`);
+    }
+
+    const memberPath = safeArchivePath(rawMemberPath);
+    if (memberPath !== FIXTURES_ASSET.targetPath && !memberPath.startsWith("fixtures/")) {
+      throw new Error(`tar member must stay inside fixtures/: ${rawMemberPath}`);
+    }
+  }
+}
+
+async function validateFixtureArchive(archivePath: string): Promise<void> {
+  const result = Bun.spawnSync(["tar", "-tvzf", archivePath]);
+  if (!result.success) throw new Error("failed to inspect fixtures release asset");
+  validateFixtureTarListing(result.stdout.toString());
+}
+
+async function extractFixtureArchive(archivePath: string, targetDir: string): Promise<void> {
+  await mkdir(targetDir, { recursive: true });
+  const result = Bun.spawnSync(["tar", "-xzf", archivePath, "-C", targetDir]);
+  if (!result.success) throw new Error("failed to extract fixtures release asset");
+}
+
+function safeArchivePath(rawPath: string): string {
+  const normalized = rawPath.split(path.win32.sep).join(path.posix.sep);
+  if (path.posix.isAbsolute(normalized) || path.win32.isAbsolute(rawPath)) {
+    throw new Error(`tar member path must be relative: ${rawPath}`);
+  }
+
+  const memberPath = path.posix.normalize(normalized);
+  if (memberPath === "." || memberPath === ".." || memberPath.startsWith("../")) {
+    throw new Error(`tar member path must stay inside archive root: ${rawPath}`);
+  }
+  return memberPath;
 }
 
 async function downloadText(url: string): Promise<string> {

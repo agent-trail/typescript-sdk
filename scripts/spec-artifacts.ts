@@ -54,6 +54,9 @@ export function parseSpecArtifactManifest(value: unknown): SpecArtifactManifest 
   const schema = requireRecord(assets.schema, "manifest.assets.schema");
   const fixtures = requireRecord(assets.fixtures, "manifest.assets.fixtures");
   const extractedFiles = requireArray(manifest.extractedFiles, "manifest.extractedFiles");
+  const fixturesTargetPath = safeManifestPath(
+    requireString(fixtures.targetPath, "manifest.assets.fixtures.targetPath"),
+  );
 
   return {
     specVersion: requireString(manifest.specVersion, "manifest.specVersion"),
@@ -74,17 +77,21 @@ export function parseSpecArtifactManifest(value: unknown): SpecArtifactManifest 
         name: requireString(fixtures.name, "manifest.assets.fixtures.name"),
         url: requireString(fixtures.url, "manifest.assets.fixtures.url"),
         sha256: requireSha256(fixtures.sha256, "manifest.assets.fixtures.sha256"),
-        targetPath: safeManifestPath(
-          requireString(fixtures.targetPath, "manifest.assets.fixtures.targetPath"),
-        ),
+        targetPath: fixturesTargetPath,
       },
     },
     extractedFiles: extractedFiles.map((file, index) => {
       const record = requireRecord(file, `manifest.extractedFiles[${index}]`);
+      const filePath = safeManifestPath(
+        requireString(record.path, `manifest.extractedFiles[${index}].path`),
+      );
+      if (!isInsideManifestPath(fixturesTargetPath, filePath)) {
+        throw new Error(
+          `manifest.extractedFiles[${index}].path must be inside ${fixturesTargetPath}: ${filePath}`,
+        );
+      }
       return {
-        path: safeManifestPath(
-          requireString(record.path, `manifest.extractedFiles[${index}].path`),
-        ),
+        path: filePath,
         sha256: requireSha256(record.sha256, `manifest.extractedFiles[${index}].sha256`),
       };
     }),
@@ -142,6 +149,7 @@ export async function verifyVendoredSpecArtifacts(
   const fixturesPath = path.join(packageDir, manifest.assets.fixtures.targetPath);
 
   await verifyFileHash(schemaPath, manifest.assets.schema.sha256, errors);
+  await verifySchemaDirectory(packageDir, manifest, errors);
 
   const expectedFiles = new Map<string, string>();
   for (const file of manifest.extractedFiles) {
@@ -165,6 +173,22 @@ export async function verifyVendoredSpecArtifacts(
   return errors.sort();
 }
 
+async function verifySchemaDirectory(
+  packageDir: string,
+  manifest: SpecArtifactManifest,
+  errors: string[],
+): Promise<void> {
+  const schemaDir = path.dirname(path.join(packageDir, manifest.assets.schema.targetPath));
+  const expectedSchemaPath = manifest.assets.schema.targetPath;
+  const actualFiles = (await listRegularFiles(schemaDir)).map((filePath) =>
+    toPosixPath(path.relative(packageDir, filePath)),
+  );
+  for (const filePath of actualFiles) {
+    if (filePath !== expectedSchemaPath)
+      errors.push(`unexpected vendored schema file: ${filePath}`);
+  }
+}
+
 async function verifyFileHash(
   filePath: string,
   expectedSha256: string,
@@ -185,6 +209,10 @@ async function verifyFileHash(
 
 function toPosixPath(filePath: string): string {
   return filePath.split(path.sep).join(path.posix.sep);
+}
+
+function isInsideManifestPath(parentPath: string, childPath: string): boolean {
+  return childPath.startsWith(`${parentPath}/`);
 }
 
 function requireRecord(value: unknown, label: string): Record<string, unknown> {

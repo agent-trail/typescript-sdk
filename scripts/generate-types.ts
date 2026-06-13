@@ -23,6 +23,7 @@ export async function generateTypes(
       singleQuote: false,
       trailingComma: "all",
     },
+    strictIndexSignatures: true,
     unreachableDefinitions: true,
     unknownAny: true,
   });

@@ -499,9 +499,87 @@ export type TaskPlanDelta =
       to_content: string;
     };
 /**
- * Token usage attached to this thinking block.
+ * Token usage attached to this tool call when it is the first usage-capable derived entry.
  */
 export type AgentMessageUsage1 = (
+  | ((
+      | {
+          input_tokens: unknown;
+          [k: string]: unknown | undefined;
+        }
+      | {
+          input_tokens_cumulative: unknown;
+          [k: string]: unknown | undefined;
+        }
+    ) &
+      (
+        | {
+            output_tokens: unknown;
+            [k: string]: unknown | undefined;
+          }
+        | {
+            output_tokens_cumulative: unknown;
+            [k: string]: unknown | undefined;
+          }
+      ))
+  | {
+      total_tokens: unknown;
+      [k: string]: unknown | undefined;
+    }
+  | {
+      total_tokens_cumulative: unknown;
+      [k: string]: unknown | undefined;
+    }
+) & {
+  /**
+   * Input token count reported for this source envelope.
+   */
+  input_tokens?: number;
+  /**
+   * Output token count reported for this source envelope.
+   */
+  output_tokens?: number;
+  /**
+   * Cumulative input token count through this source envelope.
+   */
+  input_tokens_cumulative?: number;
+  /**
+   * Cumulative output token count through this source envelope.
+   */
+  output_tokens_cumulative?: number;
+  /**
+   * Total token count reported for this source envelope.
+   */
+  total_tokens?: number;
+  /**
+   * Cumulative total token count through this source envelope.
+   */
+  total_tokens_cumulative?: number;
+  /**
+   * Tokens read from model cache for this source envelope.
+   */
+  cache_read_tokens?: number;
+  /**
+   * Tokens written to model cache for this source envelope.
+   */
+  cache_creation_tokens?: number;
+  /**
+   * Reasoning token count reported for this source envelope.
+   */
+  reasoning_tokens?: number;
+  /**
+   * Source-reported context input token pressure for this request.
+   */
+  context_input_tokens?: number;
+  /**
+   * Model context window size reported by the source.
+   */
+  context_window_tokens?: number;
+};
+/**
+ * Token usage attached to this thinking block.
+ */
+export type AgentMessageUsage2 = (
   | ((
       | {
           input_tokens: unknown;
@@ -954,176 +1032,467 @@ export interface TaskPlanItem {
   active_form?: string;
 }
 export interface ToolCall {
+  /**
+   * Tool call event discriminator.
+   */
   type?: "tool_call";
-  payload?: ToolCallPayload;
+  /**
+   * Tool call event payload.
+   */
+  payload?: (
+    | {
+        /**
+         * Canonical kind of tool requested by the agent.
+         */
+        tool: "file_read";
+        args: ToolCallFileReadArgs;
+        [k: string]: unknown | undefined;
+      }
+    | {
+        /**
+         * Canonical kind of tool requested by the agent.
+         */
+        tool: "file_write";
+        args: ToolCallFileWriteArgs;
+        [k: string]: unknown | undefined;
+      }
+    | {
+        /**
+         * Canonical kind of tool requested by the agent.
+         */
+        tool: "file_edit";
+        /**
+         * Arguments for a file edit tool call.
+         */
+        args:
+          | {
+              /**
+               * Path of the file to edit.
+               */
+              path: string;
+              /**
+               * Patch or diff content describing the edit.
+               */
+              diff: string;
+            }
+          | {
+              /**
+               * Path of the file to edit.
+               */
+              path: string;
+              /**
+               * Original text expected in the target file.
+               */
+              old: string;
+              /**
+               * Replacement text for the target file.
+               */
+              new: string;
+              /**
+               * Whether all matching occurrences are replaced.
+               */
+              replace_all?: boolean;
+            };
+        [k: string]: unknown | undefined;
+      }
+    | {
+        /**
+         * Canonical kind of tool requested by the agent.
+         */
+        tool: "file_patch";
+        args: ToolCallFilePatchArgs;
+        [k: string]: unknown | undefined;
+      }
+    | {
+        /**
+         * Canonical kind of tool requested by the agent.
+         */
+        tool: "file_list";
+        args: ToolCallFileListArgs;
+        [k: string]: unknown | undefined;
+      }
+    | {
+        /**
+         * Canonical kind of tool requested by the agent.
+         */
+        tool: "file_search";
+        args: ToolCallFileSearchArgs;
+        [k: string]: unknown | undefined;
+      }
+    | {
+        /**
+         * Canonical kind of tool requested by the agent.
+         */
+        tool: "shell_command";
+        args: ToolCallShellCommandArgs;
+        [k: string]: unknown | undefined;
+      }
+    | {
+        /**
+         * Canonical kind of tool requested by the agent.
+         */
+        tool: "shell_output";
+        args: ToolCallShellOutputArgs;
+        [k: string]: unknown | undefined;
+      }
+    | {
+        /**
+         * Canonical kind of tool requested by the agent.
+         */
+        tool: "shell_input";
+        args: ToolCallShellInputArgs;
+        [k: string]: unknown | undefined;
+      }
+    | {
+        /**
+         * Canonical kind of tool requested by the agent.
+         */
+        tool: "mcp_call";
+        args: ToolCallMcpCallArgs;
+        [k: string]: unknown | undefined;
+      }
+    | {
+        /**
+         * Canonical kind of tool requested by the agent.
+         */
+        tool: "web_fetch";
+        args: ToolCallWebFetchArgs;
+        [k: string]: unknown | undefined;
+      }
+    | {
+        /**
+         * Canonical kind of tool requested by the agent.
+         */
+        tool: "web_search";
+        args: ToolCallWebSearchArgs;
+        [k: string]: unknown | undefined;
+      }
+    | {
+        /**
+         * Canonical kind of tool requested by the agent.
+         */
+        tool: "tool_search";
+        args: ToolCallToolSearchArgs;
+        [k: string]: unknown | undefined;
+      }
+    | {
+        /**
+         * Canonical kind of tool requested by the agent.
+         */
+        tool: "notebook_edit";
+        args: ToolCallNotebookEditArgs;
+        [k: string]: unknown | undefined;
+      }
+    | {
+        /**
+         * Canonical kind of tool requested by the agent.
+         */
+        tool: "subagent_invoke";
+        args: ToolCallSubagentInvokeArgs;
+        [k: string]: unknown | undefined;
+      }
+    | {
+        /**
+         * Canonical kind of tool requested by the agent.
+         */
+        tool: "other";
+        args: ToolCallOtherArgs;
+        [k: string]: unknown | undefined;
+      }
+  ) & {
+    usage?: AgentMessageUsage1;
+    /**
+     * Content-addressed reference to full arguments when arguments are truncated.
+     */
+    overflow_ref?: string | null;
+    [k: string]: unknown | undefined;
+  } & (
+      | {
+          /**
+           * Whether tool-call arguments were truncated before emission.
+           */
+          truncated: true;
+          /**
+           * UTF-8 byte length of the original args object before truncation. Required when truncated is true.
+           */
+          args_size: number;
+          [k: string]: unknown | undefined;
+        }
+      | {
+          /**
+           * Whether tool-call arguments were truncated before emission.
+           */
+          truncated?: false;
+          /**
+           * UTF-8 byte length of the original args object before truncation. Required when truncated is true.
+           */
+          args_size?: number;
+          [k: string]: unknown | undefined;
+        }
+    );
   [k: string]: unknown | undefined;
 }
-export type ToolCallPayload = ToolCallPayloadByTool & ToolCallPayloadCommon & ToolCallTruncation;
-export type ToolCallPayloadCommon = {
-  usage?: AgentMessageUsage;
-  overflow_ref?: string | null;
-};
-export type ToolCallTruncation =
-  | {
-      truncated: true;
+/**
+ * Arguments for a file read tool call.
+ */
+export interface ToolCallFileReadArgs {
+  /**
+   * Path of the file to read.
+   */
+  path: string;
+  /**
+   * Optional inclusive line range requested from the file.
+   *
+   * @minItems 2
+   * @maxItems 2
+   */
+  range?: [number, number];
+}
+/**
+ * Arguments for a file write tool call.
+ */
+export interface ToolCallFileWriteArgs {
+  /**
+   * Path of the file to write.
+   */
+  path: string;
+  /**
+   * Full file content to write.
+   */
+  content: string;
+}
+/**
+ * Arguments for an atomic multi-file patch tool call.
+ */
+export interface ToolCallFilePatchArgs {
+  /**
+   * Files changed by this patch request.
+   *
+   * @minItems 1
+   */
+  files: [
+    {
       /**
-       * UTF-8 byte length of the original args object before truncation. Required when truncated is true.
+       * Path of the file changed by this patch entry.
        */
-      args_size: number;
-    }
-  | {
-      truncated?: false;
+      path: string;
       /**
-       * UTF-8 byte length of the original args object before truncation. Required when truncated is true.
+       * Patch content for this file.
        */
-      args_size?: number;
-    };
-export type ToolCallPayloadByTool =
-  | {
-      tool: "file_read";
-      args: {
-        path: string;
-        range?: [number, number];
-      };
-    }
-  | {
-      tool: "file_write";
-      args: {
-        path: string;
-        content: string;
-      };
-    }
-  | {
-      tool: "file_edit";
-      args:
-        | {
-            path: string;
-            diff: string;
-          }
-        | {
-            path: string;
-            old: string;
-            new: string;
-            replace_all?: boolean;
-          };
-    }
-  | {
-      tool: "file_patch";
-      args: {
-        files: [
-          {
-            path: string;
-            diff: string;
-          },
-          ...{
-            path: string;
-            diff: string;
-          }[],
-        ];
-        atomic?: boolean;
-      };
-    }
-  | {
-      tool: "file_list";
-      args: {
-        path: string;
-        recursive?: boolean;
-        glob?: string;
-      };
-    }
-  | {
-      tool: "file_search";
-      args: {
-        query: string;
-        path?: string;
-        glob?: string;
-      };
-    }
-  | {
-      tool: "shell_command";
-      args: {
-        command: string;
-        cwd?: string;
-        timeout?: number;
-      };
-    }
-  | {
-      tool: "shell_output";
-      args: {
-        command_id?: string;
-      };
-    }
-  | {
-      tool: "shell_input";
-      args: {
-        input: string;
-        session_id?: string;
-        command_id?: string;
-      };
-    }
-  | {
-      tool: "mcp_call";
-      args: {
-        server: string;
-        tool: string;
-        args?: {
-          [k: string]: unknown | undefined;
-        };
-        headers?: {
-          [k: string]: unknown | undefined;
-        };
-      };
-    }
-  | {
-      tool: "web_fetch";
-      args: {
-        url: string;
-        method?: string;
-        headers?: {
-          [k: string]: unknown | undefined;
-        };
-      };
-    }
-  | {
-      tool: "web_search";
-      args: {
-        query: string;
-      };
-    }
-  | {
-      tool: "tool_search";
-      args: {
-        query: string;
-        limit?: number;
-      };
-    }
-  | {
-      tool: "notebook_edit";
-      args: {
-        path: string;
-        cell_id?: string;
-        diff?: string;
-        content?: string;
-      };
-    }
-  | {
-      tool: "subagent_invoke";
-      args: {
-        task: string;
-        agent_type?: string;
-        session_id?: string;
-      };
-    }
-  | {
-      tool: "other";
-      args: {
-        name: string;
-        args?: {
-          [k: string]: unknown | undefined;
-        };
-      };
-    };
-
+      diff: string;
+    },
+    ...{
+      /**
+       * Path of the file changed by this patch entry.
+       */
+      path: string;
+      /**
+       * Patch content for this file.
+       */
+      diff: string;
+    }[],
+  ];
+  /**
+   * Whether the patch should be applied atomically.
+   */
+  atomic?: boolean;
+}
+/**
+ * Arguments for a file listing tool call.
+ */
+export interface ToolCallFileListArgs {
+  /**
+   * Directory path to list.
+   */
+  path: string;
+  /**
+   * Whether nested directories are included.
+   */
+  recursive?: boolean;
+  /**
+   * Optional glob filter for listed paths.
+   */
+  glob?: string;
+}
+/**
+ * Arguments for a file search tool call.
+ */
+export interface ToolCallFileSearchArgs {
+  /**
+   * Search query or pattern.
+   */
+  query: string;
+  /**
+   * Root path to search within.
+   */
+  path?: string;
+  /**
+   * Optional glob filter for searched paths.
+   */
+  glob?: string;
+}
+/**
+ * Arguments for a shell command tool call.
+ */
+export interface ToolCallShellCommandArgs {
+  /**
+   * Shell command requested by the agent.
+   */
+  command: string;
+  /**
+   * Working directory for the shell command.
+   */
+  cwd?: string;
+  /**
+   * Requested command timeout.
+   */
+  timeout?: number;
+}
+/**
+ * Arguments for polling shell command output.
+ */
+export interface ToolCallShellOutputArgs {
+  /**
+   * Source command identifier whose output is requested.
+   */
+  command_id?: string;
+}
+/**
+ * Arguments for sending input to a running shell command.
+ */
+export interface ToolCallShellInputArgs {
+  /**
+   * Input text sent to the running command.
+   */
+  input: string;
+  /**
+   * Source shell session identifier.
+   */
+  session_id?: string;
+  /**
+   * Source command identifier receiving input.
+   */
+  command_id?: string;
+}
+/**
+ * Arguments for an MCP tool call.
+ */
+export interface ToolCallMcpCallArgs {
+  /**
+   * MCP server name or identifier.
+   */
+  server: string;
+  /**
+   * MCP tool name invoked on the server.
+   */
+  tool: string;
+  /**
+   * Tool-specific argument object passed to the MCP tool.
+   */
+  args?: {
+    [k: string]: unknown | undefined;
+  };
+  /**
+   * Request headers supplied to the MCP call.
+   */
+  headers?: {
+    [k: string]: unknown | undefined;
+  };
+}
+/**
+ * Arguments for a web fetch tool call.
+ */
+export interface ToolCallWebFetchArgs {
+  /**
+   * URL requested by the fetch.
+   */
+  url: string;
+  /**
+   * HTTP method requested by the fetch.
+   */
+  method?: string;
+  /**
+   * Request headers supplied to the fetch.
+   */
+  headers?: {
+    [k: string]: unknown | undefined;
+  };
+}
+/**
+ * Arguments for a web search tool call.
+ */
+export interface ToolCallWebSearchArgs {
+  /**
+   * Search query submitted to the web search tool.
+   */
+  query: string;
+}
+/**
+ * Arguments for a tool discovery search.
+ */
+export interface ToolCallToolSearchArgs {
+  /**
+   * Search query used to discover tools.
+   */
+  query: string;
+  /**
+   * Maximum number of tool results requested.
+   */
+  limit?: number;
+}
+/**
+ * Arguments for a notebook edit tool call.
+ */
+export interface ToolCallNotebookEditArgs {
+  /**
+   * Notebook path to edit.
+   */
+  path: string;
+  /**
+   * Notebook cell identifier to edit.
+   */
+  cell_id?: string;
+  /**
+   * Patch content for the notebook edit.
+   */
+  diff?: string;
+  /**
+   * Replacement notebook cell content.
+   */
+  content?: string;
+}
+/**
+ * Arguments for invoking a subagent.
+ */
+export interface ToolCallSubagentInvokeArgs {
+  /**
+   * Task prompt or instruction given to the subagent.
+   */
+  task: string;
+  /**
+   * Requested subagent type or role.
+   */
+  agent_type?: string;
+  /**
+   * Globally-unique identifier shape: canonical uppercase ULID (26 Crockford base32 chars), lowercase hyphenated UUID (36 chars), or lowercase unhyphenated UUID (32 hex chars). Header ids, event ids, and envelope ids share this shape so cross-segment reconciliation can dedup by exact string equality (spec §9.5).
+   */
+  session_id?: string;
+}
+/**
+ * Opaque arguments for the unclassified tool call.
+ */
+export interface ToolCallOtherArgs {
+  /**
+   * Tool name reported by the source agent.
+   */
+  name: string;
+  /**
+   * Opaque arguments for the unclassified tool call.
+   */
+  args?: {
+    [k: string]: unknown | undefined;
+  };
+}
 export interface ToolResult {
   /**
    * Tool result event discriminator.
@@ -1560,7 +1929,7 @@ export interface AgentThinking {
      * Source-defined thinking effort or visibility level.
      */
     level?: string;
-    usage?: AgentMessageUsage1;
+    usage?: AgentMessageUsage2;
   };
   [k: string]: unknown | undefined;
 }

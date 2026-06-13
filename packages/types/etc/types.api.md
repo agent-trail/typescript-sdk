@@ -84,6 +84,39 @@ export type AgentMessageUsage1 = ((({
     context_window_tokens?: number;
 };
 
+// @public
+export type AgentMessageUsage2 = ((({
+    input_tokens: unknown;
+    [k: string]: unknown | undefined;
+} | {
+    input_tokens_cumulative: unknown;
+    [k: string]: unknown | undefined;
+}) & ({
+    output_tokens: unknown;
+    [k: string]: unknown | undefined;
+} | {
+    output_tokens_cumulative: unknown;
+    [k: string]: unknown | undefined;
+})) | {
+    total_tokens: unknown;
+    [k: string]: unknown | undefined;
+} | {
+    total_tokens_cumulative: unknown;
+    [k: string]: unknown | undefined;
+}) & {
+    input_tokens?: number;
+    output_tokens?: number;
+    input_tokens_cumulative?: number;
+    output_tokens_cumulative?: number;
+    total_tokens?: number;
+    total_tokens_cumulative?: number;
+    cache_read_tokens?: number;
+    cache_creation_tokens?: number;
+    reasoning_tokens?: number;
+    context_input_tokens?: number;
+    context_window_tokens?: number;
+};
+
 // @public (undocumented)
 export interface AgentThinking {
     // (undocumented)
@@ -92,7 +125,7 @@ export interface AgentThinking {
         text: string;
         model?: string;
         level?: string;
-        usage?: AgentMessageUsage1;
+        usage?: AgentMessageUsage2;
     };
     type?: "agent_thinking";
 }
@@ -568,9 +601,91 @@ export interface ThinkingLevelChange {
 export interface ToolCall {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
-    payload?: ToolCallPayload;
-    // (undocumented)
+    payload?: ({
+        tool: "file_read";
+        args: ToolCallFileReadArgs;
+        [k: string]: unknown | undefined;
+    } | {
+        tool: "file_write";
+        args: ToolCallFileWriteArgs;
+        [k: string]: unknown | undefined;
+    } | {
+        tool: "file_edit";
+        args: {
+            path: string;
+            diff: string;
+        } | {
+            path: string;
+            old: string;
+            new: string;
+            replace_all?: boolean;
+        };
+        [k: string]: unknown | undefined;
+    } | {
+        tool: "file_patch";
+        args: ToolCallFilePatchArgs;
+        [k: string]: unknown | undefined;
+    } | {
+        tool: "file_list";
+        args: ToolCallFileListArgs;
+        [k: string]: unknown | undefined;
+    } | {
+        tool: "file_search";
+        args: ToolCallFileSearchArgs;
+        [k: string]: unknown | undefined;
+    } | {
+        tool: "shell_command";
+        args: ToolCallShellCommandArgs;
+        [k: string]: unknown | undefined;
+    } | {
+        tool: "shell_output";
+        args: ToolCallShellOutputArgs;
+        [k: string]: unknown | undefined;
+    } | {
+        tool: "shell_input";
+        args: ToolCallShellInputArgs;
+        [k: string]: unknown | undefined;
+    } | {
+        tool: "mcp_call";
+        args: ToolCallMcpCallArgs;
+        [k: string]: unknown | undefined;
+    } | {
+        tool: "web_fetch";
+        args: ToolCallWebFetchArgs;
+        [k: string]: unknown | undefined;
+    } | {
+        tool: "web_search";
+        args: ToolCallWebSearchArgs;
+        [k: string]: unknown | undefined;
+    } | {
+        tool: "tool_search";
+        args: ToolCallToolSearchArgs;
+        [k: string]: unknown | undefined;
+    } | {
+        tool: "notebook_edit";
+        args: ToolCallNotebookEditArgs;
+        [k: string]: unknown | undefined;
+    } | {
+        tool: "subagent_invoke";
+        args: ToolCallSubagentInvokeArgs;
+        [k: string]: unknown | undefined;
+    } | {
+        tool: "other";
+        args: ToolCallOtherArgs;
+        [k: string]: unknown | undefined;
+    }) & {
+        usage?: AgentMessageUsage1;
+        overflow_ref?: string | null;
+        [k: string]: unknown | undefined;
+    } & ({
+        truncated: true;
+        args_size: number;
+        [k: string]: unknown | undefined;
+    } | {
+        truncated?: false;
+        args_size?: number;
+        [k: string]: unknown | undefined;
+    });
     type?: "tool_call";
 }
 
@@ -599,152 +714,120 @@ export type ToolCallAbortedPayload = {
 // @public (undocumented)
 export type ToolCallAbortedReason = "user_interrupt" | "hook_blocked" | "timeout" | "permission_denied" | "runtime_error" | `x-${string}/${string}`;
 
-// @public (undocumented)
-export type ToolCallPayload = ToolCallPayloadByTool & ToolCallPayloadCommon & ToolCallTruncation;
+// @public
+export interface ToolCallFileListArgs {
+    glob?: string;
+    path: string;
+    recursive?: boolean;
+}
 
-// @public (undocumented)
-export type ToolCallPayloadByTool = {
-    tool: "file_read";
-    args: {
-        path: string;
-        range?: [number, number];
-    };
-} | {
-    tool: "file_write";
-    args: {
-        path: string;
-        content: string;
-    };
-} | {
-    tool: "file_edit";
-    args: {
+// @public
+export interface ToolCallFilePatchArgs {
+    atomic?: boolean;
+    files: [
+        {
         path: string;
         diff: string;
-    } | {
+    },
+    ...{
         path: string;
-        old: string;
-        new: string;
-        replace_all?: boolean;
-    };
-} | {
-    tool: "file_patch";
-    args: {
-        files: [
-            {
-            path: string;
-            diff: string;
-        },
-        ...{
-            path: string;
-            diff: string;
-        }[]
-        ];
-        atomic?: boolean;
-    };
-} | {
-    tool: "file_list";
-    args: {
-        path: string;
-        recursive?: boolean;
-        glob?: string;
-    };
-} | {
-    tool: "file_search";
-    args: {
-        query: string;
-        path?: string;
-        glob?: string;
-    };
-} | {
-    tool: "shell_command";
-    args: {
-        command: string;
-        cwd?: string;
-        timeout?: number;
-    };
-} | {
-    tool: "shell_output";
-    args: {
-        command_id?: string;
-    };
-} | {
-    tool: "shell_input";
-    args: {
-        input: string;
-        session_id?: string;
-        command_id?: string;
-    };
-} | {
-    tool: "mcp_call";
-    args: {
-        server: string;
-        tool: string;
-        args?: {
-            [k: string]: unknown | undefined;
-        };
-        headers?: {
-            [k: string]: unknown | undefined;
-        };
-    };
-} | {
-    tool: "web_fetch";
-    args: {
-        url: string;
-        method?: string;
-        headers?: {
-            [k: string]: unknown | undefined;
-        };
-    };
-} | {
-    tool: "web_search";
-    args: {
-        query: string;
-    };
-} | {
-    tool: "tool_search";
-    args: {
-        query: string;
-        limit?: number;
-    };
-} | {
-    tool: "notebook_edit";
-    args: {
-        path: string;
-        cell_id?: string;
-        diff?: string;
-        content?: string;
-    };
-} | {
-    tool: "subagent_invoke";
-    args: {
-        task: string;
-        agent_type?: string;
-        session_id?: string;
-    };
-} | {
-    tool: "other";
-    args: {
-        name: string;
-        args?: {
-            [k: string]: unknown | undefined;
-        };
-    };
-};
+        diff: string;
+    }[]
+    ];
+}
 
-// @public (undocumented)
-export type ToolCallPayloadCommon = {
-    usage?: AgentMessageUsage;
-    overflow_ref?: string | null;
-};
+// @public
+export interface ToolCallFileReadArgs {
+    path: string;
+    range?: [number, number];
+}
 
-// @public (undocumented)
-export type ToolCallTruncation = {
-    truncated: true;
-    args_size: number;
-} | {
-    truncated?: false;
-    args_size?: number;
-};
+// @public
+export interface ToolCallFileSearchArgs {
+    glob?: string;
+    path?: string;
+    query: string;
+}
+
+// @public
+export interface ToolCallFileWriteArgs {
+    content: string;
+    path: string;
+}
+
+// @public
+export interface ToolCallMcpCallArgs {
+    args?: {
+        [k: string]: unknown | undefined;
+    };
+    headers?: {
+        [k: string]: unknown | undefined;
+    };
+    server: string;
+    tool: string;
+}
+
+// @public
+export interface ToolCallNotebookEditArgs {
+    cell_id?: string;
+    content?: string;
+    diff?: string;
+    path: string;
+}
+
+// @public
+export interface ToolCallOtherArgs {
+    args?: {
+        [k: string]: unknown | undefined;
+    };
+    name: string;
+}
+
+// @public
+export interface ToolCallShellCommandArgs {
+    command: string;
+    cwd?: string;
+    timeout?: number;
+}
+
+// @public
+export interface ToolCallShellInputArgs {
+    command_id?: string;
+    input: string;
+    session_id?: string;
+}
+
+// @public
+export interface ToolCallShellOutputArgs {
+    command_id?: string;
+}
+
+// @public
+export interface ToolCallSubagentInvokeArgs {
+    agent_type?: string;
+    session_id?: string;
+    task: string;
+}
+
+// @public
+export interface ToolCallToolSearchArgs {
+    limit?: number;
+    query: string;
+}
+
+// @public
+export interface ToolCallWebFetchArgs {
+    headers?: {
+        [k: string]: unknown | undefined;
+    };
+    method?: string;
+    url: string;
+}
+
+// @public
+export interface ToolCallWebSearchArgs {
+    query: string;
+}
 
 // @public (undocumented)
 export interface ToolResult {

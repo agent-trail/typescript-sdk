@@ -1,5 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { compileFromFile } from "json-schema-to-typescript";
 import { readSpecArtifactManifest } from "./spec-artifacts.ts";
@@ -17,27 +16,21 @@ export async function generateTypes(
   const manifest = await readSpecArtifactManifest(root);
   const schemaPath = path.join(root, "packages/schema", manifest.assets.schema.targetPath);
   await assertNoExternalSchemaRefs(schemaPath);
-  const typeGenerationSchemaPath = await prepareTypeGenerationSchema(schemaPath);
 
-  let generated: string;
-  try {
-    generated = await compileFromFile(typeGenerationSchemaPath, {
-      bannerComment:
-        "/* This file is generated from @agent-trail/schema. Run `bun run generate:types` to update it. */",
-      cwd: root,
-      style: {
-        printWidth: 100,
-        semi: true,
-        singleQuote: false,
-        trailingComma: "all",
-      },
-      strictIndexSignatures: true,
-      unreachableDefinitions: true,
-      unknownAny: true,
-    });
-  } finally {
-    await rm(path.dirname(typeGenerationSchemaPath), { force: true, recursive: true });
-  }
+  const generated = await compileFromFile(schemaPath, {
+    bannerComment:
+      "/* This file is generated from @agent-trail/schema. Run `bun run generate:types` to update it. */",
+    cwd: root,
+    style: {
+      printWidth: 100,
+      semi: true,
+      singleQuote: false,
+      trailingComma: "all",
+    },
+    strictIndexSignatures: true,
+    unreachableDefinitions: true,
+    unknownAny: true,
+  });
   const normalized = `${tightenGeneratedTypes(generated).trimEnd()}\n`;
 
   if (options.write ?? true) {
@@ -47,37 +40,6 @@ export async function generateTypes(
   }
 
   return normalized;
-}
-
-async function prepareTypeGenerationSchema(schemaPath: string): Promise<string> {
-  const schema = JSON.parse(await readFile(schemaPath, "utf8")) as Record<string, unknown>;
-  const events = requireRecord(requireRecord(schema.$defs, "$defs").events, "$defs.events");
-  const toolCall = requireRecord(events.tool_call, "$defs.events.tool_call");
-  const toolCallProperties = requireRecord(
-    toolCall.properties,
-    "$defs.events.tool_call.properties",
-  );
-  const toolCallPayload = requireRecord(
-    toolCallProperties.payload,
-    "$defs.events.tool_call.properties.payload",
-  );
-
-  if (!Array.isArray(toolCallPayload.oneOf) || toolCallPayload.oneOf.length === 0) {
-    throw new Error("tool_call payload schema did not contain the expected oneOf branches");
-  }
-
-  // json-schema-to-typescript is exponential on the expanded tool_call payload union.
-  // The exact placeholder below is replaced after generation by a schema-equivalent type.
-  toolCallProperties.payload = {
-    type: "object",
-    additionalProperties: true,
-    description: "Tool call event payload.",
-  };
-
-  const tempDir = await mkdtemp(path.join(tmpdir(), "agent-trail-typegen-"));
-  const tempSchemaPath = path.join(tempDir, path.basename(schemaPath));
-  await writeFile(tempSchemaPath, `${JSON.stringify(schema)}\n`);
-  return tempSchemaPath;
 }
 
 export async function assertNoExternalSchemaRefs(schemaPath: string): Promise<void> {
@@ -105,13 +67,6 @@ function collectSchemaRefs(value: unknown): string[] {
   return refs;
 }
 
-function requireRecord(value: unknown, label: string): Record<string, unknown> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error(`${label} must be an object`);
-  }
-  return value as Record<string, unknown>;
-}
-
 function tightenGeneratedTypes(generated: string): string {
   let tightened = generated;
   tightened = replaceRequired(
@@ -127,194 +82,6 @@ function tightenGeneratedTypes(generated: string): string {
     "\n    minItems?: 0;",
     "",
     "TaskPlanUpdate.payload.minItems",
-  );
-  tightened = replaceRequired(
-    tightened,
-    `export interface ToolCall {
-  /**
-   * Tool call event discriminator.
-   */
-  type?: "tool_call";
-  /**
-   * Tool call event payload.
-   */
-  payload?: {
-    [k: string]: unknown | undefined;
-  };
-  [k: string]: unknown | undefined;
-}`,
-    `export interface ToolCall {
-  type?: "tool_call";
-  payload?: ToolCallPayload;
-  [k: string]: unknown | undefined;
-}
-export type ToolCallPayload = ToolCallPayloadByTool & ToolCallPayloadCommon & ToolCallTruncation;
-export type ToolCallPayloadCommon = {
-  usage?: AgentMessageUsage;
-  overflow_ref?: string | null;
-};
-export type ToolCallTruncation =
-  | {
-      truncated: true;
-      /**
-       * UTF-8 byte length of the original args object before truncation. Required when truncated is true.
-       */
-      args_size: number;
-    }
-  | {
-      truncated?: false;
-      /**
-       * UTF-8 byte length of the original args object before truncation. Required when truncated is true.
-       */
-      args_size?: number;
-    };
-export type ToolCallPayloadByTool =
-  | {
-      tool: "file_read";
-      args: {
-        path: string;
-        range?: [number, number];
-      };
-    }
-  | {
-      tool: "file_write";
-      args: {
-        path: string;
-        content: string;
-      };
-    }
-  | {
-      tool: "file_edit";
-      args:
-        | {
-            path: string;
-            diff: string;
-          }
-        | {
-            path: string;
-            old: string;
-            new: string;
-            replace_all?: boolean;
-          };
-    }
-  | {
-      tool: "file_patch";
-      args: {
-        files: [
-          {
-            path: string;
-            diff: string;
-          },
-          ...{
-            path: string;
-            diff: string;
-          }[],
-        ];
-        atomic?: boolean;
-      };
-    }
-  | {
-      tool: "file_list";
-      args: {
-        path: string;
-        recursive?: boolean;
-        glob?: string;
-      };
-    }
-  | {
-      tool: "file_search";
-      args: {
-        query: string;
-        path?: string;
-        glob?: string;
-      };
-    }
-  | {
-      tool: "shell_command";
-      args: {
-        command: string;
-        cwd?: string;
-        timeout?: number;
-      };
-    }
-  | {
-      tool: "shell_output";
-      args: {
-        command_id?: string;
-      };
-    }
-  | {
-      tool: "shell_input";
-      args: {
-        input: string;
-        session_id?: string;
-        command_id?: string;
-      };
-    }
-  | {
-      tool: "mcp_call";
-      args: {
-        server: string;
-        tool: string;
-        args?: {
-          [k: string]: unknown | undefined;
-        };
-        headers?: {
-          [k: string]: unknown | undefined;
-        };
-      };
-    }
-  | {
-      tool: "web_fetch";
-      args: {
-        url: string;
-        method?: string;
-        headers?: {
-          [k: string]: unknown | undefined;
-        };
-      };
-    }
-  | {
-      tool: "web_search";
-      args: {
-        query: string;
-      };
-    }
-  | {
-      tool: "tool_search";
-      args: {
-        query: string;
-        limit?: number;
-      };
-    }
-  | {
-      tool: "notebook_edit";
-      args: {
-        path: string;
-        cell_id?: string;
-        diff?: string;
-        content?: string;
-      };
-    }
-  | {
-      tool: "subagent_invoke";
-      args: {
-        task: string;
-        agent_type?: string;
-        session_id?: string;
-      };
-    }
-  | {
-      tool: "other";
-      args: {
-        name: string;
-        args?: {
-          [k: string]: unknown | undefined;
-        };
-      };
-    };
-`,
-    "ToolCall.payload",
   );
   tightened = replaceRequired(
     tightened,

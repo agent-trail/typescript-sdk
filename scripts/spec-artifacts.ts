@@ -2,6 +2,13 @@ import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { lstat, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
+import {
+  FIXTURES_ASSET,
+  RELEASE_TAG,
+  RELEASE_URL,
+  SCHEMA_ASSET,
+  SPEC_VERSION,
+} from "./spec-release.ts";
 
 export type ReleaseAsset = {
   name: string;
@@ -133,7 +140,12 @@ export async function listRegularFiles(root: string): Promise<string[]> {
       files.push(...(await listRegularFiles(entryPath)));
       continue;
     }
-    if (entry.isFile()) files.push(entryPath);
+    if (entry.isFile()) {
+      files.push(entryPath);
+      continue;
+    }
+
+    throw new Error(`refusing unsupported artifact type: ${entryPath}`);
   }
 
   return files.sort();
@@ -148,6 +160,7 @@ export async function verifyVendoredSpecArtifacts(
   const schemaPath = path.join(packageDir, manifest.assets.schema.targetPath);
   const fixturesPath = path.join(packageDir, manifest.assets.fixtures.targetPath);
 
+  verifyPinnedManifestMetadata(manifest, errors);
   await verifyFileHash(schemaPath, manifest.assets.schema.sha256, errors);
   await verifySchemaDirectory(packageDir, manifest, errors);
 
@@ -163,14 +176,40 @@ export async function verifyVendoredSpecArtifacts(
   for (const filePath of actualFiles) {
     if (!expectedFiles.has(filePath)) errors.push(`unexpected vendored fixture: ${filePath}`);
   }
-  for (const filePath of expectedFiles.keys()) {
-    const statPath = path.join(packageDir, filePath);
-    if (!existsSync(statPath)) continue;
-    if (!(await lstat(statPath)).isFile())
-      errors.push(`vendored artifact is not a file: ${filePath}`);
-  }
-
   return errors.sort();
+}
+
+function verifyPinnedManifestMetadata(manifest: SpecArtifactManifest, errors: string[]): void {
+  verifyPinnedValue("specVersion", manifest.specVersion, SPEC_VERSION, errors);
+  verifyPinnedValue("release.tag", manifest.release.tag, RELEASE_TAG, errors);
+  verifyPinnedValue("release.url", manifest.release.url, RELEASE_URL, errors);
+  verifyPinnedAsset("assets.schema", manifest.assets.schema, SCHEMA_ASSET, errors);
+  verifyPinnedAsset("assets.fixtures", manifest.assets.fixtures, FIXTURES_ASSET, errors);
+}
+
+function verifyPinnedAsset(
+  label: string,
+  actual: ReleaseAsset & { targetPath: string },
+  expected: ReleaseAsset & { targetPath: string },
+  errors: string[],
+): void {
+  verifyPinnedValue(`${label}.name`, actual.name, expected.name, errors);
+  verifyPinnedValue(`${label}.url`, actual.url, expected.url, errors);
+  verifyPinnedValue(`${label}.sha256`, actual.sha256, expected.sha256, errors);
+  verifyPinnedValue(`${label}.targetPath`, actual.targetPath, expected.targetPath, errors);
+}
+
+function verifyPinnedValue(
+  label: string,
+  actual: string,
+  expected: string,
+  errors: string[],
+): void {
+  if (actual !== expected) {
+    errors.push(
+      `manifest ${label} drifted from pinned release: expected ${expected} got ${actual}`,
+    );
+  }
 }
 
 async function verifySchemaDirectory(
@@ -196,6 +235,11 @@ async function verifyFileHash(
 ): Promise<void> {
   if (!existsSync(filePath)) {
     errors.push(`missing vendored artifact: ${filePath}`);
+    return;
+  }
+
+  if (!(await lstat(filePath)).isFile()) {
+    errors.push(`vendored artifact is not a file: ${filePath}`);
     return;
   }
 

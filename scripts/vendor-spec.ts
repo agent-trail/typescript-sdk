@@ -10,24 +10,14 @@ import {
   SPEC_ARTIFACT_MANIFEST,
   type SpecArtifactManifest,
 } from "./spec-artifacts.ts";
-
-const SPEC_VERSION = "0.1.0";
-const RELEASE_TAG = `v${SPEC_VERSION}`;
-const RELEASE_URL = `https://github.com/agent-trail/spec/releases/tag/${RELEASE_TAG}`;
-const RELEASE_DOWNLOAD_URL = `https://github.com/agent-trail/spec/releases/download/${RELEASE_TAG}`;
-const SCHEMA_ASSET = {
-  name: `schema-${RELEASE_TAG}.json`,
-  url: `${RELEASE_DOWNLOAD_URL}/schema-${RELEASE_TAG}.json`,
-  sha256: "6c89c0287a94925b98d228a12336786e76eefbb9b33de8b0ef5b9f8f5ae21a6f",
-  targetPath: "schema/v0.1.0.json",
-};
-const FIXTURES_ASSET = {
-  name: `fixtures-${RELEASE_TAG}.tar.gz`,
-  url: `${RELEASE_DOWNLOAD_URL}/fixtures-${RELEASE_TAG}.tar.gz`,
-  sha256: "6f361996a6c7bd0c21fd54655421c8b8e345c376a4c3fbbf0887e59f4bc0c39f",
-  targetPath: "fixtures",
-};
-const CHECKSUMS_URL = `${RELEASE_DOWNLOAD_URL}/checksums-${RELEASE_TAG}.txt`;
+import {
+  CHECKSUMS_URL,
+  FIXTURES_ASSET,
+  RELEASE_TAG,
+  RELEASE_URL,
+  SCHEMA_ASSET,
+  SPEC_VERSION,
+} from "./spec-release.ts";
 
 async function main(root = process.cwd()): Promise<number> {
   const tempDir = await mkdtemp(path.join(tmpdir(), "agent-trail-spec-"));
@@ -61,15 +51,20 @@ async function main(root = process.cwd()): Promise<number> {
   return 0;
 }
 
-export function validateFixtureTarListing(listing: string): void {
-  for (const line of listing.split("\n")) {
-    if (line.trim() === "") continue;
-    const match = line.match(/^(\S)\S*\s+\d+\s+\S+\s+\S+\s+\d+\s+\S+\s+\d+\s+\S+\s+(.+)$/);
-    if (match === null) throw new Error(`unable to parse tar member: ${line}`);
+export function validateFixtureTarListing(pathListing: string, verboseListing: string): void {
+  const memberPaths = pathListing.split("\n").filter((line) => line.trim() !== "");
+  const memberTypes = verboseListing
+    .split("\n")
+    .filter((line) => line.trim() !== "")
+    .map((line) => line[0]);
 
-    const type = match[1];
-    const rawMemberPath = match[2];
-    if (rawMemberPath === undefined) throw new Error(`unable to parse tar member path: ${line}`);
+  if (memberPaths.length !== memberTypes.length) {
+    throw new Error("tar listing path and type counts differ");
+  }
+
+  for (const [index, rawMemberPath] of memberPaths.entries()) {
+    const type = memberTypes[index];
+    if (type === undefined) throw new Error(`missing tar member type: ${rawMemberPath}`);
     if (type !== "-" && type !== "d") {
       throw new Error(`unsupported tar member type: ${rawMemberPath}`);
     }
@@ -82,9 +77,13 @@ export function validateFixtureTarListing(listing: string): void {
 }
 
 async function validateFixtureArchive(archivePath: string): Promise<void> {
-  const result = Bun.spawnSync(["tar", "-tvzf", archivePath]);
-  if (!result.success) throw new Error("failed to inspect fixtures release asset");
-  validateFixtureTarListing(result.stdout.toString());
+  const pathResult = Bun.spawnSync(["tar", "-tzf", archivePath]);
+  if (!pathResult.success) throw new Error("failed to inspect fixtures release asset paths");
+
+  const typeResult = Bun.spawnSync(["tar", "-tvzf", archivePath]);
+  if (!typeResult.success) throw new Error("failed to inspect fixtures release asset types");
+
+  validateFixtureTarListing(pathResult.stdout.toString(), typeResult.stdout.toString());
 }
 
 async function extractFixtureArchive(archivePath: string, targetDir: string): Promise<void> {

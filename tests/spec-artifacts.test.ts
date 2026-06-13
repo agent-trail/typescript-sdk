@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { cpSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { assertNoExternalSchemaRefs } from "../scripts/generate-types.ts";
 import {
   parseSpecArtifactManifest,
   readSpecArtifactManifest,
@@ -48,6 +49,28 @@ test("rejects unexpected vendored schema files", async () => {
   );
 });
 
+test("rejects manifests that drift from pinned release metadata", async () => {
+  const root = createVendoredCopy();
+  const manifest = await readSpecArtifactManifest(root);
+
+  expect(
+    await verifyVendoredSpecArtifacts(root, {
+      ...manifest,
+      assets: {
+        ...manifest.assets,
+        schema: {
+          ...manifest.assets.schema,
+          sha256: "0000000000000000000000000000000000000000000000000000000000000000",
+        },
+      },
+    }),
+  ).toEqual(
+    expect.arrayContaining([
+      expect.stringContaining("manifest assets.schema.sha256 drifted from pinned release"),
+    ]),
+  );
+});
+
 test("rejects extracted manifest files outside the fixtures root", () => {
   const validManifest = {
     specVersion: "0.1.0",
@@ -84,14 +107,59 @@ test("rejects extracted manifest files outside the fixtures root", () => {
 
 test("rejects fixture tar members outside fixtures", () => {
   expect(() =>
-    validateFixtureTarListing("-rw-r--r--  0 root root 1 Jun 13 01:07 ../escape.txt\n"),
+    validateFixtureTarListing(
+      "../escape.txt\n",
+      "-rw-r--r--  0 root root 1 Jun 13 01:07 ../escape.txt\n",
+    ),
   ).toThrow("tar member path must stay inside archive root");
 });
 
 test("rejects fixture tar links", () => {
   expect(() =>
-    validateFixtureTarListing("lrwxrwxrwx  0 root root 0 Jun 13 01:07 fixtures/link -> /tmp/x\n"),
+    validateFixtureTarListing(
+      "fixtures/link\n",
+      "lrwxrwxrwx  0 root root 0 Jun 13 01:07 fixtures/link -> /tmp/x\n",
+    ),
   ).toThrow("unsupported tar member type");
+});
+
+test("accepts GNU tar verbose listings", () => {
+  expect(() =>
+    validateFixtureTarListing(
+      "fixtures/validation/valid/minimal-linear.trail.jsonl\n",
+      "-rw-r--r-- root/root 3 2026-06-13 01:07 fixtures/validation/valid/minimal-linear.trail.jsonl\n",
+    ),
+  ).not.toThrow();
+});
+
+test("rejects manifest entries that point at directories", async () => {
+  const root = createVendoredCopy();
+  const manifest = await readSpecArtifactManifest(root);
+
+  expect(
+    await verifyVendoredSpecArtifacts(root, {
+      ...manifest,
+      extractedFiles: [
+        { path: "fixtures/validation", sha256: manifest.extractedFiles[0]?.sha256 ?? "" },
+      ],
+    }),
+  ).toEqual(expect.arrayContaining([expect.stringContaining("vendored artifact is not a file")]));
+});
+
+test("rejects external schema refs before generating types", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "agent-trail-schema-refs-"));
+  const schemaPath = path.join(root, "schema.json");
+  writeFileSync(
+    schemaPath,
+    JSON.stringify({
+      $schema: "https://json-schema.org/draft/2020-12/schema",
+      $ref: "https://example.invalid/schema.json",
+    }),
+  );
+
+  await expect(assertNoExternalSchemaRefs(schemaPath)).rejects.toThrow(
+    "schema contains external $ref values",
+  );
 });
 
 test("rejects manifest paths that escape the schema package", () => {

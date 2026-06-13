@@ -56,6 +56,22 @@ export function toolResult(
   return event("tool_result", id, "2026-05-17T14:00:04.000Z", payload, parent_id);
 }
 
+export function sessionMetadataUpdate(
+  id: string,
+  field: "name" | "description" | "tags",
+  value: string | string[],
+): Record<string, unknown> {
+  return event("session_metadata_update", id, "2026-05-17T14:00:05.000Z", {
+    field,
+    value,
+    reason: "user_set",
+  });
+}
+
+export function sessionTerminated(id: string, reason: string): Record<string, unknown> {
+  return event("session_terminated", id, "2026-05-17T14:00:06.000Z", { reason });
+}
+
 export function event(
   type: string,
   id: string,

@@ -1,11 +1,16 @@
-import type { ParsedTrail, ParsedTrailRecord } from "../index.js";
+import type { ParsedTrail } from "../index.js";
 import { buildParsedTrail } from "../parse.js";
-import { cloneRecord, firstHeader, readString } from "../shared.js";
+import { cloneRecord, firstHeader } from "../shared.js";
+import { collectMergedEvents } from "./events.js";
+import { appendHeaderMetadataReplayCorrections } from "./metadata.js";
+import { parseFidelityForEvents } from "./parse-fidelity.js";
 
 export function mergeSegments(trails: ParsedTrail[]): ParsedTrail {
   const mergedHeader = buildMergedHeader(trails);
   if (mergedHeader === undefined) return trails[0] ?? { records: [], groups: [] };
-  const events = mergedEvents(trails);
+  const { events, latestSegmentEventStartIndex } = collectMergedEvents(trails);
+  appendHeaderMetadataReplayCorrections(mergedHeader, events, trails, latestSegmentEventStartIndex);
+  mergedHeader.parse_fidelity = parseFidelityForEvents(events);
 
   return buildParsedTrail([
     { line: 1, record: mergedHeader },
@@ -30,20 +35,4 @@ function buildMergedHeader(trails: ParsedTrail[]) {
   }
   mergedHeader.ts = first.ts;
   return mergedHeader;
-}
-
-function mergedEvents(trails: ParsedTrail[]): ParsedTrailRecord[] {
-  const seen = new Set<string>();
-  const events: ParsedTrailRecord[] = [];
-  for (const trail of trails) {
-    for (const event of trail.groups[0]?.events ?? []) {
-      const id = readString(event.record, "id");
-      if (id !== undefined) {
-        if (seen.has(id)) continue;
-        seen.add(id);
-      }
-      events.push({ line: events.length + 2, record: cloneRecord(event.record) });
-    }
-  }
-  return events;
 }

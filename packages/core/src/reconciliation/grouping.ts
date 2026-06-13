@@ -1,4 +1,5 @@
 import type { ParsedTrail } from "../index.js";
+import { buildParsedTrail } from "../parse.js";
 import { firstHeader, hasSegment, segmentSeq } from "../shared.js";
 
 export function groupReconciliationInputs(
@@ -6,9 +7,10 @@ export function groupReconciliationInputs(
   passThrough: ParsedTrail[],
 ): Map<string, ParsedTrail[]> {
   const grouped = new Map<string, ParsedTrail[]>();
-  const sessionUidCounts = countSessionUids(inputs);
+  const sessionInputs = explodeMultiSessionInputs(inputs);
+  const sessionUidCounts = countSessionUids(sessionInputs);
 
-  for (const trail of inputs) {
+  for (const trail of sessionInputs) {
     const header = firstHeader(trail);
     if (
       header?.session_uid === undefined ||
@@ -23,6 +25,13 @@ export function groupReconciliationInputs(
   }
 
   return grouped;
+}
+
+function explodeMultiSessionInputs(inputs: ParsedTrail[]): ParsedTrail[] {
+  return inputs.flatMap((trail) => {
+    if (trail.groups.length <= 1) return [trail];
+    return trail.groups.map((group) => buildParsedTrail([group.header, ...group.events]));
+  });
 }
 
 function countSessionUids(inputs: ParsedTrail[]): Map<string, number> {

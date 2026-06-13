@@ -129,6 +129,10 @@ export function bytesSha256(bytes: Uint8Array): string {
 
 export async function listRegularFiles(root: string): Promise<string[]> {
   if (!existsSync(root)) return [];
+  const rootStat = await lstat(root);
+  if (rootStat.isSymbolicLink()) throw new Error(`refusing symlinked artifact: ${root}`);
+  if (rootStat.isFile()) return [root];
+  if (!rootStat.isDirectory()) throw new Error(`refusing unsupported artifact type: ${root}`);
 
   const entries = await readdir(root, { withFileTypes: true });
   const files: string[] = [];

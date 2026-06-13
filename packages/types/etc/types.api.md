@@ -237,9 +237,7 @@ export interface EntryBase {
     // (undocumented)
     parent_id?: string | null;
     // (undocumented)
-    payload: {
-        [k: string]: unknown | undefined;
-    };
+    payload: unknown;
     // (undocumented)
     semantic?: SemanticMetadata;
     // (undocumented)
@@ -542,7 +540,6 @@ export interface TaskPlanUpdate {
         explanation?: string;
         items: TaskPlanItem[];
         deltas?: TaskPlanDelta[];
-        minItems?: 0;
     };
     // (undocumented)
     type?: "task_plan_update";

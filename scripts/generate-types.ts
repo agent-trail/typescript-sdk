@@ -70,6 +70,13 @@ function collectSchemaRefs(value: unknown): string[] {
 function tightenGeneratedTypes(generated: string): string {
   return generated
     .replace(
+      `  payload: {
+    [k: string]: unknown | undefined;
+  };`,
+      "  payload: unknown;",
+    )
+    .replace("\n    minItems?: 0;", "")
+    .replace(
       `export interface ToolCall {
   type?: "tool_call";
   payload?: {

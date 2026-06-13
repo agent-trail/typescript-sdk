@@ -366,9 +366,7 @@ export interface EntryBase {
   id: string;
   parent_id?: string | null;
   ts: Iso8601;
-  payload: {
-    [k: string]: unknown | undefined;
-  };
+  payload: unknown;
   semantic?: SemanticMetadata;
   source?: SourceMetadata;
   meta?: {
@@ -437,7 +435,6 @@ export interface TaskPlanUpdate {
     explanation?: string;
     items: TaskPlanItem[];
     deltas?: TaskPlanDelta[];
-    minItems?: 0;
   };
   [k: string]: unknown | undefined;
 }

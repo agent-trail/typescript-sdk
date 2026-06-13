@@ -56,22 +56,22 @@ const validCapabilityChange: TrailEntry = {
   },
 };
 
+const validTaskPlanUpdate: TrailEntry = {
+  ...base,
+  type: "task_plan_update",
+  payload: {
+    items: [{ id: "plan-1", content: "Ship ATF-18", status: "completed" }],
+  },
+};
+
 // @ts-expect-error tool_call payload requires tool and args.
 const invalidToolCall: TrailEntry = { ...base, type: "tool_call", payload: {} };
 
 // @ts-expect-error file_read tool_call args require path.
-const invalidFileReadToolCall: TrailEntry = {
-  ...base,
-  type: "tool_call",
-  payload: { tool: "file_read", args: {} },
-};
+const invalidFileReadToolCall: TrailEntry = { ...base, type: "tool_call", payload: { tool: "file_read", args: {} } };
 
 // @ts-expect-error truncated tool_call requires args_size.
-const invalidTruncatedToolCall: TrailEntry = {
-  ...base,
-  type: "tool_call",
-  payload: { tool: "other", args: { name: "custom" }, truncated: true },
-};
+const invalidTruncatedToolCall: TrailEntry = { ...base, type: "tool_call", payload: { tool: "other", args: { name: "custom" }, truncated: true } };
 
 // @ts-expect-error tool_call_aborted payload requires scope and reason.
 const invalidToolCallAborted: TrailEntry = {
@@ -81,22 +81,13 @@ const invalidToolCallAborted: TrailEntry = {
 };
 
 // @ts-expect-error tool_call-scoped abort requires for_id.
-const invalidToolCallScopedAbort: TrailEntry = {
-  ...base,
-  type: "tool_call_aborted",
-  payload: { scope: "tool_call", reason: "timeout" },
-};
+const invalidToolCallScopedAbort: TrailEntry = { ...base, type: "tool_call_aborted", payload: { scope: "tool_call", reason: "timeout" } };
 
 // @ts-expect-error turn-scoped abort forbids for_id.
-const invalidTurnScopedAbort: TrailEntry = {
-  ...base,
-  type: "tool_call_aborted",
-  payload: {
-    scope: "turn",
-    for_id: "00000000-0000-0000-0000-000000000000",
-    reason: "timeout",
-  },
-};
+const invalidTurnScopedAbort: TrailEntry = { ...base, type: "tool_call_aborted", payload: { scope: "turn", for_id: "00000000-0000-0000-0000-000000000000", reason: "timeout" } };
+
+// @ts-expect-error schema keyword minItems is not a task_plan_update payload field.
+const invalidTaskPlanUpdate: TrailEntry = { ...base, type: "task_plan_update", payload: { items: [{ id: "plan-1", content: "Ship ATF-18", status: "completed" }], minItems: 0 } };
 
 // @ts-expect-error capability_change payload requires at least one delta array.
 const invalidCapabilityChange: TrailEntry = {
@@ -111,12 +102,14 @@ void [
   validToolCallAborted,
   validToolCallScopedAbort,
   validCapabilityChange,
+  validTaskPlanUpdate,
   invalidToolCall,
   invalidFileReadToolCall,
   invalidTruncatedToolCall,
   invalidToolCallAborted,
   invalidToolCallScopedAbort,
   invalidTurnScopedAbort,
+  invalidTaskPlanUpdate,
   invalidCapabilityChange,
 ];
 `,

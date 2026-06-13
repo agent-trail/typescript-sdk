@@ -1,7 +1,16 @@
 import { expect, test } from "bun:test";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { checkSpecArtifacts } from "../scripts/check-spec-artifacts.ts";
 import { assertNoExternalSchemaRefs } from "../scripts/generate-types.ts";
 import {
   parseSpecArtifactManifest,
@@ -15,6 +24,7 @@ function createVendoredCopy(): string {
   const root = mkdtempSync(path.join(tmpdir(), "agent-trail-spec-artifacts-"));
   mkdirSync(path.join(root, "packages"), { recursive: true });
   cpSync(SCHEMA_PACKAGE_DIR, path.join(root, SCHEMA_PACKAGE_DIR), { recursive: true });
+  cpSync("packages/types", path.join(root, "packages/types"), { recursive: true });
   return root;
 }
 
@@ -49,6 +59,20 @@ test("rejects unexpected vendored schema files", async () => {
   );
 });
 
+test("rejects a symlinked fixtures root", async () => {
+  const root = createVendoredCopy();
+  const manifest = await readSpecArtifactManifest(root);
+  const fixturesPath = path.join(root, SCHEMA_PACKAGE_DIR, "fixtures");
+  const replacementPath = path.join(root, "replacement-fixtures");
+  rmSync(fixturesPath, { recursive: true });
+  mkdirSync(replacementPath);
+  symlinkSync(replacementPath, fixturesPath);
+
+  await expect(verifyVendoredSpecArtifacts(root, manifest)).rejects.toThrow(
+    "refusing symlinked artifact",
+  );
+});
+
 test("rejects manifests that drift from pinned release metadata", async () => {
   const root = createVendoredCopy();
   const manifest = await readSpecArtifactManifest(root);
@@ -68,6 +92,15 @@ test("rejects manifests that drift from pinned release metadata", async () => {
     expect.arrayContaining([
       expect.stringContaining("manifest assets.schema.sha256 drifted from pinned release"),
     ]),
+  );
+});
+
+test("reports missing generated types as check-spec drift", async () => {
+  const root = createVendoredCopy();
+  rmSync(path.join(root, "packages/types/src/generated.ts"));
+
+  expect(await checkSpecArtifacts(root)).toEqual(
+    expect.arrayContaining([expect.stringContaining("packages/types/src/generated.ts is missing")]),
   );
 });
 

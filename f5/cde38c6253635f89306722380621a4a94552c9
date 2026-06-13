@@ -1,0 +1,19 @@
+docs/adr/0001-sdk-package-architecture-and-public-api-boundaries.md
+  s_e7ea42c34d7131::t_0ba8a31e327525 9-12,14-15,90-92,106
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "f5cde38c6253635f89306722380621a4a94552c9",
+  "prompts": {},
+  "sessions": {
+    "s_e7ea42c34d7131": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ebf6f-a8ec-7b43-969f-590f06133f42",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

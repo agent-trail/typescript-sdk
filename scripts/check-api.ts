@@ -23,7 +23,7 @@ function findNestedTypes(value: unknown): string | undefined {
   const record = asRecord(value);
   if (record === undefined) return undefined;
 
-  return directTypes(record) ?? Object.values(record).map(directTypes).find(isPresent);
+  return directTypes(record) ?? Object.values(record).map(findNestedTypes).find(isPresent);
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {

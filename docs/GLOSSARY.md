@@ -6,9 +6,14 @@ Agent Trail spec repository.
 ## Language
 
 **Public API**:
-The imports, exported values, exported types, package metadata, and runtime
-behavior that consumers can rely on through a package's `exports` map.
-Avoid: treating source files or internal module paths as public.
+The imports, exported values, exported types, and runtime behavior that
+consumers can rely on through a package's `exports` map. Avoid: treating source
+files or internal module paths as public.
+
+**Package metadata**:
+The `package.json` fields that describe a package, such as `name`, `version`,
+`license`, and `keywords`. Metadata is separate from public API and is not
+enforced by export-map checks or API reports.
 
 **Package boundary**:
 The line between one published SDK package and another. Code crosses this

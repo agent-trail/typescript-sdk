@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { checkWorkspacePackageImports } from "../scripts/check-exports.ts";
@@ -8,7 +8,7 @@ function writeJson(filePath: string, value: unknown): void {
   writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
-function createWorkspace(): string {
+function createWorkspace(workspaces = ["packages/*"]): string {
   const root = mkdtempSync(path.join(tmpdir(), "agent-trail-check-exports-"));
   mkdirSync(path.join(root, "packages", "core"), { recursive: true });
   mkdirSync(path.join(root, "packages", "schema"), { recursive: true });
@@ -16,7 +16,7 @@ function createWorkspace(): string {
 
   writeJson(path.join(root, "package.json"), {
     private: true,
-    workspaces: ["packages/*"],
+    workspaces,
   });
   writeJson(path.join(root, "packages", "core", "package.json"), {
     name: "@agent-trail/core",
@@ -39,12 +39,14 @@ function createWorkspace(): string {
       },
       "./fixtures/*": "./fixtures/*",
       "./fixtures/private/*": null,
+      "./patterns/*": "./patterns/*.json",
+      "./patterns/*.json": null,
       "./conformance/fixtures/*": "./conformance/fixtures/*",
       "./package.json": "./package.json",
     },
   });
 
-  return root;
+  return realpathSync(root);
 }
 
 function writeSource(root: string, source: string): string {
@@ -105,6 +107,22 @@ test("rejects undeclared package subpaths", () => {
   ]);
 });
 
+test("checks packages declared as literal workspace paths", () => {
+  const root = createWorkspace(["packages/core"]);
+  const filePath = writeSource(
+    root,
+    'import { computeContentHash } from "@agent-trail/core/hash";\n',
+  );
+
+  expect(checkWorkspacePackageImports(root)).toEqual([
+    {
+      filePath,
+      specifier: "@agent-trail/core/hash",
+      message: "workspace import must match @agent-trail/core exports map",
+    },
+  ]);
+});
+
 test("rejects subpaths denied by null package exports", () => {
   const root = createWorkspace();
   const filePath = writeSource(
@@ -116,6 +134,22 @@ test("rejects subpaths denied by null package exports", () => {
     {
       filePath,
       specifier: "@agent-trail/schema/fixtures/private/secret.json",
+      message: "workspace import must match @agent-trail/schema exports map",
+    },
+  ]);
+});
+
+test("prefers suffix-specific null exports over same-prefix wildcard allows", () => {
+  const root = createWorkspace();
+  const filePath = writeSource(
+    root,
+    'import blocked from "@agent-trail/schema/patterns/blocked.json";\n',
+  );
+
+  expect(checkWorkspacePackageImports(root)).toEqual([
+    {
+      filePath,
+      specifier: "@agent-trail/schema/patterns/blocked.json",
       message: "workspace import must match @agent-trail/schema exports map",
     },
   ]);
@@ -135,6 +169,44 @@ test("rejects workspace packages without explicit exports", () => {
       message: "workspace package must define an explicit package.json exports map",
     },
   ]);
+});
+
+test("rejects workspace patterns that escape the root", () => {
+  const root = createWorkspace(["../outside/*"]);
+
+  expect(() => checkWorkspacePackageImports(root)).toThrow("workspace pattern escapes root");
+});
+
+test("ignores symlinked workspace package directories", () => {
+  const root = createWorkspace();
+  const outsidePackage = mkdtempSync(path.join(tmpdir(), "agent-trail-outside-package-"));
+  writeJson(path.join(outsidePackage, "package.json"), {
+    name: "@agent-trail/outside",
+  });
+  symlinkSync(outsidePackage, path.join(root, "packages", "outside"), "dir");
+
+  expect(checkWorkspacePackageImports(root)).toEqual([]);
+});
+
+test("ignores symlinked source files", () => {
+  const root = createWorkspace();
+  const outsideDir = mkdtempSync(path.join(tmpdir(), "agent-trail-outside-source-"));
+  const outsideFile = path.join(outsideDir, "outside.ts");
+  writeFileSync(outsideFile, 'import { computeContentHash } from "@agent-trail/core/hash";\n');
+  symlinkSync(outsideFile, path.join(root, "src", "outside.ts"));
+
+  expect(checkWorkspacePackageImports(root)).toEqual([]);
+});
+
+test("ignores caller-supplied symlinked source files", () => {
+  const root = createWorkspace();
+  const outsideDir = mkdtempSync(path.join(tmpdir(), "agent-trail-outside-source-"));
+  const outsideFile = path.join(outsideDir, "outside.ts");
+  const symlinkPath = path.join(root, "src", "outside.ts");
+  writeFileSync(outsideFile, 'import { computeContentHash } from "@agent-trail/core/hash";\n');
+  symlinkSync(outsideFile, symlinkPath);
+
+  expect(checkWorkspacePackageImports(root, [symlinkPath])).toEqual([]);
 });
 
 test("ignores relative imports inside packages", () => {

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { type ApiPackage, checkApiPackages, discoverApiPackages } from "../scripts/check-api.ts";
@@ -16,11 +16,23 @@ function createWorkspace(): string {
     workspaces: ["packages/*"],
   });
 
-  return root;
+  return realpathSync(root);
 }
 
 function writePackage(root: string, packageJson: Record<string, unknown>): void {
   writeJson(path.join(root, "packages", "core", "package.json"), packageJson);
+}
+
+function writePackageWithExportedTypes(root: string): void {
+  writePackage(root, {
+    name: "@agent-trail/core",
+    exports: {
+      ".": {
+        types: "./dist/index.d.ts",
+        default: "./dist/index.js",
+      },
+    },
+  });
 }
 
 test("ignores packages without TypeScript declaration entrypoints", () => {
@@ -51,15 +63,7 @@ test("reports missing API Extractor config", () => {
 
 test("reports missing declaration entrypoint", () => {
   const root = createWorkspace();
-  writePackage(root, {
-    name: "@agent-trail/core",
-    exports: {
-      ".": {
-        types: "./dist/index.d.ts",
-        default: "./dist/index.js",
-      },
-    },
-  });
+  writePackageWithExportedTypes(root);
   writeJson(path.join(root, "packages", "core", "api-extractor.json"), {});
 
   expect(checkApiPackages(root)).toEqual([
@@ -69,15 +73,7 @@ test("reports missing declaration entrypoint", () => {
 
 test("runs API Extractor for packages with config and declarations", () => {
   const root = createWorkspace();
-  writePackage(root, {
-    name: "@agent-trail/core",
-    exports: {
-      ".": {
-        types: "./dist/index.d.ts",
-        default: "./dist/index.js",
-      },
-    },
-  });
+  writePackageWithExportedTypes(root);
   writeJson(path.join(root, "packages", "core", "api-extractor.json"), {});
   writeFileSync(path.join(root, "packages", "core", "dist", "index.d.ts"), "export {};\n");
 
@@ -89,6 +85,32 @@ test("runs API Extractor for packages with config and declarations", () => {
 
   expect(errors).toEqual([]);
   expect(checkedPackages.map((packageInfo) => packageInfo.name)).toEqual(["@agent-trail/core"]);
+});
+
+test("discovers nested conditional export declaration entrypoints", () => {
+  const root = createWorkspace();
+  writePackage(root, {
+    name: "@agent-trail/core",
+    exports: {
+      ".": {
+        import: {
+          types: "./dist/index.d.ts",
+          default: "./dist/index.js",
+        },
+      },
+    },
+  });
+  writeJson(path.join(root, "packages", "core", "api-extractor.json"), {});
+  writeFileSync(path.join(root, "packages", "core", "dist", "index.d.ts"), "export {};\n");
+
+  expect(discoverApiPackages(root)).toEqual([
+    {
+      name: "@agent-trail/core",
+      dir: path.join(root, "packages", "core"),
+      declarationEntrypoint: "./dist/index.d.ts",
+    },
+  ]);
+  expect(checkApiPackages(root, () => true)).toEqual([]);
 });
 
 test("reports API Extractor failure", () => {

@@ -1,7 +1,7 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import path from "node:path";
 import * as ts from "typescript";
-import { readPackageJson, workspacePackageDirs } from "./workspaces.ts";
+import { isInsidePath, readPackageJson, workspacePackageDirs } from "./workspaces.ts";
 
 export type WorkspacePackage = {
   name: string;
@@ -58,24 +58,31 @@ export function discoverWorkspacePackages(root: string): WorkspacePackage[] {
   });
 }
 
-function findSourceFiles(dir: string, files: string[] = []): string[] {
+function findSourceFiles(dir: string, root = realpathSync(dir), files: string[] = []): string[] {
   if (!existsSync(dir)) return files;
+  if (!isInsidePath(root, realpathSync(dir))) return files;
 
-  for (const entry of readdirSync(dir)) {
-    const entryPath = path.join(dir, entry);
-    const stats = statSync(entryPath);
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const entryPath = path.join(dir, entry.name);
+    if (entry.isSymbolicLink()) continue;
 
-    if (stats.isDirectory()) {
-      if (!IGNORED_DIRS.has(entry)) findSourceFiles(entryPath, files);
+    if (isSearchableDirectory(entry.name, entry.isDirectory())) {
+      if (!IGNORED_DIRS.has(entry.name)) findSourceFiles(entryPath, root, files);
       continue;
     }
 
-    if (SOURCE_EXTENSIONS.has(path.extname(entryPath)) && !entryPath.endsWith(".d.ts")) {
-      files.push(entryPath);
-    }
+    if (isSourceFile(entryPath, entry.isFile())) files.push(entryPath);
   }
 
   return files;
+}
+
+function isSearchableDirectory(name: string, isDirectory: boolean): boolean {
+  return isDirectory && !IGNORED_DIRS.has(name);
+}
+
+function isSourceFile(filePath: string, isFile: boolean): boolean {
+  return isFile && SOURCE_EXTENSIONS.has(path.extname(filePath)) && !filePath.endsWith(".d.ts");
 }
 
 function collectImportSites(filePath: string): ImportSite[] {
@@ -95,19 +102,32 @@ function subpathMatches(exportedSubpath: string, requestedSubpath: string): bool
   return requestedSubpath.startsWith(prefix) && requestedSubpath.endsWith(suffix);
 }
 
-function exportRulePrecedence(rule: ExportRule): number {
+function exportRulePrecedence(rule: ExportRule): { prefixLength: number; subpathLength: number } {
   const wildcardIndex = rule.subpath.indexOf("*");
-  if (wildcardIndex === -1) return Number.MAX_SAFE_INTEGER;
+  if (wildcardIndex === -1) {
+    return {
+      prefixLength: Number.MAX_SAFE_INTEGER,
+      subpathLength: Number.MAX_SAFE_INTEGER,
+    };
+  }
 
-  return rule.subpath.slice(0, wildcardIndex).length;
+  return {
+    prefixLength: rule.subpath.slice(0, wildcardIndex).length,
+    subpathLength: rule.subpath.length,
+  };
 }
 
 function isAllowedByExports(exportRules: ExportRule[], subpath: string): boolean {
   const matchingRules = exportRules
     .filter((rule) => subpathMatches(rule.subpath, subpath))
     .sort((a, b) => {
-      const precedence = exportRulePrecedence(b) - exportRulePrecedence(a);
-      return precedence === 0 ? a.order - b.order : precedence;
+      const aPrecedence = exportRulePrecedence(a);
+      const bPrecedence = exportRulePrecedence(b);
+      const prefixPrecedence = bPrecedence.prefixLength - aPrecedence.prefixLength;
+      if (prefixPrecedence !== 0) return prefixPrecedence;
+
+      const subpathPrecedence = bPrecedence.subpathLength - aPrecedence.subpathLength;
+      return subpathPrecedence === 0 ? a.order - b.order : subpathPrecedence;
     });
 
   const selectedRule = matchingRules[0];
@@ -120,47 +140,62 @@ function requestedSubpath(packageName: string, specifier: string): string | unde
   return `./${specifier.slice(packageName.length + 1)}`;
 }
 
-export function checkWorkspacePackageImports(
-  root: string,
-  files = findSourceFiles(root),
+export function checkWorkspacePackageImports(root: string, files?: string[]): ExportViolation[] {
+  const rootDir = realpathSync(root);
+  const sourceFiles = files ?? findSourceFiles(rootDir);
+  const workspacePackages = discoverWorkspacePackages(rootDir);
+
+  return [
+    ...missingExportsViolations(workspacePackages),
+    ...importViolations(rootDir, sourceFiles, workspacePackages),
+  ].sort((a, b) => `${a.filePath}:${a.specifier}`.localeCompare(`${b.filePath}:${b.specifier}`));
+}
+
+function missingExportsViolations(workspacePackages: WorkspacePackage[]): ExportViolation[] {
+  return workspacePackages
+    .filter((packageInfo) => packageInfo.exportRules.length === 0)
+    .map((packageInfo) => ({
+      filePath: path.join(packageInfo.dir, "package.json"),
+      specifier: packageInfo.name,
+      message: "workspace package must define an explicit package.json exports map",
+    }));
+}
+
+function importViolations(
+  rootDir: string,
+  sourceFiles: string[],
+  workspacePackages: WorkspacePackage[],
 ): ExportViolation[] {
-  const workspacePackages = discoverWorkspacePackages(root);
-  const violations: ExportViolation[] = [];
+  return sourceFiles
+    .filter((filePath) => isSafeSourceFile(rootDir, filePath))
+    .flatMap((filePath) => collectImportSites(filePath))
+    .flatMap((importSite) => importViolation(importSite, workspacePackages) ?? []);
+}
 
-  for (const packageInfo of workspacePackages) {
-    if (packageInfo.exportRules.length === 0) {
-      violations.push({
-        filePath: path.join(packageInfo.dir, "package.json"),
-        specifier: packageInfo.name,
-        message: "workspace package must define an explicit package.json exports map",
-      });
-    }
-  }
+function isSafeSourceFile(rootDir: string, filePath: string): boolean {
+  if (!existsSync(filePath) || lstatSync(filePath).isSymbolicLink()) return false;
+  return isInsidePath(rootDir, realpathSync(filePath));
+}
 
-  for (const filePath of files) {
-    for (const importSite of collectImportSites(filePath)) {
-      const matchingPackage = workspacePackages.find(
-        (packageInfo) => requestedSubpath(packageInfo.name, importSite.specifier) !== undefined,
-      );
-      if (matchingPackage === undefined) continue;
-
-      const subpath = requestedSubpath(matchingPackage.name, importSite.specifier);
-      if (subpath === undefined) continue;
-
-      const isAllowed = isAllowedByExports(matchingPackage.exportRules, subpath);
-      if (isAllowed) continue;
-
-      violations.push({
-        filePath: importSite.filePath,
-        specifier: importSite.specifier,
-        message: `workspace import must match ${matchingPackage.name} exports map`,
-      });
-    }
-  }
-
-  return violations.sort((a, b) =>
-    `${a.filePath}:${a.specifier}`.localeCompare(`${b.filePath}:${b.specifier}`),
+function importViolation(
+  importSite: ImportSite,
+  workspacePackages: WorkspacePackage[],
+): ExportViolation | undefined {
+  const matchingPackage = workspacePackages.find(
+    (packageInfo) => requestedSubpath(packageInfo.name, importSite.specifier) !== undefined,
   );
+  if (matchingPackage === undefined) return undefined;
+
+  const subpath = requestedSubpath(matchingPackage.name, importSite.specifier);
+  if (subpath === undefined || isAllowedByExports(matchingPackage.exportRules, subpath)) {
+    return undefined;
+  }
+
+  return {
+    filePath: importSite.filePath,
+    specifier: importSite.specifier,
+    message: `workspace import must match ${matchingPackage.name} exports map`,
+  };
 }
 
 export function formatExportViolation(root: string, violation: ExportViolation): string {

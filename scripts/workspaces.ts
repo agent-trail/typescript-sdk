@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import path from "node:path";
 
 export type PackageJson = {
@@ -13,12 +13,18 @@ export function readPackageJson(filePath: string): PackageJson {
 }
 
 export function workspacePackageDirs(root: string): string[] {
-  return workspacePatterns(root).flatMap((pattern) => expandWorkspacePattern(root, pattern));
+  const rootDir = realpathSync(root);
+  return workspacePatterns(rootDir).flatMap((pattern) => expandWorkspacePattern(rootDir, pattern));
+}
+
+export function isInsidePath(parentPath: string, childPath: string): boolean {
+  const relativePath = path.relative(parentPath, childPath);
+  return relativePath === "" || (!relativePath.startsWith("..") && !path.isAbsolute(relativePath));
 }
 
 function workspacePatterns(root: string): string[] {
   const packageJsonPath = path.join(root, "package.json");
-  if (!existsSync(packageJsonPath)) return [];
+  if (!isRegularFile(packageJsonPath)) return [];
 
   const packageJson = readPackageJson(packageJsonPath);
   return Array.isArray(packageJson.workspaces)
@@ -27,13 +33,42 @@ function workspacePatterns(root: string): string[] {
 }
 
 function expandWorkspacePattern(root: string, pattern: string): string[] {
-  if (!pattern.endsWith("/*")) return [];
+  if (!pattern.endsWith("/*")) {
+    const workspaceDir = resolveWorkspacePath(root, pattern);
+    if (!isDirectory(workspaceDir)) return [];
+    return hasPackageJson(workspaceDir) ? [workspaceDir] : [];
+  }
 
-  const parentDir = path.join(root, pattern.slice(0, -2));
-  if (!existsSync(parentDir)) return [];
+  const parentDir = resolveWorkspacePath(root, pattern.slice(0, -2));
+  if (!isDirectory(parentDir)) return [];
 
-  return readdirSync(parentDir)
-    .map((entry) => path.join(parentDir, entry))
-    .filter((entryPath) => statSync(entryPath).isDirectory())
-    .filter((entryPath) => existsSync(path.join(entryPath, "package.json")));
+  return readdirSync(parentDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => path.join(parentDir, entry.name))
+    .filter(hasPackageJson);
+}
+
+function resolveWorkspacePath(root: string, patternPath: string): string {
+  if (path.isAbsolute(patternPath)) {
+    throw new Error(`workspace pattern must be relative: ${patternPath}`);
+  }
+
+  const resolvedPath = path.resolve(root, patternPath);
+  if (!isInsidePath(root, resolvedPath)) {
+    throw new Error(`workspace pattern escapes root: ${patternPath}`);
+  }
+
+  return resolvedPath;
+}
+
+function hasPackageJson(dir: string): boolean {
+  return isRegularFile(path.join(dir, "package.json"));
+}
+
+function isDirectory(filePath: string): boolean {
+  return existsSync(filePath) && lstatSync(filePath).isDirectory();
+}
+
+function isRegularFile(filePath: string): boolean {
+  return existsSync(filePath) && lstatSync(filePath).isFile();
 }

@@ -8,11 +8,12 @@
   ],
   "scripts": {
     "check": "bun run --parallel check:biome check:types test check:exports check:api check:fallow",
-    "check:api": "bun run scripts/check-api.ts",
+    "check:api": "bun run build:declarations && bun run scripts/check-api.ts",
     "check:biome": "biome check .",
     "check:exports": "bun run scripts/check-exports.ts",
     "check:fallow": "fallow --fail-on-issues --format compact",
     "check:types": "tsc --noEmit",
+    "build:declarations": "bun run scripts/build-api-declarations.ts",
     "test": "bun test"
   },
   "devDependencies": {

@@ -56,10 +56,12 @@ Runtime and dependency policy:
 - SDK default exports support Node 20+ and Bun.
 - SDK default exports must not import Bun globals or `bun:*` modules.
 - Runtime-specific capabilities use injected interfaces. SQLite-backed source
-  readers use injected drivers.
-- When a required injected driver is missing, adapter health reports a warning
-  and discovery skips that storage surface rather than crashing unrelated
-  workflows.
+  readers use injected drivers and are optional storage surfaces by default.
+- When an optional storage driver is missing, health reports a warning and
+  discovery skips that storage surface rather than crashing unrelated workflows.
+- If a future package declares an injected driver as integral to its default
+  behavior, the package health check must fail visibly when that driver is
+  missing.
 - Concrete sharing transports are injected into `@agent-trail/sessions`;
   sessions owns orchestration, not Gist or hosted transport implementations.
 

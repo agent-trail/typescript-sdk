@@ -1,0 +1,34 @@
+tests/spec-artifacts.test.ts
+  s_c85b59c92b98bc::t_6a0f201d1c8d85 6
+  s_c85b59c92b98bc::t_8b63a181a5de91 2-5,7-10,13,27,62-75,98-103
+scripts/check-spec-artifacts.ts
+  s_c85b59c92b98bc::t_937381f3f6fea5 6,12-13,17-22,33-41
+scripts/spec-artifacts.ts
+  s_c85b59c92b98bc::t_937381f3f6fea5 132-135
+scripts/generate-types.ts
+  s_c85b59c92b98bc::t_937381f3f6fea5 78
+  s_c85b59c92b98bc::t_222855997f1225 72-77
+packages/types/etc/types.api.md
+  s_c85b59c92b98bc::t_8fe1aa46fe3870 240
+tests/type-contracts.test.ts
+  s_c85b59c92b98bc::t_d5897845c9a9a8 59-66,88-89,105,112
+  s_c85b59c92b98bc::t_20515815ce9c5e 71,74,84,87,90
+packages/types/src/generated.ts
+  s_c85b59c92b98bc::t_53de459aea4b85 369
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "5e8c95547246e8f8f1ce94866e8e95fd4221d1c0",
+  "prompts": {},
+  "sessions": {
+    "s_c85b59c92b98bc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ebfc5-ebdd-7d33-9e5e-711a55b42218",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

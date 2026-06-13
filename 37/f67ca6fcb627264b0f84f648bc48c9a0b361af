@@ -1,0 +1,26 @@
+packages/core/test/validation-rules.test.ts
+  s_1276b0959ffd41::t_103dc4480607a7 46-47,62-64
+  s_1276b0959ffd41::t_6943e944d5a98a 1-45,48-61,65-160
+packages/core/test/helpers.ts
+  s_1276b0959ffd41::t_103dc4480607a7 1-69
+packages/core/test/parser.test.ts
+  s_1276b0959ffd41::t_103dc4480607a7 1-65
+packages/core/test/hashing.test.ts
+  s_1276b0959ffd41::t_103dc4480607a7 1-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "37f67ca6fcb627264b0f84f648bc48c9a0b361af",
+  "prompts": {},
+  "sessions": {
+    "s_1276b0959ffd41": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec0f1-1d7c-7ba1-a721-447a182bf364",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

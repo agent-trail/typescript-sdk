@@ -17,6 +17,12 @@ export const baseEnvelope = {
   producer: "agent-trail-test",
 } as const;
 
+export const segmentChainBreakWarning = {
+  code: "segment_chain_break",
+  path: "/segment/prev_content_hash",
+  severity: "warning",
+} as const;
+
 export function jsonl(records: unknown[]): string {
   return `${records.map((record) => JSON.stringify(record)).join("\n")}\n`;
 }

@@ -8,7 +8,7 @@ export function validateSegmentChain(trails: ParsedTrail[]): {
   diagnostics: TrailDiagnostic[];
 } {
   const diagnostics = [...duplicateSeqDiagnostics(trails), ...prevHashDiagnostics(trails)];
-  return { canMerge: diagnostics.length === 0, diagnostics };
+  return { canMerge: true, diagnostics };
 }
 
 function duplicateSeqDiagnostics(trails: ParsedTrail[]): TrailDiagnostic[] {
@@ -19,7 +19,7 @@ function duplicateSeqDiagnostics(trails: ParsedTrail[]): TrailDiagnostic[] {
     const seq = segmentSeq(headerRecord?.record);
     if (seqs.has(seq)) {
       diagnostics.push(
-        diagnostic(headerRecord?.line ?? 1, "/segment/seq", "error", "duplicate_segment_seq"),
+        diagnostic(headerRecord?.line ?? 1, "/segment/seq", "warning", "duplicate_segment_seq"),
       );
     }
     seqs.add(seq);
@@ -34,7 +34,12 @@ function prevHashDiagnostics(trails: ParsedTrail[]): TrailDiagnostic[] {
     const previous = trails[index - 1];
     if (previous === undefined || isExpectedPrevHash(current, previous)) continue;
     diagnostics.push(
-      diagnostic(current?.line ?? 1, "/segment/prev_content_hash", "error", "segment_chain_break"),
+      diagnostic(
+        current?.line ?? 1,
+        "/segment/prev_content_hash",
+        "warning",
+        "segment_chain_break",
+      ),
     );
   }
   return diagnostics;
@@ -51,6 +56,6 @@ function isExpectedPrevHash(
     currentRecord.segment === undefined ||
     !("prev_content_hash" in currentRecord.segment)
   )
-    return false;
+    return true;
   return currentRecord.segment.prev_content_hash === previousHash;
 }

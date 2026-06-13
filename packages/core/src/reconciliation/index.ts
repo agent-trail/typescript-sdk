@@ -1,5 +1,6 @@
 import { stampContentHashes } from "../hashing.js";
 import type { ParsedTrail, ReconciliationResult, TrailDiagnostic } from "../index.js";
+import { firstHeader, isJsonObject } from "../shared.js";
 import { validateSegmentChain } from "./chain.js";
 import { groupReconciliationInputs, sortSegments } from "./grouping.js";
 import { mergeSegments } from "./merge.js";
@@ -14,8 +15,15 @@ export function reconcileSegments(inputs: ParsedTrail[]): ReconciliationResult {
     const chain = validateSegmentChain(sorted);
     diagnostics.push(...chain.diagnostics);
 
-    output.push(...(chain.canMerge ? [stampContentHashes(mergeSegments(sorted)).trail] : sorted));
+    const merged = mergeSegments(sorted);
+    output.push(
+      isOpenStream(firstHeader(merged)?.stream) ? merged : stampContentHashes(merged).trail,
+    );
   }
 
   return { trails: output, diagnostics };
+}
+
+function isOpenStream(stream: unknown): boolean {
+  return isJsonObject(stream) && stream.state === "open";
 }

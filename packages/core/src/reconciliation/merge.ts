@@ -1,24 +1,38 @@
-import type { Header } from "@agent-trail/types";
 import type { ParsedTrail, ParsedTrailRecord } from "../index.js";
 import { buildParsedTrail } from "../parse.js";
 import { cloneRecord, firstHeader, readString } from "../shared.js";
 
 export function mergeSegments(trails: ParsedTrail[]): ParsedTrail {
+  const mergedHeader = buildMergedHeader(trails);
+  if (mergedHeader === undefined) return trails[0] ?? { records: [], groups: [] };
+  const events = mergedEvents(trails);
+
+  return buildParsedTrail([
+    { line: 1, record: mergedHeader },
+    ...events.map((event, index) => ({ line: index + 2, record: event.record })),
+  ]);
+}
+
+function buildMergedHeader(trails: ParsedTrail[]) {
   const first = firstHeader(trails[0]);
-  if (first === undefined) return trails[0] ?? { records: [], groups: [] };
+  if (first === undefined) return undefined;
   const last = firstHeader(trails.at(-1));
-  const mergedHeader = cloneRecord(first);
+  const mergedHeader = cloneRecord(last ?? first);
   delete mergedHeader.segment;
   delete mergedHeader.content_hash;
-  if (last?.stream !== undefined) {
-    mergedHeader.stream = cloneRecord(last.stream) as NonNullable<Header["stream"]>;
+  mergedHeader.id = first.id;
+  mergedHeader.type = first.type;
+  mergedHeader.schema_version = first.schema_version;
+  if (first.session_uid === undefined) {
+    delete mergedHeader.session_uid;
+  } else {
+    mergedHeader.session_uid = first.session_uid;
   }
-  if (last?.parse_fidelity !== undefined) {
-    mergedHeader.parse_fidelity = cloneRecord(last.parse_fidelity) as NonNullable<
-      Header["parse_fidelity"]
-    >;
-  }
+  mergedHeader.ts = first.ts;
+  return mergedHeader;
+}
 
+function mergedEvents(trails: ParsedTrail[]): ParsedTrailRecord[] {
   const seen = new Set<string>();
   const events: ParsedTrailRecord[] = [];
   for (const trail of trails) {
@@ -31,9 +45,5 @@ export function mergeSegments(trails: ParsedTrail[]): ParsedTrail {
       events.push({ line: events.length + 2, record: cloneRecord(event.record) });
     }
   }
-
-  return buildParsedTrail([
-    { line: 1, record: mergedHeader },
-    ...events.map((event, index) => ({ line: index + 2, record: event.record })),
-  ]);
+  return events;
 }

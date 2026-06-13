@@ -6,6 +6,7 @@ import {
   stampContentHashes,
   validateTrailJsonl,
 } from "../src/index.ts";
+import { segmentChainBreakWarning } from "./helpers";
 
 const header = {
   type: "session",
@@ -160,7 +161,7 @@ test("reconciles ordered segments, deduplicates event ids, and restamps", async 
   expect(merged?.groups[0]?.header.record).toHaveProperty("stream", { state: "closed" });
 });
 
-test("does not merge or restamp segments with unproven chains", async () => {
+test("reports unproven segment chains and still emits merged output", async () => {
   const segmentOne = await parseTrailJsonl(jsonl([{ ...header, segment: { seq: 1 } }]));
   const segmentTwo = await parseTrailJsonl(
     jsonl([
@@ -173,16 +174,13 @@ test("does not merge or restamp segments with unproven chains", async () => {
   );
 
   const result = reconcileSegments([segmentTwo, segmentOne]);
-
-  expect(result.diagnostics).toContainEqual(
-    expect.objectContaining({
-      code: "segment_chain_break",
-      path: "/segment/prev_content_hash",
-      severity: "error",
-    }),
+  const chainDiagnostic = result.diagnostics.find(
+    (diagnostic) => diagnostic.code === segmentChainBreakWarning.code,
   );
-  expect(result.trails).toEqual([segmentOne, segmentTwo]);
-  expect(result.trails[0]?.groups[0]?.header.record).not.toHaveProperty("content_hash");
+
+  expect(chainDiagnostic).toEqual(expect.objectContaining(segmentChainBreakWarning));
+  expect(result.trails).toHaveLength(1);
+  expect(result.trails[0]?.groups[0]?.header.record).toHaveProperty("content_hash");
 });
 
 test("passes through trails without session_uid during reconciliation", async () => {

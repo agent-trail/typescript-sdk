@@ -1,8 +1,9 @@
 import { expect, test } from "bun:test";
+import type { ParsedTrail } from "../src/index.ts";
 import { computeContentHashes, reconcileSegments } from "../src/index.ts";
-import { agentMessage, baseHeader, trail, userMessage } from "./helpers";
+import { agentMessage, baseHeader, segmentChainBreakWarning, trail, userMessage } from "./helpers";
 
-test("merged segment header keeps first identity fields and only last stream/parse_fidelity", async () => {
+test("merged segment header keeps first identity fields and late-binds latest metadata", async () => {
   const first = await trail([
     {
       ...baseHeader,
@@ -39,10 +40,10 @@ test("merged segment header keeps first identity fields and only last stream/par
   expect(result.diagnostics).toEqual([]);
   expect(header).toMatchObject({
     id: "01HSESS0000000000000000001",
-    name: "Initial name",
-    description: "Initial description",
-    tags: ["initial"],
-    cwd: "/first",
+    name: "Updated name",
+    description: "Updated description",
+    tags: ["updated"],
+    cwd: "/second",
     stream: { state: "closed" },
     parse_fidelity: { truncated: true },
   });
@@ -78,7 +79,7 @@ test("deduplicates repeated event ids by keeping the earliest segment event", as
   expect(events[0]?.record.payload).toEqual({ text: "first copy" });
 });
 
-test("reports duplicate sequence numbers and leaves inputs unmerged", async () => {
+test("reports duplicate sequence numbers and still emits a merged trail", async () => {
   const first = await trail([{ ...baseHeader, segment: { seq: 1 } }]);
   const duplicate = await trail([
     {
@@ -91,9 +92,14 @@ test("reports duplicate sequence numbers and leaves inputs unmerged", async () =
   const result = reconcileSegments([duplicate, first]);
 
   expect(result.diagnostics).toContainEqual(
-    expect.objectContaining({ code: "duplicate_segment_seq", path: "/segment/seq" }),
+    expect.objectContaining({
+      code: "duplicate_segment_seq",
+      path: "/segment/seq",
+      severity: "warning",
+    }),
   );
-  expect(result.trails).toEqual([duplicate, first]);
+  expect(result.trails).toHaveLength(1);
+  expect(result.trails[0]?.groups[0]?.header.record).not.toHaveProperty("segment");
 });
 
 test("passes through single non-segmented trails when session_uid is unique", async () => {
@@ -105,21 +111,7 @@ test("passes through single non-segmented trails when session_uid is unique", as
 });
 
 test("does not mutate caller-owned segment trails during merge", async () => {
-  const first = await trail([
-    { ...baseHeader, segment: { seq: 1 } },
-    userMessage("01HEVTA0000000000000000001", "one"),
-  ]);
-  const second = await trail([
-    {
-      ...baseHeader,
-      id: "01HSESS0000000000000000002",
-      segment: {
-        seq: 2,
-        prev_content_hash: computeContentHashes(first).sessionHashes[0]?.hash,
-      },
-    },
-    agentMessage("01HEVTA0000000000000000002", "two"),
-  ]);
+  const { first, second } = await validSegmentPair();
   const firstBefore = JSON.stringify(first);
   const secondBefore = JSON.stringify(second);
 
@@ -175,3 +167,59 @@ test("reconciles multiple session_uids independently", async () => {
     result.trails.map((item) => item.groups[0]?.events).map((events) => events?.length),
   ).toEqual([2, 2]);
 });
+
+test("reports broken segment chains and still emits a merged trail", async () => {
+  const first = await trail([
+    { ...baseHeader, segment: { seq: 1 } },
+    userMessage("01HEVTA0000000000000000001", "one"),
+  ]);
+  const second = await trail([
+    {
+      ...baseHeader,
+      id: "01HSESS0000000000000000002",
+      segment: { seq: 2, prev_content_hash: "a".repeat(64) },
+    },
+    agentMessage("01HEVTA0000000000000000002", "two"),
+  ]);
+
+  const result = reconcileSegments([second, first]);
+
+  expect(result.diagnostics).toContainEqual(expect.objectContaining(segmentChainBreakWarning));
+  expect(result.trails).toHaveLength(1);
+  expect(result.trails[0]?.groups[0]?.events.map((event) => event.record.id)).toEqual([
+    "01HEVTA0000000000000000001",
+    "01HEVTA0000000000000000002",
+  ]);
+});
+
+test("merged open final segment omits finalized content_hash", async () => {
+  const { first, second } = await validSegmentPair({ stream: { state: "open" } });
+
+  const result = reconcileSegments([first, second]);
+  const header = result.trails[0]?.groups[0]?.header.record;
+
+  expect(header).toHaveProperty("stream", { state: "open" });
+  expect(header).not.toHaveProperty("content_hash");
+});
+
+async function validSegmentPair(
+  secondHeaderExtras: Record<string, unknown> = {},
+): Promise<{ first: ParsedTrail; second: ParsedTrail }> {
+  const first = await trail([
+    { ...baseHeader, segment: { seq: 1 } },
+    userMessage("01HEVTA0000000000000000001", "one"),
+  ]);
+  const second = await trail([
+    {
+      ...baseHeader,
+      id: "01HSESS0000000000000000002",
+      segment: {
+        seq: 2,
+        prev_content_hash: computeContentHashes(first).sessionHashes[0]?.hash,
+      },
+      ...secondHeaderExtras,
+    },
+    agentMessage("01HEVTA0000000000000000002", "two"),
+  ]);
+  return { first, second };
+}

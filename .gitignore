@@ -9,5 +9,6 @@ coverage/
 .fallow/
 .turbo/
 .cache/
+temp/
 
 bun.lockb

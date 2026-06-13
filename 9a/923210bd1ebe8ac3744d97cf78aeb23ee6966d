@@ -1,0 +1,24 @@
+packages/types/etc/types.api.md
+  s_c85b59c92b98bc::t_45dbc66c001041 240
+scripts/generate-types.ts
+  s_c85b59c92b98bc::t_9b42d7bcc02e89 74,88,95,270,277,319,363
+  s_c85b59c92b98bc::t_ea127a658ac604 71-73,77-87,266-269,315-318,418-432
+packages/types/src/generated.ts
+  s_c85b59c92b98bc::t_3ec544a06d2d2b 369
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "9a923210bd1ebe8ac3744d97cf78aeb23ee6966d",
+  "prompts": {},
+  "sessions": {
+    "s_c85b59c92b98bc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ebfc5-ebdd-7d33-9e5e-711a55b42218",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

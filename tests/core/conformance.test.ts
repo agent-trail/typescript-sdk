@@ -6,7 +6,7 @@ import {
   parseTrailJsonl,
   type TrailDiagnostic,
   validateTrailJsonl,
-} from "../../packages/core/src/index.ts";
+} from "@agent-trail/core";
 
 type ExpectedDiagnostic = {
   line: number;

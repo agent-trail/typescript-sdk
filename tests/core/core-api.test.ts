@@ -4,7 +4,8 @@ import {
   parseTrailJsonl,
   reconcileSegments,
   stampContentHashes,
-} from "../../packages/core/src/index.ts";
+  validateTrailJsonl,
+} from "@agent-trail/core";
 
 const header = {
   type: "session",
@@ -21,6 +22,13 @@ function jsonl(records: unknown[]): string {
 
 async function* chunks(parts: (string | Uint8Array)[]): AsyncIterable<string | Uint8Array> {
   for (const part of parts) yield part;
+}
+
+async function* deferredChunks(parts: Uint8Array[]): AsyncIterable<Uint8Array> {
+  for (const part of parts) {
+    await Promise.resolve();
+    yield part;
+  }
 }
 
 test("parses async string and byte chunks across JSONL and UTF-8 boundaries", async () => {
@@ -46,6 +54,24 @@ test("parses async string and byte chunks across JSONL and UTF-8 boundaries", as
 
   expect(trail.groups).toHaveLength(1);
   expect(trail.groups[0]?.events[0]?.record.type).toBe("user_message");
+});
+
+test("isolates UTF-8 decoder state across concurrent async parses", async () => {
+  const encoder = new TextEncoder();
+  const first = jsonl([{ ...header, name: "é" }]);
+  const second = jsonl([{ ...header, id: "01HSESS0000000000000000002", name: "🚀" }]);
+  const firstBytes = encoder.encode(first);
+  const secondBytes = encoder.encode(second);
+
+  const [firstTrail, secondTrail] = await Promise.all([
+    parseTrailJsonl(deferredChunks([firstBytes.slice(0, 46), firstBytes.slice(46)])),
+    parseTrailJsonl(deferredChunks([secondBytes.slice(0, 47), secondBytes.slice(47)])),
+  ]);
+
+  expect(firstTrail.records[0]?.record).toHaveProperty("name", "é");
+  expect(secondTrail.records[0]?.record).toHaveProperty("name", "🚀");
+  expect(firstTrail.records[0]?.record.type).toBe("session");
+  expect(secondTrail.records[0]?.record.type).toBe("session");
 });
 
 test("computes and stamps content hashes without mutating parsed input", async () => {
@@ -84,7 +110,7 @@ test("computes two-tier envelope and session hashes", async () => {
   expect(stamped.hashes.fileHash).not.toBe(stamped.hashes.sessionHashes[0]?.hash);
 });
 
-test("reconciles ordered segments, deduplicates event ids, and reports chain gaps", async () => {
+test("reconciles ordered segments, deduplicates event ids, and restamps", async () => {
   const segmentOne = await parseTrailJsonl(
     jsonl([
       { ...header, segment: { seq: 1 } },
@@ -101,7 +127,10 @@ test("reconciles ordered segments, deduplicates event ids, and reports chain gap
       {
         ...header,
         id: "01HSESS0000000000000000002",
-        segment: { seq: 2, prev_content_hash: null },
+        segment: {
+          seq: 2,
+          prev_content_hash: computeContentHashes(segmentOne).sessionHashes[0]?.hash,
+        },
         stream: { state: "closed" },
       },
       {
@@ -122,7 +151,7 @@ test("reconciles ordered segments, deduplicates event ids, and reports chain gap
   const result = reconcileSegments([segmentTwo, segmentOne]);
   const merged = result.trails[0];
 
-  expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toContain("segment_chain_break");
+  expect(result.diagnostics).toEqual([]);
   expect(merged?.groups[0]?.events.map((event) => event.record.id)).toEqual([
     "01HEVTA0000000000000000001",
     "01HEVTA0000000000000000002",
@@ -131,10 +160,165 @@ test("reconciles ordered segments, deduplicates event ids, and reports chain gap
   expect(merged?.groups[0]?.header.record).toHaveProperty("stream", { state: "closed" });
 });
 
+test("does not merge or restamp segments with unproven chains", async () => {
+  const segmentOne = await parseTrailJsonl(jsonl([{ ...header, segment: { seq: 1 } }]));
+  const segmentTwo = await parseTrailJsonl(
+    jsonl([
+      {
+        ...header,
+        id: "01HSESS0000000000000000002",
+        segment: { seq: 2, prev_content_hash: null },
+      },
+    ]),
+  );
+
+  const result = reconcileSegments([segmentTwo, segmentOne]);
+
+  expect(result.diagnostics).toContainEqual(
+    expect.objectContaining({
+      code: "segment_chain_break",
+      path: "/segment/prev_content_hash",
+      severity: "error",
+    }),
+  );
+  expect(result.trails).toEqual([segmentOne, segmentTwo]);
+  expect(result.trails[0]?.groups[0]?.header.record).not.toHaveProperty("content_hash");
+});
+
 test("passes through trails without session_uid during reconciliation", async () => {
   const single = await parseTrailJsonl(jsonl([{ ...header, session_uid: undefined }]));
   const result = reconcileSegments([single]);
 
   expect(result.trails).toEqual([single]);
   expect(result.diagnostics).toEqual([]);
+});
+
+test("passes through single non-segmented trails with envelopes during reconciliation", async () => {
+  const single = await parseTrailJsonl(
+    jsonl([
+      {
+        type: "trail",
+        schema_version: "0.1.0",
+        id: "01HSESS0000000000000000900",
+        ts: "2026-05-17T14:00:00.000Z",
+        producer: "agent-trail-test",
+      },
+      header,
+      {
+        type: "user_message",
+        id: "01HEVTA0000000000000000001",
+        ts: "2026-05-17T14:00:01.000Z",
+        payload: { text: "hello" },
+      },
+    ]),
+  );
+
+  const result = reconcileSegments([single]);
+
+  expect(result.trails).toEqual([single]);
+  expect(result.trails[0]?.envelope?.record.type).toBe("trail");
+  expect(result.trails[0]?.records.map((record) => record.record.type)).toEqual([
+    "trail",
+    "session",
+    "user_message",
+  ]);
+});
+
+test("treats schema-unknown event records as future records in tolerant mode", async () => {
+  const result = await validateTrailJsonl(
+    jsonl([
+      header,
+      {
+        type: "subagent_invoke",
+        id: "01HEVTA0000000000000000001",
+        ts: "2026-05-17T14:00:01.000Z",
+        payload: {},
+      },
+    ]),
+    { mode: "tolerant" },
+  );
+
+  expect(result.diagnostics).toContainEqual(
+    expect.objectContaining({
+      code: "reader_tolerant_unknown_record",
+      path: "/type",
+      severity: "warning",
+    }),
+  );
+});
+
+test("reports core-owned diagnostics not covered by fixture manifest", async () => {
+  const parentHash = "a".repeat(64);
+  const childHash = "b".repeat(64);
+  const text = jsonl([
+    {
+      type: "trail",
+      schema_version: "0.1.0",
+      id: "01HSESS0000000000000000900",
+      ts: "2026-05-17T14:00:00.000Z",
+      producer: "agent-trail-test",
+      parent_id: "01HSESS0000000000000000001",
+    },
+    { ...header, content_hash: parentHash, stream: { state: "open" } },
+    {
+      type: "tool_call",
+      id: "01HEVTA0000000000000000001",
+      ts: "2026-05-17T14:00:01.000Z",
+      payload: { tool: "file_read", args: { path: "/tmp/a", token: "api_key=secret" } },
+      source: { raw: { envelope_ref: "missing", authorization: "Bearer secret" } },
+    },
+    {
+      type: "tool_result",
+      id: "01HEVTA0000000000000000002",
+      ts: "2026-05-17T14:00:02.000Z",
+      payload: {
+        for_id: "01HEVTA0000000000000000001",
+        output: "ok",
+        semantic: { tool: "file_write" },
+      },
+    },
+    {
+      type: "user_query",
+      id: "01HEVTA0000000000000000003",
+      ts: "2026-05-17T14:00:03.000Z",
+      payload: {
+        questions: [{ id: "q1", kind: "text", prompt: "continue?" }],
+      },
+    },
+    {
+      type: "user_query_response",
+      id: "01HEVTA0000000000000000004",
+      ts: "2026-05-17T14:00:04.000Z",
+      payload: {
+        for_id: "01HEVTA0000000000000000003",
+        answers: { q2: "yes" },
+      },
+    },
+    {
+      type: "session_end",
+      id: "01HEVTA0000000000000000005",
+      ts: "2026-05-17T14:00:05.000Z",
+      payload: {},
+    },
+    {
+      ...header,
+      id: "01HSESS0000000000000000002",
+      session_uid: "01HZZZZZZZZZZZZZZZZZZZZZ02",
+      fork_from: {
+        session_id: "01HSESS0000000000000000001",
+        content_hash: childHash,
+      },
+    },
+  ]);
+
+  const result = await validateTrailJsonl(text, { mode: "strict" });
+  const codes = result.diagnostics.map((diagnostic) => diagnostic.code);
+
+  expect(codes).toContain("envelope_has_parent_id");
+  expect(codes).toContain("source_raw_envelope_ref_unresolved");
+  expect(codes).toContain("source_raw_unredacted_secret");
+  expect(codes).toContain("cross_group_fork_from_hash_mismatch");
+  expect(codes).toContain("tool_result_semantic_conflict");
+  expect(codes).toContain("unknown_user_query_answer_key");
+  expect(codes).toContain("stream_open_with_terminal_event");
 });

@@ -5,6 +5,9 @@
     "declarationMap": false,
     "noEmit": false,
     "outDir": "dist",
+    "paths": {
+      "@agent-trail/schema": ["../schema/schema/v0.1.0.json"]
+    },
     "rootDir": "src"
   },
   "include": ["src/**/*.ts"]

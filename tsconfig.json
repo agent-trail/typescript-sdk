@@ -16,6 +16,11 @@
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "paths": {
+      "@agent-trail/core": ["./packages/core/src/index.ts"],
+      "@agent-trail/schema": ["./packages/schema/schema/v0.1.0.json"],
+      "@agent-trail/types": ["./packages/types/src/index.ts"]
+    },
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,

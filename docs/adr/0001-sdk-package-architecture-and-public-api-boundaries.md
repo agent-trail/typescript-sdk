@@ -6,19 +6,13 @@ Accepted.
 
 ## Context
 
-The old monorepo kept the spec, schema package, generated types, core library,
-adapters, CLI, redaction, store, and website together. Its ADR-0002 chose a
-single Bun monorepo, and its ADR-0003 allowed the CLI and adapters to be
-Bun-only.
+The TypeScript SDK repository owns public TypeScript packages and
+generated/public TypeScript contracts. It does not own the CLI binary or the web
+app. Package boundaries must be locked before porting starts so downstream CLI,
+web, and future MCP work build on stable surfaces.
 
-The split TypeScript SDK repository has a different job. It owns public
-TypeScript packages and generated/public TypeScript contracts. It does not own
-the CLI binary or the web app. Package boundaries must be locked before porting
-starts so downstream CLI, web, and future MCP work build on stable surfaces.
-
-This ADR supersedes the old monorepo ADR-0002 and ADR-0003 for SDK repository
-package layout, runtime target, and public API policy. Format-contract
-decisions remain owned by the spec repository.
+This ADR defines SDK repository package layout, runtime target, and public API
+policy. Format-contract decisions remain owned by the spec repository.
 
 ## Decision
 
@@ -93,9 +87,9 @@ License policy:
 
 ## Considered Options
 
-- Preserve the old package set without changes. Rejected because the CLI leaves
-  this repo and planned `sessions` and `render-model` packages need explicit
-  ownership.
+- Preserve the initial package set without changes. Rejected because the CLI is
+  outside this repo and planned `sessions` and `render-model` packages need
+  explicit ownership.
 - Collapse SDK behavior into fewer packages. Rejected because CLI, web, and
   future MCP consumers need different dependency surfaces.
 - Keep adapters Bun-only. Rejected because `@agent-trail/adapters` is now an SDK
@@ -109,7 +103,7 @@ License policy:
 
 - ATF-19 and later package ports must create package manifests, build configs,
   exports maps, and API reports that conform to this ADR.
-- Existing monorepo code that imported internals must be rewritten to use
+- Existing implementation code that imported internals must be rewritten to use
   package public APIs or local relative imports before porting.
 - Adapters that used Bun APIs directly must move runtime-specific behavior
   behind injected interfaces.

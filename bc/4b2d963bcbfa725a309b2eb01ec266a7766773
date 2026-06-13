@@ -1,0 +1,46 @@
+tests/check-api.test.ts
+  s_e7ea42c34d7131::t_7b624eeaad2ebb 2,19
+  s_e7ea42c34d7131::t_2ac52fabd241cf 26-37,66,76
+  s_e7ea42c34d7131::t_fbe948e90a0837 90-115
+package.json
+  s_e7ea42c34d7131::t_4c3214cc786333 11
+  s_e7ea42c34d7131::t_8a6b805d4238b4 16
+scripts/check-api.ts
+  s_e7ea42c34d7131::t_340abcefcc93cb 26
+scripts/build-api-declarations.ts
+  s_e7ea42c34d7131::t_2ac52fabd241cf 21-23,25-27,29-33
+  s_e7ea42c34d7131::t_8a6b805d4238b4 1-20,24,28,34-38
+docs/adr/0001-sdk-package-architecture-and-public-api-boundaries.md
+  s_e7ea42c34d7131::t_340abcefcc93cb 59-64
+scripts/check-exports.ts
+  s_e7ea42c34d7131::t_4c3214cc786333 105,107-112,114-117,124-130
+  s_e7ea42c34d7131::t_7b624eeaad2ebb 1,143
+  s_e7ea42c34d7131::t_2ac52fabd241cf 69,74,80-85,148-152,154-162,164-173,175-186,189-193
+  s_e7ea42c34d7131::t_4c5b3582949708 4,61,63,65-67,70,144-146
+scripts/workspaces.ts
+  s_e7ea42c34d7131::t_4c5b3582949708 1,16-22,27,37-53,56-70,72-73
+  s_e7ea42c34d7131::t_340abcefcc93cb 36,54
+tests/check-exports.test.ts
+  s_e7ea42c34d7131::t_7b624eeaad2ebb 2,49,144-147
+  s_e7ea42c34d7131::t_fbe948e90a0837 11,19,110-111
+  s_e7ea42c34d7131::t_8ee8bc43710ce5 112-115
+  s_e7ea42c34d7131::t_1db2eace4653f9 42-43,142-143,148-157,174-198
+docs/GLOSSARY.md
+  s_e7ea42c34d7131::t_340abcefcc93cb 9-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "bc4b2d963bcbfa725a309b2eb01ec266a7766773",
+  "prompts": {},
+  "sessions": {
+    "s_e7ea42c34d7131": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ebf6f-a8ec-7b43-969f-590f06133f42",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

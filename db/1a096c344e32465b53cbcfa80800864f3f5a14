@@ -1,0 +1,66 @@
+packages/core/test/conformance.test.ts
+  s_1276b0959ffd41::t_20c27f5725026a 4,29
+packages/core/test/parser.test.ts
+  s_1276b0959ffd41::t_0c169e33b83cdd 75-98,115-140
+  s_1276b0959ffd41::t_e8cab5d5ace6ef 99-114
+  s_1276b0959ffd41::t_f92db738250260 37,41,45-72
+packages/core/src/validation/schema.ts
+  s_1276b0959ffd41::t_cd40289c40efed 7
+  s_1276b0959ffd41::t_e9fce823fc391b 43-44,61,64,90-96,116,160,345
+  s_1276b0959ffd41::t_be8b2423c278e9 65-67
+  s_1276b0959ffd41::t_17f24ac33cc120 145,148-153,155,158-159,161,164-167,169,193,206,209,213-239,266-273,275-276
+  s_1276b0959ffd41::t_9fc61214aae28c 41-42
+  s_1276b0959ffd41::t_e510be23916193 62
+  s_1276b0959ffd41::t_df5afc7b14f749 68-72,135,141,174
+  s_1276b0959ffd41::t_2860bcec44d458 77-84,86-87,100-106,108,115,117-134,136-139,144,146-147,154,156-157,168,170-172,175,180-181,335-336,338-341,356-361
+  s_1276b0959ffd41::t_b9874003511263 12,25-28,85,107,109-114,184-192,196-205,208,210-212,240-265,274,277-280,337
+  s_1276b0959ffd41::t_979c19068fec1a 2,34
+  s_1276b0959ffd41::t_03c3ebe64c3644 176,281-285,289-300,303-304
+  s_1276b0959ffd41::t_8822cfad9e780e 22,29-33,38,74,305-315
+  s_1276b0959ffd41::t_11959b4552e596 301-302,325,332-334
+packages/core/test/validation-edge-cases.test.ts
+  s_1276b0959ffd41::t_e3891d4290bf5e 40-53,60-62
+  s_1276b0959ffd41::t_707caccb6d5e7f 79-81,83-84
+  s_1276b0959ffd41::t_6cd55a1efeb4ff 103
+  s_1276b0959ffd41::t_9fdc577b6eb719 63-67,71-78,85-102,104
+  s_1276b0959ffd41::t_2b3f6daecb5138 153-156
+  s_1276b0959ffd41::t_b2e2c9158d4e0a 54-59
+  s_1276b0959ffd41::t_de87c0561b95ab 105-152,157-169
+  s_1276b0959ffd41::t_9c7a6f1a4ac58c 68-70,82
+packages/core/src/parse.ts
+  s_1276b0959ffd41::t_d2ef260f2a1d06 35
+  s_1276b0959ffd41::t_980c73b0358c75 97-101
+  s_1276b0959ffd41::t_abc92d5830cc71 30,43,45-46,58-59,64,66-68,70-71,74-83,85-86,108-111,118
+  s_1276b0959ffd41::t_31f282615d0a82 31,34,36-39,42,48-55,60-61,63,69,73,84,113-116
+  s_1276b0959ffd41::t_4b8e12aea45f90 14,16-21,23-29,32-33,62,65,72,87-96,102-107,112,117,119-137,139-147
+packages/core/src/reconciliation/grouping.ts
+  s_1276b0959ffd41::t_48a384462a01bf 15
+  s_1276b0959ffd41::t_4f301e425806ea 3
+packages/core/src/validation/file.ts
+  s_1276b0959ffd41::t_70cedb77f3e315 19,38
+packages/core/src/validation/timestamps.ts
+  s_1276b0959ffd41::t_f8eab7b2fd3cff 33-34
+  s_1276b0959ffd41::t_0759b515cd6636 11-12
+  s_1276b0959ffd41::t_3ae9c2e094674f 2,15,20-32,38-40
+packages/core/test/validation-schema.test.ts
+  s_1276b0959ffd41::t_f6985a6fb962d8 20-29,36-37
+packages/core/test/reconciliation.test.ts
+  s_1276b0959ffd41::t_5745b2ec376f65 114-116,121,123-127
+  s_1276b0959ffd41::t_8026b2aeda179a 117-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "db1a096c344e32465b53cbcfa80800864f3f5a14",
+  "prompts": {},
+  "sessions": {
+    "s_1276b0959ffd41": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec0f1-1d7c-7ba1-a721-447a182bf364",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

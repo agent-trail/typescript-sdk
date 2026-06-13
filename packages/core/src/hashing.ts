@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { canonicalize } from "json-canonicalize";
+import type { ContentHashes, ParsedTrail, ParsedTrailRecord, StampedTrail } from "./index.js";
 import { buildParsedTrail } from "./parse.js";
 import { cloneRecord, isEnvelope, isHeader } from "./shared.js";
-import type { ContentHashes, ParsedTrail, ParsedTrailRecord, StampedTrail } from "./types.js";
 
 export function computeContentHashes(trail: ParsedTrail): ContentHashes {
   const sessionHashes = trail.groups.flatMap((group) => {

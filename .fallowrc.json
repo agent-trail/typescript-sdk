@@ -12,33 +12,5 @@
     "threshold": 0,
     "ignore": ["packages/types/src/generated.ts"]
   },
-  "health": {
-    "thresholdOverrides": [
-      {
-        "files": ["packages/core/src/validation.ts"],
-        "functions": [
-          "layoutDiagnostics",
-          "toolPairingDiagnostics",
-          "userQueryDiagnostics",
-          "tolerantUnknownPayloadPath",
-          "hashDiagnostics",
-          "timestampDiagnostics",
-          "sourceRawDiagnostics"
-        ],
-        "maxCyclomatic": 40,
-        "maxCognitive": 75,
-        "maxCrap": 300,
-        "reason": "Spec conformance validators mirror independent Agent Trail whole-file rules and are covered by manifest plus focused core tests."
-      },
-      {
-        "files": ["packages/core/src/reconciliation.ts"],
-        "functions": ["mergeSegments"],
-        "maxCyclomatic": 15,
-        "maxCognitive": 20,
-        "maxCrap": 60,
-        "reason": "Segment merge is the narrow reconciliation restamping helper and is covered by focused reconciliation tests."
-      }
-    ]
-  },
   "production": false
 }

@@ -1,5 +1,4 @@
 import type { Entry, Header, TrailEnvelope } from "@agent-trail/types";
-import { isJsonObject } from "./shared.js";
 import type {
   ParsedTrail,
   ParsedTrailRecord,
@@ -7,7 +6,8 @@ import type {
   TrailJsonlInput,
   TrailRecordLike,
   UnknownTrailRecord,
-} from "./types.js";
+} from "./index.js";
+import { isJsonObject } from "./shared.js";
 
 export async function parseTrailJsonl(input: TrailJsonlInput): Promise<ParsedTrail> {
   const text = typeof input === "string" ? input : await collectInput(input);

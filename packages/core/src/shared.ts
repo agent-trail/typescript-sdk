@@ -1,11 +1,12 @@
 import type { Header, TrailEnvelope } from "@agent-trail/types";
 import type {
-  JsonObject,
   ParsedTrail,
   ParsedTrailRecord,
   TrailDiagnostic,
   UnknownTrailRecord,
-} from "./types.js";
+} from "./index.js";
+
+type JsonObject = Record<string, unknown>;
 
 export function diagnostic(
   line: number,

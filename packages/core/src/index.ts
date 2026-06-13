@@ -4,8 +4,8 @@ import {
   stampContentHashes as stampContentHashesImpl,
 } from "./hashing.js";
 import { parseTrailJsonl as parseTrailJsonlImpl } from "./parse.js";
-import { reconcileSegments as reconcileSegmentsImpl } from "./reconciliation.js";
-import { validateTrailJsonl as validateTrailJsonlImpl } from "./validation.js";
+import { reconcileSegments as reconcileSegmentsImpl } from "./reconciliation/index.js";
+import { validateTrailJsonl as validateTrailJsonlImpl } from "./validation/index.js";
 
 export type CoreValidationMode = "strict" | "tolerant";
 export type TrailJsonlInput = string | AsyncIterable<string | Uint8Array>;

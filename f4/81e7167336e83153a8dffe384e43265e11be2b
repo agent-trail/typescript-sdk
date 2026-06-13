@@ -1,0 +1,33 @@
+packages/schema/fixtures/validation/manifest.json
+  s_c85b59c92b98bc::t_3dbbb49d937a04 2287-2300
+scripts/generate-types.ts
+  s_c85b59c92b98bc::t_527b48528830b3 1-2,20,22-40,52-55,60-82,108-112
+  s_c85b59c92b98bc::t_ffdaf86c9cbc0c 329-365
+  s_c85b59c92b98bc::t_44c78e45170008 56-59
+packages/schema/fixtures/validation/invalid-schema/tool-call-truncated-missing-args-size.trail.jsonl
+  s_c85b59c92b98bc::t_3dbbb49d937a04 1-2
+scripts/spec-release.ts
+  s_c85b59c92b98bc::t_fda9fcc72de072 11,18
+packages/types/src/generated.ts
+  s_c85b59c92b98bc::t_c89b8001fba5c7 579-590,1912-1914,1916-1919,1921-1955,1957-1974,1977-2017,2019-2030,2033-2079,2081-2086,2089-2141,2143,2176-2184,2186,2188-2196,2279,2281-2289,2291,2293-2301
+packages/schema/fixtures/validation/README.md
+  s_c85b59c92b98bc::t_3dbbb49d937a04 126
+packages/types/etc/types.api.md
+  s_c85b59c92b98bc::t_4166a13ec313b6 164,169-175,177-178,180-187,189,191-199,201,208-210,212-214,327-331,435-440
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "f481e7167336e83153a8dffe384e43265e11be2b",
+  "prompts": {},
+  "sessions": {
+    "s_c85b59c92b98bc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ebfc5-ebdd-7d33-9e5e-711a55b42218",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

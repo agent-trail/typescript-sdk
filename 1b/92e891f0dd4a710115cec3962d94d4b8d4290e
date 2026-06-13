@@ -1,0 +1,19 @@
+scripts/generate-types.ts
+  s_c85b59c92b98bc::t_0f5f2d5b1b870f 72-73,82-83,90-93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "1b92e891f0dd4a710115cec3962d94d4b8d4290e",
+  "prompts": {},
+  "sessions": {
+    "s_c85b59c92b98bc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ebfc5-ebdd-7d33-9e5e-711a55b42218",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

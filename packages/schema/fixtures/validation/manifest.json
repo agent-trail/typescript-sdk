@@ -2284,6 +2284,42 @@
       ]
     },
     {
+      "path": "invalid-schema/tool-call-truncated-missing-args-size.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          },
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          },
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
       "path": "invalid-schema/tool-call-usage-missing-output.trail.jsonl",
       "strict": {
         "valid": false,

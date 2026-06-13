@@ -1,4 +1,5 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { compileFromFile } from "json-schema-to-typescript";
 import { readSpecArtifactManifest } from "./spec-artifacts.ts";
@@ -16,21 +17,27 @@ export async function generateTypes(
   const manifest = await readSpecArtifactManifest(root);
   const schemaPath = path.join(root, "packages/schema", manifest.assets.schema.targetPath);
   await assertNoExternalSchemaRefs(schemaPath);
+  const typeGenerationSchemaPath = await prepareTypeGenerationSchema(schemaPath);
 
-  const generated = await compileFromFile(schemaPath, {
-    bannerComment:
-      "/* This file is generated from @agent-trail/schema. Run `bun run generate:types` to update it. */",
-    cwd: root,
-    style: {
-      printWidth: 100,
-      semi: true,
-      singleQuote: false,
-      trailingComma: "all",
-    },
-    strictIndexSignatures: true,
-    unreachableDefinitions: true,
-    unknownAny: true,
-  });
+  let generated: string;
+  try {
+    generated = await compileFromFile(typeGenerationSchemaPath, {
+      bannerComment:
+        "/* This file is generated from @agent-trail/schema. Run `bun run generate:types` to update it. */",
+      cwd: root,
+      style: {
+        printWidth: 100,
+        semi: true,
+        singleQuote: false,
+        trailingComma: "all",
+      },
+      strictIndexSignatures: true,
+      unreachableDefinitions: true,
+      unknownAny: true,
+    });
+  } finally {
+    await rm(path.dirname(typeGenerationSchemaPath), { force: true, recursive: true });
+  }
   const normalized = `${tightenGeneratedTypes(generated).trimEnd()}\n`;
 
   if (options.write ?? true) {
@@ -40,6 +47,37 @@ export async function generateTypes(
   }
 
   return normalized;
+}
+
+async function prepareTypeGenerationSchema(schemaPath: string): Promise<string> {
+  const schema = JSON.parse(await readFile(schemaPath, "utf8")) as Record<string, unknown>;
+  const events = requireRecord(requireRecord(schema.$defs, "$defs").events, "$defs.events");
+  const toolCall = requireRecord(events.tool_call, "$defs.events.tool_call");
+  const toolCallProperties = requireRecord(
+    toolCall.properties,
+    "$defs.events.tool_call.properties",
+  );
+  const toolCallPayload = requireRecord(
+    toolCallProperties.payload,
+    "$defs.events.tool_call.properties.payload",
+  );
+
+  if (!Array.isArray(toolCallPayload.oneOf) || toolCallPayload.oneOf.length === 0) {
+    throw new Error("tool_call payload schema did not contain the expected oneOf branches");
+  }
+
+  // json-schema-to-typescript is exponential on the expanded tool_call payload union.
+  // The exact placeholder below is replaced after generation by a schema-equivalent type.
+  toolCallProperties.payload = {
+    type: "object",
+    additionalProperties: true,
+    description: "Tool call event payload.",
+  };
+
+  const tempDir = await mkdtemp(path.join(tmpdir(), "agent-trail-typegen-"));
+  const tempSchemaPath = path.join(tempDir, path.basename(schemaPath));
+  await writeFile(tempSchemaPath, `${JSON.stringify(schema)}\n`);
+  return tempSchemaPath;
 }
 
 export async function assertNoExternalSchemaRefs(schemaPath: string): Promise<void> {
@@ -65,6 +103,13 @@ function collectSchemaRefs(value: unknown): string[] {
     refs.push(...collectSchemaRefs(child));
   }
   return refs;
+}
+
+function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`${label} must be an object`);
+  }
+  return value as Record<string, unknown>;
 }
 
 function tightenGeneratedTypes(generated: string): string {
@@ -281,9 +326,43 @@ export type ToolCallPayloadByTool =
   /**
    * Tool-call abort event payload.
    */
-  payload?: {
-    [k: string]: unknown | undefined;
-  };
+  payload?:
+    | {
+        /**
+         * Abort granularity. tool_call aborts reference a specific tool_call by for_id; turn aborts describe a broader turn-level stop when the source cannot identify one call.
+         */
+        scope: "tool_call";
+        /**
+         * Globally-unique identifier shape: canonical uppercase ULID (26 Crockford base32 chars), lowercase hyphenated UUID (36 chars), or lowercase unhyphenated UUID (32 hex chars). Header ids, event ids, and envelope ids share this shape so cross-segment reconciliation can dedup by exact string equality (spec §9.5).
+         */
+        for_id: string;
+        /**
+         * Why execution stopped before a normal tool_result.
+         */
+        reason:
+          | ("user_interrupt" | "hook_blocked" | "timeout" | "permission_denied" | "runtime_error")
+          | string;
+        /**
+         * Source component or policy that blocked the tool call.
+         */
+        blocked_by?: string;
+      }
+    | {
+        /**
+         * Abort granularity. tool_call aborts reference a specific tool_call by for_id; turn aborts describe a broader turn-level stop when the source cannot identify one call.
+         */
+        scope: "turn" | string;
+        /**
+         * Why execution stopped before a normal tool_result.
+         */
+        reason:
+          | ("user_interrupt" | "hook_blocked" | "timeout" | "permission_denied" | "runtime_error")
+          | string;
+        /**
+         * Source component or policy that blocked the tool call.
+         */
+        blocked_by?: string;
+      };
   [k: string]: unknown | undefined;
 }`,
     `export interface ToolCallAborted {
@@ -325,190 +404,6 @@ export type ToolCallAbortedPayload = {
 );
 `,
     "ToolCallAborted.payload",
-  );
-  tightened = replaceRequired(
-    tightened,
-    `export interface CapabilityChange {
-  /**
-   * Capability change event discriminator.
-   */
-  type?: "capability_change";
-  /**
-   * Capability change event payload.
-   */
-  payload?: {
-    /**
-     * Capability domain changed by this event.
-     */
-    scope: (
-      | ("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin")
-      | {
-          [k: string]: unknown | undefined;
-        }
-    ) &
-      string;
-    /**
-     * Reason the capability set changed.
-     */
-    reason: (
-      | (
-          | "initial"
-          | "registered"
-          | "deregistered"
-          | "connected"
-          | "disconnected"
-          | "loaded"
-          | "unloaded"
-          | "error"
-          | "instructions_updated"
-        )
-      | {
-          [k: string]: unknown | undefined;
-        }
-    ) &
-      string;
-    /**
-     * Capabilities added by this change.
-     *
-     * @minItems 1
-     */
-    added?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
-    /**
-     * Capabilities removed by this change.
-     *
-     * @minItems 1
-     */
-    removed?: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
-    /**
-     * Capabilities modified by this change.
-     *
-     * @minItems 1
-     */
-    changed?: [CapabilityChangedItem, ...CapabilityChangedItem[]];
-    /**
-     * Full capability snapshot after this change.
-     *
-     * @minItems 1
-     */
-    snapshot?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
-  } & {
-    [k: string]: unknown | undefined;
-  };
-  [k: string]: unknown | undefined;
-}`,
-    `export interface CapabilityChange {
-  type?: "capability_change";
-  payload?: {
-    scope: (
-      | ("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin")
-      | {
-          [k: string]: unknown | undefined;
-        }
-    ) &
-      string;
-    reason: (
-      | (
-          | "initial"
-          | "registered"
-          | "deregistered"
-          | "connected"
-          | "disconnected"
-          | "loaded"
-          | "unloaded"
-          | "error"
-          | "instructions_updated"
-        )
-      | {
-          [k: string]: unknown | undefined;
-        }
-    ) &
-      string;
-    /**
-     * @minItems 1
-     */
-    added?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
-    /**
-     * @minItems 1
-     */
-    removed?: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
-    /**
-     * @minItems 1
-     */
-    changed?: [CapabilityChangedItem, ...CapabilityChangedItem[]];
-    /**
-     * @minItems 1
-     */
-    snapshot?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
-  } & (
-    | {
-        added: [CapabilityAddedItem, ...CapabilityAddedItem[]];
-      }
-    | {
-        removed: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
-      }
-    | {
-        changed: [CapabilityChangedItem, ...CapabilityChangedItem[]];
-      }
-    | {
-        snapshot: [CapabilityAddedItem, ...CapabilityAddedItem[]];
-      }
-  );
-  [k: string]: unknown | undefined;
-}
-`,
-    "CapabilityChange.payload",
-  );
-  tightened = replaceRequired(
-    tightened,
-    `  /**
-   * Previous capability field value.
-   */
-  from?: {
-    [k: string]: unknown | undefined;
-  };`,
-    `  /**
-   * Previous capability field value.
-   */
-  from?: unknown;`,
-    "CapabilityChangedItem.from",
-  );
-  tightened = replaceRequired(
-    tightened,
-    `  /**
-   * New capability field value.
-   */
-  to?: {
-    [k: string]: unknown | undefined;
-  };`,
-    `  /**
-   * New capability field value.
-   */
-  to?: unknown;`,
-    "CapabilityChangedItem.to",
-  );
-  tightened = replaceRequired(
-    tightened,
-    `        /**
-         * New session metadata value.
-         */
-        value: {
-          [k: string]: unknown | undefined;
-        };
-        /**
-         * Previous session metadata value when known.
-         */
-        previous_value?: {
-          [k: string]: unknown | undefined;
-        };`,
-    `        /**
-         * New session metadata value.
-         */
-        value: unknown;
-        /**
-         * Previous session metadata value when known.
-         */
-        previous_value?: unknown;`,
-    "SessionMetadataUpdate.extensionValue",
   );
   return tightened;
 }

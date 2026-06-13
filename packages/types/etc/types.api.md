@@ -154,8 +154,40 @@ export interface CapabilityAddedItem {
 export interface CapabilityChange {
     // (undocumented)
     [k: string]: unknown | undefined;
-    // (undocumented)
     payload?: {
+        scope: (("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin") | {
+            [k: string]: unknown | undefined;
+        }) & string;
+        reason: (("initial" | "registered" | "deregistered" | "connected" | "disconnected" | "loaded" | "unloaded" | "error" | "instructions_updated") | {
+            [k: string]: unknown | undefined;
+        }) & string;
+        added: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+        removed?: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
+        changed?: [CapabilityChangedItem, ...CapabilityChangedItem[]];
+        snapshot?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+    } | {
+        scope: (("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin") | {
+            [k: string]: unknown | undefined;
+        }) & string;
+        reason: (("initial" | "registered" | "deregistered" | "connected" | "disconnected" | "loaded" | "unloaded" | "error" | "instructions_updated") | {
+            [k: string]: unknown | undefined;
+        }) & string;
+        added?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+        removed: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
+        changed?: [CapabilityChangedItem, ...CapabilityChangedItem[]];
+        snapshot?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+    } | {
+        scope: (("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin") | {
+            [k: string]: unknown | undefined;
+        }) & string;
+        reason: (("initial" | "registered" | "deregistered" | "connected" | "disconnected" | "loaded" | "unloaded" | "error" | "instructions_updated") | {
+            [k: string]: unknown | undefined;
+        }) & string;
+        added?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+        removed?: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
+        changed: [CapabilityChangedItem, ...CapabilityChangedItem[]];
+        snapshot?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+    } | {
         scope: (("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin") | {
             [k: string]: unknown | undefined;
         }) & string;
@@ -165,26 +197,21 @@ export interface CapabilityChange {
         added?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
         removed?: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
         changed?: [CapabilityChangedItem, ...CapabilityChangedItem[]];
-        snapshot?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
-    } & ({
-        added: [CapabilityAddedItem, ...CapabilityAddedItem[]];
-    } | {
-        removed: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
-    } | {
-        changed: [CapabilityChangedItem, ...CapabilityChangedItem[]];
-    } | {
         snapshot: [CapabilityAddedItem, ...CapabilityAddedItem[]];
-    });
-    // (undocumented)
+    };
     type?: "capability_change";
 }
 
 // @public (undocumented)
 export interface CapabilityChangedItem {
     field: string;
-    from?: unknown;
+    from?: null | boolean | number | string | JsonValue[] | {
+        [k: string]: JsonValue;
+    };
     name: string;
-    to?: unknown;
+    to?: null | boolean | number | string | JsonValue[] | {
+        [k: string]: JsonValue;
+    };
 }
 
 // @public (undocumented)
@@ -297,6 +324,11 @@ type Header = {
 export { Header }
 export { Header as SessionHeader }
 
+// @public
+export type JsonValue = null | boolean | number | string | JsonValue[] | {
+    [k: string]: JsonValue;
+};
+
 // @public (undocumented)
 export interface ModeChange {
     // (undocumented)
@@ -400,8 +432,12 @@ export interface SessionMetadataUpdate {
         }) & string;
     } | {
         field: string;
-        value: unknown;
-        previous_value?: unknown;
+        value: null | boolean | number | string | JsonValue[] | {
+            [k: string]: JsonValue;
+        };
+        previous_value?: null | boolean | number | string | JsonValue[] | {
+            [k: string]: JsonValue;
+        };
         reason: (("ai_generated" | "user_set" | "runtime_inferred" | "external") | {
             [k: string]: unknown | undefined;
         }) & string;

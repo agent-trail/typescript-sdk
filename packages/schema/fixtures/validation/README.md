@@ -123,6 +123,7 @@ This section is generated from `manifest.json`; run `mise run check:conformance`
 - `invalid-schema/tool-call-file-patch-empty-files.trail.jsonl` — classes: W, R1, R2, strict: invalid with 2 assertion(s), tolerant: 2 diagnostic(s)
 - `invalid-schema/tool-call-file-patch-file-missing-diff.trail.jsonl` — classes: W, R1, R2, strict: invalid with 2 assertion(s), tolerant: 2 diagnostic(s)
 - `invalid-schema/tool-call-missing-args-path.trail.jsonl` — classes: W, R1, R2, strict: invalid with 2 assertion(s), tolerant: 2 diagnostic(s)
+- `invalid-schema/tool-call-truncated-missing-args-size.trail.jsonl` — classes: W, R1, R2, strict: invalid with 2 assertion(s), tolerant: 2 diagnostic(s)
 - `invalid-schema/tool-call-usage-missing-output.trail.jsonl` — classes: W, R1, R2, strict: invalid with 1 assertion(s), tolerant: 1 diagnostic(s)
 - `invalid-schema/tool-result-attachment-extra-field.trail.jsonl` — classes: W, R1, R2, strict: invalid with 1 assertion(s), tolerant: 2 diagnostic(s)
 - `invalid-schema/tool-result-meta-file-read-range-wrong-length.trail.jsonl` — classes: W, R1, R2, strict: invalid with 1 assertion(s), tolerant: 1 diagnostic(s)

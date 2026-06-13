@@ -576,6 +576,18 @@ export type AgentMessageUsage1 = (
    */
   context_window_tokens?: number;
 };
+/**
+ * Any JSON value.
+ */
+export type JsonValue =
+  | null
+  | boolean
+  | number
+  | string
+  | JsonValue[]
+  | {
+      [k: string]: JsonValue;
+    };
 
 /**
  * Optional trail envelope record (line 1). File-level metadata; not part of the event graph. When present, MUST appear at line 1 and the first session header MUST follow on line 2. At most one per file. Multi-session files (spec §9.6) carry one envelope followed by N session groups in file order.
@@ -1897,65 +1909,240 @@ export interface CommandInvoke {
   [k: string]: unknown | undefined;
 }
 export interface CapabilityChange {
+  /**
+   * Capability change event discriminator.
+   */
   type?: "capability_change";
-  payload?: {
-    scope: (
-      | ("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin")
-      | {
-          [k: string]: unknown | undefined;
-        }
-    ) &
-      string;
-    reason: (
-      | (
-          | "initial"
-          | "registered"
-          | "deregistered"
-          | "connected"
-          | "disconnected"
-          | "loaded"
-          | "unloaded"
-          | "error"
-          | "instructions_updated"
-        )
-      | {
-          [k: string]: unknown | undefined;
-        }
-    ) &
-      string;
-    /**
-     * @minItems 1
-     */
-    added?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
-    /**
-     * @minItems 1
-     */
-    removed?: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
-    /**
-     * @minItems 1
-     */
-    changed?: [CapabilityChangedItem, ...CapabilityChangedItem[]];
-    /**
-     * @minItems 1
-     */
-    snapshot?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
-  } & (
+  /**
+   * Capability change event payload.
+   */
+  payload?:
     | {
+        /**
+         * Capability domain changed by this event.
+         */
+        scope: (
+          | ("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin")
+          | {
+              [k: string]: unknown | undefined;
+            }
+        ) &
+          string;
+        /**
+         * Reason the capability set changed.
+         */
+        reason: (
+          | (
+              | "initial"
+              | "registered"
+              | "deregistered"
+              | "connected"
+              | "disconnected"
+              | "loaded"
+              | "unloaded"
+              | "error"
+              | "instructions_updated"
+            )
+          | {
+              [k: string]: unknown | undefined;
+            }
+        ) &
+          string;
+        /**
+         * Capabilities added by this change.
+         *
+         * @minItems 1
+         */
         added: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+        /**
+         * Capabilities removed by this change.
+         *
+         * @minItems 1
+         */
+        removed?: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
+        /**
+         * Capabilities modified by this change.
+         *
+         * @minItems 1
+         */
+        changed?: [CapabilityChangedItem, ...CapabilityChangedItem[]];
+        /**
+         * Full capability snapshot after this change.
+         *
+         * @minItems 1
+         */
+        snapshot?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
       }
     | {
+        /**
+         * Capability domain changed by this event.
+         */
+        scope: (
+          | ("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin")
+          | {
+              [k: string]: unknown | undefined;
+            }
+        ) &
+          string;
+        /**
+         * Reason the capability set changed.
+         */
+        reason: (
+          | (
+              | "initial"
+              | "registered"
+              | "deregistered"
+              | "connected"
+              | "disconnected"
+              | "loaded"
+              | "unloaded"
+              | "error"
+              | "instructions_updated"
+            )
+          | {
+              [k: string]: unknown | undefined;
+            }
+        ) &
+          string;
+        /**
+         * Capabilities added by this change.
+         *
+         * @minItems 1
+         */
+        added?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+        /**
+         * Capabilities removed by this change.
+         *
+         * @minItems 1
+         */
         removed: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
+        /**
+         * Capabilities modified by this change.
+         *
+         * @minItems 1
+         */
+        changed?: [CapabilityChangedItem, ...CapabilityChangedItem[]];
+        /**
+         * Full capability snapshot after this change.
+         *
+         * @minItems 1
+         */
+        snapshot?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
       }
     | {
+        /**
+         * Capability domain changed by this event.
+         */
+        scope: (
+          | ("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin")
+          | {
+              [k: string]: unknown | undefined;
+            }
+        ) &
+          string;
+        /**
+         * Reason the capability set changed.
+         */
+        reason: (
+          | (
+              | "initial"
+              | "registered"
+              | "deregistered"
+              | "connected"
+              | "disconnected"
+              | "loaded"
+              | "unloaded"
+              | "error"
+              | "instructions_updated"
+            )
+          | {
+              [k: string]: unknown | undefined;
+            }
+        ) &
+          string;
+        /**
+         * Capabilities added by this change.
+         *
+         * @minItems 1
+         */
+        added?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+        /**
+         * Capabilities removed by this change.
+         *
+         * @minItems 1
+         */
+        removed?: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
+        /**
+         * Capabilities modified by this change.
+         *
+         * @minItems 1
+         */
         changed: [CapabilityChangedItem, ...CapabilityChangedItem[]];
+        /**
+         * Full capability snapshot after this change.
+         *
+         * @minItems 1
+         */
+        snapshot?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
       }
     | {
+        /**
+         * Capability domain changed by this event.
+         */
+        scope: (
+          | ("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin")
+          | {
+              [k: string]: unknown | undefined;
+            }
+        ) &
+          string;
+        /**
+         * Reason the capability set changed.
+         */
+        reason: (
+          | (
+              | "initial"
+              | "registered"
+              | "deregistered"
+              | "connected"
+              | "disconnected"
+              | "loaded"
+              | "unloaded"
+              | "error"
+              | "instructions_updated"
+            )
+          | {
+              [k: string]: unknown | undefined;
+            }
+        ) &
+          string;
+        /**
+         * Capabilities added by this change.
+         *
+         * @minItems 1
+         */
+        added?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+        /**
+         * Capabilities removed by this change.
+         *
+         * @minItems 1
+         */
+        removed?: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
+        /**
+         * Capabilities modified by this change.
+         *
+         * @minItems 1
+         */
+        changed?: [CapabilityChangedItem, ...CapabilityChangedItem[]];
+        /**
+         * Full capability snapshot after this change.
+         *
+         * @minItems 1
+         */
         snapshot: [CapabilityAddedItem, ...CapabilityAddedItem[]];
-      }
-  );
+      };
   [k: string]: unknown | undefined;
 }
-
 export interface CapabilityAddedItem {
   /**
    * Name of the added capability.
@@ -1986,11 +2173,27 @@ export interface CapabilityChangedItem {
   /**
    * Previous capability field value.
    */
-  from?: unknown;
+  from?:
+    | null
+    | boolean
+    | number
+    | string
+    | JsonValue[]
+    | {
+        [k: string]: JsonValue;
+      };
   /**
-   * New capability field value.
+   * Any JSON value.
    */
-  to?: unknown;
+  to?:
+    | null
+    | boolean
+    | number
+    | string
+    | JsonValue[]
+    | {
+        [k: string]: JsonValue;
+      };
 }
 export interface SessionMetadataUpdate {
   /**
@@ -2073,13 +2276,29 @@ export interface SessionMetadataUpdate {
          */
         field: string;
         /**
-         * New session metadata value.
+         * Any JSON value.
          */
-        value: unknown;
+        value:
+          | null
+          | boolean
+          | number
+          | string
+          | JsonValue[]
+          | {
+              [k: string]: JsonValue;
+            };
         /**
-         * Previous session metadata value when known.
+         * Any JSON value.
          */
-        previous_value?: unknown;
+        previous_value?:
+          | null
+          | boolean
+          | number
+          | string
+          | JsonValue[]
+          | {
+              [k: string]: JsonValue;
+            };
         /**
          * Reason the session metadata changed.
          */

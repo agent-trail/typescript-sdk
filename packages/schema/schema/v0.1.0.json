@@ -71,6 +71,35 @@
       "pattern": "^[a-f0-9]{64}$",
       "description": "SHA-256 hash as lowercase hex (64 chars)"
     },
+    "jsonValue": {
+      "description": "Any JSON value.",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/jsonValue"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/jsonValue"
+          }
+        }
+      ]
+    },
 
     "agentName": {
       "oneOf": [
@@ -125,6 +154,381 @@
         "subagent_invoke",
         "other"
       ]
+    },
+    "toolCallFileReadArgs": {
+      "type": "object",
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Path of the file to read."
+        },
+        "range": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "Optional inclusive line range requested from the file."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Arguments for a file read tool call."
+    },
+    "toolCallFileWriteArgs": {
+      "type": "object",
+      "required": [
+        "path",
+        "content"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Path of the file to write."
+        },
+        "content": {
+          "type": "string",
+          "description": "Full file content to write."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Arguments for a file write tool call."
+    },
+    "toolCallFileEditArgs": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "path",
+            "diff"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path of the file to edit."
+            },
+            "diff": {
+              "type": "string",
+              "description": "Patch or diff content describing the edit."
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "path",
+            "old",
+            "new"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path of the file to edit."
+            },
+            "old": {
+              "type": "string",
+              "description": "Original text expected in the target file."
+            },
+            "new": {
+              "type": "string",
+              "description": "Replacement text for the target file."
+            },
+            "replace_all": {
+              "type": "boolean",
+              "description": "Whether all matching occurrences are replaced."
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "Arguments for a file edit tool call."
+    },
+    "toolCallFilePatchArgs": {
+      "type": "object",
+      "required": [
+        "files"
+      ],
+      "properties": {
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "diff"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path of the file changed by this patch entry."
+              },
+              "diff": {
+                "type": "string",
+                "description": "Patch content for this file."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Files changed by this patch request."
+        },
+        "atomic": {
+          "type": "boolean",
+          "description": "Whether the patch should be applied atomically."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Arguments for an atomic multi-file patch tool call."
+    },
+    "toolCallFileListArgs": {
+      "type": "object",
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Directory path to list."
+        },
+        "recursive": {
+          "type": "boolean",
+          "description": "Whether nested directories are included."
+        },
+        "glob": {
+          "type": "string",
+          "description": "Optional glob filter for listed paths."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Arguments for a file listing tool call."
+    },
+    "toolCallFileSearchArgs": {
+      "type": "object",
+      "required": [
+        "query"
+      ],
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Search query or pattern."
+        },
+        "path": {
+          "type": "string",
+          "description": "Root path to search within."
+        },
+        "glob": {
+          "type": "string",
+          "description": "Optional glob filter for searched paths."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Arguments for a file search tool call."
+    },
+    "toolCallShellCommandArgs": {
+      "type": "object",
+      "required": [
+        "command"
+      ],
+      "properties": {
+        "command": {
+          "type": "string",
+          "description": "Shell command requested by the agent."
+        },
+        "cwd": {
+          "type": "string",
+          "description": "Working directory for the shell command."
+        },
+        "timeout": {
+          "type": "integer",
+          "description": "Requested command timeout."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Arguments for a shell command tool call."
+    },
+    "toolCallShellOutputArgs": {
+      "type": "object",
+      "properties": {
+        "command_id": {
+          "type": "string",
+          "description": "Source command identifier whose output is requested."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Arguments for polling shell command output."
+    },
+    "toolCallShellInputArgs": {
+      "type": "object",
+      "required": [
+        "input"
+      ],
+      "properties": {
+        "input": {
+          "type": "string",
+          "description": "Input text sent to the running command."
+        },
+        "session_id": {
+          "type": "string",
+          "description": "Source shell session identifier."
+        },
+        "command_id": {
+          "type": "string",
+          "description": "Source command identifier receiving input."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Arguments for sending input to a running shell command."
+    },
+    "toolCallMcpCallArgs": {
+      "type": "object",
+      "required": [
+        "server",
+        "tool"
+      ],
+      "properties": {
+        "server": {
+          "type": "string",
+          "description": "MCP server name or identifier."
+        },
+        "tool": {
+          "type": "string",
+          "description": "MCP tool name invoked on the server."
+        },
+        "args": {
+          "type": "object",
+          "description": "Tool-specific argument object passed to the MCP tool."
+        },
+        "headers": {
+          "type": "object",
+          "description": "Request headers supplied to the MCP call."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Arguments for an MCP tool call."
+    },
+    "toolCallWebFetchArgs": {
+      "type": "object",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "URL requested by the fetch."
+        },
+        "method": {
+          "type": "string",
+          "description": "HTTP method requested by the fetch."
+        },
+        "headers": {
+          "type": "object",
+          "description": "Request headers supplied to the fetch."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Arguments for a web fetch tool call."
+    },
+    "toolCallWebSearchArgs": {
+      "type": "object",
+      "required": [
+        "query"
+      ],
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Search query submitted to the web search tool."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Arguments for a web search tool call."
+    },
+    "toolCallToolSearchArgs": {
+      "type": "object",
+      "required": [
+        "query"
+      ],
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Search query used to discover tools."
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of tool results requested."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Arguments for a tool discovery search."
+    },
+    "toolCallNotebookEditArgs": {
+      "type": "object",
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Notebook path to edit."
+        },
+        "cell_id": {
+          "type": "string",
+          "description": "Notebook cell identifier to edit."
+        },
+        "diff": {
+          "type": "string",
+          "description": "Patch content for the notebook edit."
+        },
+        "content": {
+          "type": "string",
+          "description": "Replacement notebook cell content."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Arguments for a notebook edit tool call."
+    },
+    "toolCallSubagentInvokeArgs": {
+      "type": "object",
+      "required": [
+        "task"
+      ],
+      "properties": {
+        "task": {
+          "type": "string",
+          "description": "Task prompt or instruction given to the subagent."
+        },
+        "agent_type": {
+          "type": "string",
+          "description": "Requested subagent type or role."
+        },
+        "session_id": {
+          "$ref": "#/$defs/id",
+          "description": "Child session identifier when known."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Arguments for invoking a subagent."
+    },
+    "toolCallOtherArgs": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Tool name reported by the source agent."
+        },
+        "args": {
+          "type": "object",
+          "description": "Opaque arguments for the unclassified tool call."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Opaque arguments for the unclassified tool call."
     },
 
     "taskPlanStatus": {
@@ -390,6 +794,25 @@
       "anyOf": [
         { "enum": ["eof_with_open_tool_calls", "process_terminated", "truncated", "user_abort"] },
         { "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$" }
+      ]
+    },
+    "toolCallAbortedReason": {
+      "description": "Why execution stopped before a normal tool_result.",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "user_interrupt",
+            "hook_blocked",
+            "timeout",
+            "permission_denied",
+            "runtime_error"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$"
+        }
       ]
     },
 
@@ -751,359 +1174,1446 @@
         "properties": {
           "type": { "const": "tool_call", "description": "Tool call event discriminator." },
           "payload": {
-            "type": "object",
-            "required": ["tool", "args"],
-            "properties": {
-              "tool": { "$ref": "#/$defs/toolKind", "description": "Canonical kind of tool requested by the agent." },
-              "args": { "type": "object", "description": "Arguments supplied to the requested tool." },
-              "usage": { "$ref": "#/$defs/agentMessageUsage", "description": "Token usage attached to this tool call when it is the first usage-capable derived entry." },
-              "truncated": { "type": "boolean", "description": "Whether tool-call arguments were truncated before emission." },
-              "args_size": {
-                "type": "integer",
-                "minimum": 0,
-                "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
-              },
-              "overflow_ref": {
-                "oneOf": [
-                  { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
-                  { "type": "null" }
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args"
                 ],
-                "description": "Content-addressed reference to full arguments when arguments are truncated."
-              }
-            },
-            "additionalProperties": false,
-            "dependentSchemas": {
-              "truncated": {
-                "if": {
-                  "properties": {
-                    "truncated": { "const": true }
+                "properties": {
+                  "tool": {
+                    "const": "file_read",
+                    "description": "Canonical kind of tool requested by the agent."
                   },
-                  "required": ["truncated"]
+                  "args": {
+                    "$ref": "#/$defs/toolCallFileReadArgs",
+                    "description": "Arguments for a file read tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": false,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
+                  }
                 },
-                "then": {
-                  "properties": {
-                    "args_size": {
-                      "type": "integer",
-                      "minimum": 0
-                    }
+                "additionalProperties": false,
+                "description": "Non-truncated file read tool call payload."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args",
+                  "truncated",
+                  "args_size"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "file_read",
+                    "description": "Canonical kind of tool requested by the agent."
                   },
-                  "required": ["args_size"]
-                }
-              }
-            },
-            "allOf": [
-              {
-                "if": { "properties": { "tool": { "const": "file_read" } }, "required": ["tool"] },
-                "then": {
-                  "properties": {
-                    "args": {
-                      "type": "object",
-                      "required": ["path"],
-                      "properties": {
-                        "path": { "type": "string", "description": "Path of the file to read." },
-                        "range": {
-                          "type": "array",
-                          "items": { "type": "integer" },
-                          "minItems": 2,
-                          "maxItems": 2,
-                          "description": "Optional inclusive line range requested from the file."
-                        }
+                  "args": {
+                    "$ref": "#/$defs/toolCallFileReadArgs",
+                    "description": "Arguments for a file read tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": true,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
                       },
-                      "additionalProperties": false,
-                      "description": "Arguments for a file read tool call."
-                    }
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
                   }
-                }
+                },
+                "additionalProperties": false,
+                "description": "Truncated file read tool call payload."
               },
               {
-                "if": { "properties": { "tool": { "const": "file_write" } }, "required": ["tool"] },
-                "then": {
-                  "properties": {
-                    "args": {
-                      "type": "object",
-                      "required": ["path", "content"],
-                      "properties": {
-                        "path": { "type": "string", "description": "Path of the file to write." },
-                        "content": { "type": "string", "description": "Full file content to write." }
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "file_write",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallFileWriteArgs",
+                    "description": "Arguments for a file write tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": false,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
                       },
-                      "additionalProperties": false,
-                      "description": "Arguments for a file write tool call."
-                    }
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
                   }
-                }
+                },
+                "additionalProperties": false,
+                "description": "Non-truncated file write tool call payload."
               },
               {
-                "if": { "properties": { "tool": { "const": "file_edit" } }, "required": ["tool"] },
-                "then": {
-                  "properties": {
-                    "args": {
-                      "oneOf": [
-                        {
-                          "type": "object",
-                          "required": ["path", "diff"],
-                          "properties": {
-                            "path": { "type": "string", "description": "Path of the file to edit." },
-                            "diff": { "type": "string", "description": "Patch or diff content describing the edit." }
-                          },
-                          "additionalProperties": false
-                        },
-                        {
-                          "type": "object",
-                          "required": ["path", "old", "new"],
-                          "properties": {
-                            "path": { "type": "string", "description": "Path of the file to edit." },
-                            "old": { "type": "string", "description": "Original text expected in the target file." },
-                            "new": { "type": "string", "description": "Replacement text for the target file." },
-                            "replace_all": { "type": "boolean", "description": "Whether all matching occurrences are replaced." }
-                          },
-                          "additionalProperties": false
-                        }
-                      ],
-                      "description": "Arguments for a file edit tool call."
-                    }
-                  }
-                }
-              },
-              {
-                "if": { "properties": { "tool": { "const": "file_patch" } }, "required": ["tool"] },
-                "then": {
-                  "properties": {
-                    "args": {
-                      "type": "object",
-                      "required": ["files"],
-                      "properties": {
-                        "files": {
-                          "type": "array",
-                          "minItems": 1,
-                          "items": {
-                            "type": "object",
-                            "required": ["path", "diff"],
-                            "properties": {
-                              "path": { "type": "string", "description": "Path of the file changed by this patch entry." },
-                              "diff": { "type": "string", "description": "Patch content for this file." }
-                            },
-                            "additionalProperties": false
-                          },
-                          "description": "Files changed by this patch request."
-                        },
-                        "atomic": { "type": "boolean", "description": "Whether the patch should be applied atomically." }
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args",
+                  "truncated",
+                  "args_size"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "file_write",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallFileWriteArgs",
+                    "description": "Arguments for a file write tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": true,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
                       },
-                      "additionalProperties": false,
-                      "description": "Arguments for an atomic multi-file patch tool call."
-                    }
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
                   }
-                }
+                },
+                "additionalProperties": false,
+                "description": "Truncated file write tool call payload."
               },
               {
-                "if": { "properties": { "tool": { "const": "file_list" } }, "required": ["tool"] },
-                "then": {
-                  "properties": {
-                    "args": {
-                      "type": "object",
-                      "required": ["path"],
-                      "properties": {
-                        "path": { "type": "string", "description": "Directory path to list." },
-                        "recursive": { "type": "boolean", "description": "Whether nested directories are included." },
-                        "glob": { "type": "string", "description": "Optional glob filter for listed paths." }
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "file_edit",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallFileEditArgs",
+                    "description": "Arguments for a file edit tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": false,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
                       },
-                      "additionalProperties": false,
-                      "description": "Arguments for a file listing tool call."
-                    }
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
                   }
-                }
+                },
+                "additionalProperties": false,
+                "description": "Non-truncated file edit tool call payload."
               },
               {
-                "if": { "properties": { "tool": { "const": "file_search" } }, "required": ["tool"] },
-                "then": {
-                  "properties": {
-                    "args": {
-                      "type": "object",
-                      "required": ["query"],
-                      "properties": {
-                        "query": { "type": "string", "description": "Search query or pattern." },
-                        "path": { "type": "string", "description": "Root path to search within." },
-                        "glob": { "type": "string", "description": "Optional glob filter for searched paths." }
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args",
+                  "truncated",
+                  "args_size"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "file_edit",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallFileEditArgs",
+                    "description": "Arguments for a file edit tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": true,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
                       },
-                      "additionalProperties": false,
-                      "description": "Arguments for a file search tool call."
-                    }
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
                   }
-                }
+                },
+                "additionalProperties": false,
+                "description": "Truncated file edit tool call payload."
               },
               {
-                "if": { "properties": { "tool": { "const": "shell_command" } }, "required": ["tool"] },
-                "then": {
-                  "properties": {
-                    "args": {
-                      "type": "object",
-                      "required": ["command"],
-                      "properties": {
-                        "command": { "type": "string", "description": "Shell command requested by the agent." },
-                        "cwd": { "type": "string", "description": "Working directory for the shell command." },
-                        "timeout": { "type": "integer", "description": "Requested command timeout." }
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "file_patch",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallFilePatchArgs",
+                    "description": "Arguments for an atomic multi-file patch tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": false,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
                       },
-                      "additionalProperties": false,
-                      "description": "Arguments for a shell command tool call."
-                    }
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
                   }
-                }
+                },
+                "additionalProperties": false,
+                "description": "Non-truncated file patch tool call payload."
               },
               {
-                "if": { "properties": { "tool": { "const": "shell_output" } }, "required": ["tool"] },
-                "then": {
-                  "properties": {
-                    "args": {
-                      "type": "object",
-                      "properties": {
-                        "command_id": { "type": "string", "description": "Source command identifier whose output is requested." }
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args",
+                  "truncated",
+                  "args_size"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "file_patch",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallFilePatchArgs",
+                    "description": "Arguments for an atomic multi-file patch tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": true,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
                       },
-                      "additionalProperties": false,
-                      "description": "Arguments for polling shell command output."
-                    }
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
                   }
-                }
+                },
+                "additionalProperties": false,
+                "description": "Truncated file patch tool call payload."
               },
               {
-                "if": { "properties": { "tool": { "const": "shell_input" } }, "required": ["tool"] },
-                "then": {
-                  "properties": {
-                    "args": {
-                      "type": "object",
-                      "required": ["input"],
-                      "properties": {
-                        "input": { "type": "string", "description": "Input text sent to the running command." },
-                        "session_id": { "type": "string", "description": "Source shell session identifier." },
-                        "command_id": { "type": "string", "description": "Source command identifier receiving input." }
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "file_list",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallFileListArgs",
+                    "description": "Arguments for a file listing tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": false,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
                       },
-                      "additionalProperties": false,
-                      "description": "Arguments for sending input to a running shell command."
-                    }
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
                   }
-                }
+                },
+                "additionalProperties": false,
+                "description": "Non-truncated file list tool call payload."
               },
               {
-                "if": { "properties": { "tool": { "const": "mcp_call" } }, "required": ["tool"] },
-                "then": {
-                  "properties": {
-                    "args": {
-                      "type": "object",
-                      "required": ["server", "tool"],
-                      "properties": {
-                        "server": { "type": "string", "description": "MCP server name or identifier." },
-                        "tool": { "type": "string", "description": "MCP tool name invoked on the server." },
-                        "args": { "type": "object", "description": "Tool-specific argument object passed to the MCP tool." },
-                        "headers": { "type": "object", "description": "Request headers supplied to the MCP call." }
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args",
+                  "truncated",
+                  "args_size"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "file_list",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallFileListArgs",
+                    "description": "Arguments for a file listing tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": true,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
                       },
-                      "additionalProperties": false,
-                      "description": "Arguments for an MCP tool call."
-                    }
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
                   }
-                }
+                },
+                "additionalProperties": false,
+                "description": "Truncated file list tool call payload."
               },
               {
-                "if": { "properties": { "tool": { "const": "web_fetch" } }, "required": ["tool"] },
-                "then": {
-                  "properties": {
-                    "args": {
-                      "type": "object",
-                      "required": ["url"],
-                      "properties": {
-                        "url": { "type": "string", "description": "URL requested by the fetch." },
-                        "method": { "type": "string", "description": "HTTP method requested by the fetch." },
-                        "headers": { "type": "object", "description": "Request headers supplied to the fetch." }
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "file_search",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallFileSearchArgs",
+                    "description": "Arguments for a file search tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": false,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
                       },
-                      "additionalProperties": false,
-                      "description": "Arguments for a web fetch tool call."
-                    }
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
                   }
-                }
+                },
+                "additionalProperties": false,
+                "description": "Non-truncated file search tool call payload."
               },
               {
-                "if": { "properties": { "tool": { "const": "web_search" } }, "required": ["tool"] },
-                "then": {
-                  "properties": {
-                    "args": {
-                      "type": "object",
-                      "required": ["query"],
-                      "properties": {
-                        "query": { "type": "string", "description": "Search query submitted to the web search tool." }
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args",
+                  "truncated",
+                  "args_size"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "file_search",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallFileSearchArgs",
+                    "description": "Arguments for a file search tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": true,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
                       },
-                      "additionalProperties": false,
-                      "description": "Arguments for a web search tool call."
-                    }
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
                   }
-                }
+                },
+                "additionalProperties": false,
+                "description": "Truncated file search tool call payload."
               },
               {
-                "if": { "properties": { "tool": { "const": "tool_search" } }, "required": ["tool"] },
-                "then": {
-                  "properties": {
-                    "args": {
-                      "type": "object",
-                      "required": ["query"],
-                      "properties": {
-                        "query": { "type": "string", "description": "Search query used to discover tools." },
-                        "limit": { "type": "integer", "description": "Maximum number of tool results requested." }
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "shell_command",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallShellCommandArgs",
+                    "description": "Arguments for a shell command tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": false,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
                       },
-                      "additionalProperties": false,
-                      "description": "Arguments for a tool discovery search."
-                    }
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
                   }
-                }
+                },
+                "additionalProperties": false,
+                "description": "Non-truncated shell command tool call payload."
               },
               {
-                "if": { "properties": { "tool": { "const": "notebook_edit" } }, "required": ["tool"] },
-                "then": {
-                  "properties": {
-                    "args": {
-                      "type": "object",
-                      "required": ["path"],
-                      "properties": {
-                        "path": { "type": "string", "description": "Notebook path to edit." },
-                        "cell_id": { "type": "string", "description": "Notebook cell identifier to edit." },
-                        "diff": { "type": "string", "description": "Patch content for the notebook edit." },
-                        "content": { "type": "string", "description": "Replacement notebook cell content." }
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args",
+                  "truncated",
+                  "args_size"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "shell_command",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallShellCommandArgs",
+                    "description": "Arguments for a shell command tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": true,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
                       },
-                      "additionalProperties": false,
-                      "description": "Arguments for a notebook edit tool call."
-                    }
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
                   }
-                }
+                },
+                "additionalProperties": false,
+                "description": "Truncated shell command tool call payload."
               },
               {
-                "if": { "properties": { "tool": { "const": "subagent_invoke" } }, "required": ["tool"] },
-                "then": {
-                  "properties": {
-                    "args": {
-                      "type": "object",
-                      "required": ["task"],
-                      "properties": {
-                        "task": { "type": "string", "description": "Task prompt or instruction given to the subagent." },
-                        "agent_type": { "type": "string", "description": "Requested subagent type or role." },
-                      "session_id": { "$ref": "#/$defs/id", "description": "Child session identifier when known." }
-                    },
-                      "additionalProperties": false,
-                      "description": "Arguments for invoking a subagent."
-                    }
-                  }
-                }
-              },
-              {
-                "if": { "properties": { "tool": { "const": "other" } }, "required": ["tool"] },
-                "then": {
-                  "properties": {
-                    "args": {
-                      "type": "object",
-                      "required": ["name"],
-                      "properties": {
-                        "name": { "type": "string", "description": "Tool name reported by the source agent." },
-                        "args": { "type": "object", "description": "Opaque arguments for the unclassified tool call." }
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "shell_output",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallShellOutputArgs",
+                    "description": "Arguments for polling shell command output."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": false,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
                       },
-                      "additionalProperties": false,
-                      "description": "Opaque arguments for the unclassified tool call."
-                    }
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
                   }
-                }
+                },
+                "additionalProperties": false,
+                "description": "Non-truncated shell output tool call payload."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args",
+                  "truncated",
+                  "args_size"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "shell_output",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallShellOutputArgs",
+                    "description": "Arguments for polling shell command output."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": true,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Truncated shell output tool call payload."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "shell_input",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallShellInputArgs",
+                    "description": "Arguments for sending input to a running shell command."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": false,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Non-truncated shell input tool call payload."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args",
+                  "truncated",
+                  "args_size"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "shell_input",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallShellInputArgs",
+                    "description": "Arguments for sending input to a running shell command."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": true,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Truncated shell input tool call payload."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "mcp_call",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallMcpCallArgs",
+                    "description": "Arguments for an MCP tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": false,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Non-truncated mcp call tool call payload."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args",
+                  "truncated",
+                  "args_size"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "mcp_call",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallMcpCallArgs",
+                    "description": "Arguments for an MCP tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": true,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Truncated mcp call tool call payload."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "web_fetch",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallWebFetchArgs",
+                    "description": "Arguments for a web fetch tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": false,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Non-truncated web fetch tool call payload."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args",
+                  "truncated",
+                  "args_size"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "web_fetch",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallWebFetchArgs",
+                    "description": "Arguments for a web fetch tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": true,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Truncated web fetch tool call payload."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "web_search",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallWebSearchArgs",
+                    "description": "Arguments for a web search tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": false,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Non-truncated web search tool call payload."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args",
+                  "truncated",
+                  "args_size"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "web_search",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallWebSearchArgs",
+                    "description": "Arguments for a web search tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": true,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Truncated web search tool call payload."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "tool_search",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallToolSearchArgs",
+                    "description": "Arguments for a tool discovery search."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": false,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Non-truncated tool search tool call payload."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args",
+                  "truncated",
+                  "args_size"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "tool_search",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallToolSearchArgs",
+                    "description": "Arguments for a tool discovery search."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": true,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Truncated tool search tool call payload."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "notebook_edit",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallNotebookEditArgs",
+                    "description": "Arguments for a notebook edit tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": false,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Non-truncated notebook edit tool call payload."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args",
+                  "truncated",
+                  "args_size"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "notebook_edit",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallNotebookEditArgs",
+                    "description": "Arguments for a notebook edit tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": true,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Truncated notebook edit tool call payload."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "subagent_invoke",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallSubagentInvokeArgs",
+                    "description": "Arguments for invoking a subagent."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": false,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Non-truncated subagent invoke tool call payload."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args",
+                  "truncated",
+                  "args_size"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "subagent_invoke",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallSubagentInvokeArgs",
+                    "description": "Arguments for invoking a subagent."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": true,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Truncated subagent invoke tool call payload."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "other",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallOtherArgs",
+                    "description": "Opaque arguments for the unclassified tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": false,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Non-truncated other tool call payload."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "tool",
+                  "args",
+                  "truncated",
+                  "args_size"
+                ],
+                "properties": {
+                  "tool": {
+                    "const": "other",
+                    "description": "Canonical kind of tool requested by the agent."
+                  },
+                  "args": {
+                    "$ref": "#/$defs/toolCallOtherArgs",
+                    "description": "Opaque arguments for the unclassified tool call."
+                  },
+                  "usage": {
+                    "$ref": "#/$defs/agentMessageUsage",
+                    "description": "Token usage attached to this tool call when it is the first usage-capable derived entry."
+                  },
+                  "truncated": {
+                    "const": true,
+                    "description": "Whether tool-call arguments were truncated before emission."
+                  },
+                  "args_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "UTF-8 byte length of the original args object before truncation. Required when truncated is true."
+                  },
+                  "overflow_ref": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^sha256:[a-f0-9]{64}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Content-addressed reference to full arguments when arguments are truncated."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Truncated other tool call payload."
               }
             ],
             "description": "Tool call event payload."
@@ -1259,67 +2769,65 @@
         "properties": {
           "type": { "const": "tool_call_aborted", "description": "Tool-call abort event discriminator." },
           "payload": {
-            "type": "object",
-            "required": ["scope", "reason"],
-            "properties": {
-              "scope": {
-                "description": "Abort granularity. tool_call aborts reference a specific tool_call by for_id; turn aborts describe a broader turn-level stop when the source cannot identify one call.",
-                "oneOf": [
-                  { "type": "string", "enum": ["tool_call", "turn"] },
-                  {
-                    "type": "string",
-                    "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$"
-                  }
-                ]
-              },
-              "for_id": { "$ref": "#/$defs/id", "description": "Tool call ID affected by this abort." },
-              "reason": {
-                "description": "Why execution stopped before a normal tool_result.",
-                "oneOf": [
-                  {
-                    "type": "string",
-                    "enum": [
-                      "user_interrupt",
-                      "hook_blocked",
-                      "timeout",
-                      "permission_denied",
-                      "runtime_error"
-                    ]
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$"
-                  }
-                ]
-              },
-              "blocked_by": { "type": "string", "description": "Source component or policy that blocked the tool call." }
-            },
-            "additionalProperties": false,
-            "allOf": [
+            "oneOf": [
               {
-                "if": {
-                  "properties": {
-                    "scope": { "const": "tool_call" }
+                "type": "object",
+                "required": [
+                  "scope",
+                  "for_id",
+                  "reason"
+                ],
+                "properties": {
+                  "scope": {
+                    "const": "tool_call",
+                    "description": "Abort granularity. tool_call aborts reference a specific tool_call by for_id; turn aborts describe a broader turn-level stop when the source cannot identify one call."
                   },
-                  "required": ["scope"]
-                },
-                "then": {
-                  "required": ["for_id"],
-                  "properties": {
-                    "for_id": { "$ref": "#/$defs/id", "description": "Tool call ID affected by this abort." }
+                  "for_id": {
+                    "$ref": "#/$defs/id",
+                    "description": "Tool call ID affected by this abort."
+                  },
+                  "reason": {
+                    "$ref": "#/$defs/toolCallAbortedReason",
+                    "description": "Why execution stopped before a normal tool_result."
+                  },
+                  "blocked_by": {
+                    "type": "string",
+                    "description": "Source component or policy that blocked the tool call."
                   }
-                }
+                },
+                "additionalProperties": false,
+                "description": "Tool-call-scoped abort event payload."
               },
               {
-                "if": {
-                  "properties": {
-                    "scope": { "not": { "const": "tool_call" } }
+                "type": "object",
+                "required": [
+                  "scope",
+                  "reason"
+                ],
+                "properties": {
+                  "scope": {
+                    "oneOf": [
+                      {
+                        "const": "turn"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$"
+                      }
+                    ],
+                    "description": "Abort granularity. tool_call aborts reference a specific tool_call by for_id; turn aborts describe a broader turn-level stop when the source cannot identify one call."
                   },
-                  "required": ["scope"]
+                  "reason": {
+                    "$ref": "#/$defs/toolCallAbortedReason",
+                    "description": "Why execution stopped before a normal tool_result."
+                  },
+                  "blocked_by": {
+                    "type": "string",
+                    "description": "Source component or policy that blocked the tool call."
+                  }
                 },
-                "then": {
-                  "not": { "required": ["for_id"] }
-                }
+                "additionalProperties": false,
+                "description": "Turn-scoped or vendor-scoped abort event payload."
               }
             ],
             "description": "Tool-call abort event payload."
@@ -1807,16 +3315,30 @@
         "properties": {
           "type": { "const": "capability_change", "description": "Capability change event discriminator." },
           "payload": {
-            "allOf": [
+            "anyOf": [
               {
                 "type": "object",
-                "required": ["scope", "reason"],
+                "required": [
+                  "scope",
+                  "reason",
+                  "added"
+                ],
                 "properties": {
                   "scope": {
                     "type": "string",
                     "anyOf": [
-                      { "enum": ["tool", "skill", "mcp_server", "mcp_tool", "plugin"] },
-                      { "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$" }
+                      {
+                        "enum": [
+                          "tool",
+                          "skill",
+                          "mcp_server",
+                          "mcp_tool",
+                          "plugin"
+                        ]
+                      },
+                      {
+                        "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$"
+                      }
                     ],
                     "description": "Capability domain changed by this event."
                   },
@@ -1836,44 +3358,299 @@
                           "instructions_updated"
                         ]
                       },
-                      { "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$" }
+                      {
+                        "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$"
+                      }
                     ],
                     "description": "Reason the capability set changed."
                   },
                   "added": {
                     "type": "array",
                     "minItems": 1,
-                    "items": { "$ref": "#/$defs/capabilityAddedItem" },
+                    "items": {
+                      "$ref": "#/$defs/capabilityAddedItem"
+                    },
                     "description": "Capabilities added by this change."
                   },
                   "removed": {
                     "type": "array",
                     "minItems": 1,
-                    "items": { "$ref": "#/$defs/capabilityRemovedItem" },
+                    "items": {
+                      "$ref": "#/$defs/capabilityRemovedItem"
+                    },
                     "description": "Capabilities removed by this change."
                   },
                   "changed": {
                     "type": "array",
                     "minItems": 1,
-                    "items": { "$ref": "#/$defs/capabilityChangedItem" },
+                    "items": {
+                      "$ref": "#/$defs/capabilityChangedItem"
+                    },
                     "description": "Capabilities modified by this change."
                   },
                   "snapshot": {
                     "type": "array",
                     "minItems": 1,
-                    "items": { "$ref": "#/$defs/capabilityAddedItem" },
+                    "items": {
+                      "$ref": "#/$defs/capabilityAddedItem"
+                    },
                     "description": "Full capability snapshot after this change."
                   }
                 },
-                "additionalProperties": false
+                "additionalProperties": false,
+                "description": "Capability change payload with added."
               },
               {
-                "anyOf": [
-                  { "type": "object", "required": ["added"] },
-                  { "type": "object", "required": ["removed"] },
-                  { "type": "object", "required": ["changed"] },
-                  { "type": "object", "required": ["snapshot"] }
-                ]
+                "type": "object",
+                "required": [
+                  "scope",
+                  "reason",
+                  "removed"
+                ],
+                "properties": {
+                  "scope": {
+                    "type": "string",
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "tool",
+                          "skill",
+                          "mcp_server",
+                          "mcp_tool",
+                          "plugin"
+                        ]
+                      },
+                      {
+                        "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$"
+                      }
+                    ],
+                    "description": "Capability domain changed by this event."
+                  },
+                  "reason": {
+                    "type": "string",
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "initial",
+                          "registered",
+                          "deregistered",
+                          "connected",
+                          "disconnected",
+                          "loaded",
+                          "unloaded",
+                          "error",
+                          "instructions_updated"
+                        ]
+                      },
+                      {
+                        "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$"
+                      }
+                    ],
+                    "description": "Reason the capability set changed."
+                  },
+                  "added": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "$ref": "#/$defs/capabilityAddedItem"
+                    },
+                    "description": "Capabilities added by this change."
+                  },
+                  "removed": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "$ref": "#/$defs/capabilityRemovedItem"
+                    },
+                    "description": "Capabilities removed by this change."
+                  },
+                  "changed": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "$ref": "#/$defs/capabilityChangedItem"
+                    },
+                    "description": "Capabilities modified by this change."
+                  },
+                  "snapshot": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "$ref": "#/$defs/capabilityAddedItem"
+                    },
+                    "description": "Full capability snapshot after this change."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Capability change payload with removed."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "scope",
+                  "reason",
+                  "changed"
+                ],
+                "properties": {
+                  "scope": {
+                    "type": "string",
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "tool",
+                          "skill",
+                          "mcp_server",
+                          "mcp_tool",
+                          "plugin"
+                        ]
+                      },
+                      {
+                        "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$"
+                      }
+                    ],
+                    "description": "Capability domain changed by this event."
+                  },
+                  "reason": {
+                    "type": "string",
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "initial",
+                          "registered",
+                          "deregistered",
+                          "connected",
+                          "disconnected",
+                          "loaded",
+                          "unloaded",
+                          "error",
+                          "instructions_updated"
+                        ]
+                      },
+                      {
+                        "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$"
+                      }
+                    ],
+                    "description": "Reason the capability set changed."
+                  },
+                  "added": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "$ref": "#/$defs/capabilityAddedItem"
+                    },
+                    "description": "Capabilities added by this change."
+                  },
+                  "removed": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "$ref": "#/$defs/capabilityRemovedItem"
+                    },
+                    "description": "Capabilities removed by this change."
+                  },
+                  "changed": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "$ref": "#/$defs/capabilityChangedItem"
+                    },
+                    "description": "Capabilities modified by this change."
+                  },
+                  "snapshot": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "$ref": "#/$defs/capabilityAddedItem"
+                    },
+                    "description": "Full capability snapshot after this change."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Capability change payload with changed."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "scope",
+                  "reason",
+                  "snapshot"
+                ],
+                "properties": {
+                  "scope": {
+                    "type": "string",
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "tool",
+                          "skill",
+                          "mcp_server",
+                          "mcp_tool",
+                          "plugin"
+                        ]
+                      },
+                      {
+                        "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$"
+                      }
+                    ],
+                    "description": "Capability domain changed by this event."
+                  },
+                  "reason": {
+                    "type": "string",
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "initial",
+                          "registered",
+                          "deregistered",
+                          "connected",
+                          "disconnected",
+                          "loaded",
+                          "unloaded",
+                          "error",
+                          "instructions_updated"
+                        ]
+                      },
+                      {
+                        "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$"
+                      }
+                    ],
+                    "description": "Reason the capability set changed."
+                  },
+                  "added": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "$ref": "#/$defs/capabilityAddedItem"
+                    },
+                    "description": "Capabilities added by this change."
+                  },
+                  "removed": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "$ref": "#/$defs/capabilityRemovedItem"
+                    },
+                    "description": "Capabilities removed by this change."
+                  },
+                  "changed": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "$ref": "#/$defs/capabilityChangedItem"
+                    },
+                    "description": "Capabilities modified by this change."
+                  },
+                  "snapshot": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "$ref": "#/$defs/capabilityAddedItem"
+                    },
+                    "description": "Full capability snapshot after this change."
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Capability change payload with snapshot."
               }
             ],
             "description": "Capability change event payload."
@@ -1962,8 +3739,14 @@
                     "pattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9][a-z0-9_-]*$",
                     "description": "Session metadata field being updated."
                   },
-                  "value": { "description": "New session metadata value." },
-                  "previous_value": { "description": "Previous session metadata value when known." },
+                  "value": {
+                    "$ref": "#/$defs/jsonValue",
+                    "description": "New session metadata value."
+                  },
+                  "previous_value": {
+                    "$ref": "#/$defs/jsonValue",
+                    "description": "Previous session metadata value when known."
+                  },
                   "reason": {
                     "type": "string",
                     "anyOf": [
@@ -2007,8 +3790,14 @@
       "properties": {
         "name": { "type": "string", "description": "Name of the changed capability." },
         "field": { "type": "string", "description": "Capability field that changed." },
-        "from": { "description": "Previous capability field value." },
-        "to": { "description": "New capability field value." }
+        "from": {
+          "$ref": "#/$defs/jsonValue",
+          "description": "Previous capability field value."
+        },
+        "to": {
+          "$ref": "#/$defs/jsonValue",
+          "description": "New capability field value."
+        }
       },
       "additionalProperties": false
     }

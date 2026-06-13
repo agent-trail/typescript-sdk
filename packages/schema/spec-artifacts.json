@@ -8,13 +8,13 @@
     "schema": {
       "name": "schema-v0.1.0.json",
       "url": "https://github.com/agent-trail/spec/releases/download/v0.1.0/schema-v0.1.0.json",
-      "sha256": "b9012b15968b6be0ffe43c998cdf49d88b045176f21a4b5a20570106c79e5ad6",
+      "sha256": "bf13df1edca229e28665c34b7937525e4b23443f730eed5299498a8262fcd7f5",
       "targetPath": "schema/v0.1.0.json"
     },
     "fixtures": {
       "name": "fixtures-v0.1.0.tar.gz",
       "url": "https://github.com/agent-trail/spec/releases/download/v0.1.0/fixtures-v0.1.0.tar.gz",
-      "sha256": "89235c13ca3d43c49fccdd474fb30feb74965eadca5924e8f5dd6936054ea7c8",
+      "sha256": "c47679370637f56e593eefa630be2cfb2fcc207becf63805dec31e832d8f63df",
       "targetPath": "fixtures"
     }
   },
@@ -340,6 +340,10 @@
       "sha256": "59133ea564a0762178933ef2a37d0595ebee20890f56cbf678cb9354b83f08b8"
     },
     {
+      "path": "fixtures/validation/invalid-schema/tool-call-truncated-missing-args-size.trail.jsonl",
+      "sha256": "a7b53b94f6833ef5b2ef54d2dcf99381b9f66c6447d1c8a4d98a4040de6bde7b"
+    },
+    {
       "path": "fixtures/validation/invalid-schema/tool-call-usage-missing-output.trail.jsonl",
       "sha256": "df41db3cb6a8968422293eb1792503507a255bd827f60425afc2612ce9b3bb3b"
     },
@@ -385,7 +389,7 @@
     },
     {
       "path": "fixtures/validation/manifest.json",
-      "sha256": "e22596742d8c3229bfaaccadd6c754a33b753c0d065153c682c2ec9f1a197ed3"
+      "sha256": "ce4c7d6d1fd1debdd8e50b1db0cb0c7ca3d75a44fb81f8528dd4416c4361535c"
     },
     {
       "path": "fixtures/validation/manifest.schema.json",
@@ -425,7 +429,7 @@
     },
     {
       "path": "fixtures/validation/README.md",
-      "sha256": "c7c1f269de55e8dcddb0a63510f78eaa0e63125beb42aa7a529e86b2dbda3f68"
+      "sha256": "4b16dfac3147b9df027ec04389b9dfe1097fb5c40497c5fcf9ca93ca52c48b33"
     },
     {
       "path": "fixtures/validation/valid/agent-message-attachments-multiple.trail.jsonl",

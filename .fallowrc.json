@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
-  "entry": ["src/index.ts"],
+  "entry": ["scripts/check-api.ts", "scripts/check-exports.ts", "src/index.ts"],
   "ignorePatterns": ["dist/**", "coverage/**", "node_modules/**"],
   "rules": {
     "unresolved-imports": "error",

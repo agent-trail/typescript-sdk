@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   computeContentHashes,
   parseTrailJsonl,
@@ -25,7 +26,7 @@ type FixtureExpectation = {
   };
 };
 
-const fixturesRoot = path.join(process.cwd(), "packages/schema/fixtures/validation");
+const fixturesRoot = fileURLToPath(new URL("../../schema/fixtures/validation/", import.meta.url));
 const manifest = JSON.parse(readFileSync(path.join(fixturesRoot, "manifest.json"), "utf8")) as {
   fixtures: FixtureExpectation[];
 };

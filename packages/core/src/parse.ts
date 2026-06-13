@@ -10,41 +10,141 @@ import type {
 import { isJsonObject } from "./shared.js";
 
 export async function parseTrailJsonl(input: TrailJsonlInput): Promise<ParsedTrail> {
-  const text = typeof input === "string" ? input : await collectInput(input);
   const records: ParsedTrailRecord[] = [];
+  const pushLine = lineParser(records);
 
-  const lines = text.split(/\n/);
-  if (lines.at(-1) === "") lines.pop();
-
-  for (const [index, line] of lines.entries()) {
-    const lineNumber = index + 1;
-    if (line.length === 0) continue;
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(line);
-    } catch {
-      records.push({ line: lineNumber, record: { type: "x-parse-error", raw: line } });
-      continue;
-    }
-
-    const record = isJsonObject(parsed)
-      ? (parsed as TrailRecordLike)
-      : ({ type: "x-parse-error", value: parsed } as UnknownTrailRecord);
-    const parsedRecord = { line: lineNumber, record };
-    records.push(parsedRecord);
+  if (typeof input === "string") {
+    pushLine.pushText(input);
+  } else {
+    await parseInput(input, pushLine);
   }
+  pushLine.finish();
 
   return buildParsedTrail(records);
 }
 
-async function collectInput(input: AsyncIterable<string | Uint8Array>): Promise<string> {
-  const textDecoder = new TextDecoder("utf-8", { fatal: false });
-  let text = "";
+async function parseInput(
+  input: AsyncIterable<string | Uint8Array>,
+  pushLine: ReturnType<typeof lineParser>,
+): Promise<void> {
+  const pushBytes = byteLineParser(pushLine);
+  let discardInvalidLineRemainder = false;
   for await (const chunk of input) {
-    text += typeof chunk === "string" ? chunk : textDecoder.decode(chunk, { stream: true });
+    if (typeof chunk === "string") {
+      discardInvalidLineRemainder = pushBytes.finish() || discardInvalidLineRemainder;
+      const text: string | undefined = discardInvalidLineRemainder
+        ? textAfterDiscardedInvalidLine(chunk, pushLine)
+        : chunk;
+      discardInvalidLineRemainder = text === undefined;
+      if (text !== undefined) pushLine.pushText(text);
+      continue;
+    }
+    if (discardInvalidLineRemainder) continue;
+    pushBytes.push(chunk);
   }
-  text += textDecoder.decode();
-  return text;
+  pushBytes.finish();
+}
+
+function textAfterDiscardedInvalidLine(
+  text: string,
+  pushLine: ReturnType<typeof lineParser>,
+): string | undefined {
+  const newlineIndex = text.indexOf("\n");
+  if (newlineIndex === -1) return undefined;
+  pushLine.consumeLine();
+  return text.slice(newlineIndex + 1);
+}
+
+function byteLineParser(pushLine: ReturnType<typeof lineParser>) {
+  let pending: number[] = [];
+  const pushPending = (consumeLine: boolean): boolean => {
+    if (pending.length === 0) return false;
+    try {
+      const decoder = new TextDecoder("utf-8", { fatal: true });
+      pushLine.pushText(decoder.decode(new Uint8Array(pending)));
+    } catch (error) {
+      if (!(error instanceof TypeError)) throw error;
+      if (consumeLine) pushLine.pushInvalidLine("invalid_utf8");
+      else pushLine.pushParseError("invalid_utf8");
+      return !consumeLine;
+    } finally {
+      pending = [];
+    }
+    return false;
+  };
+
+  return {
+    push(bytes: Uint8Array) {
+      for (const byte of bytes) {
+        pending.push(byte);
+        if (byte === 0x0a) pushPending(true);
+      }
+    },
+    finish() {
+      return pushPending(false);
+    },
+  };
+}
+
+function lineParser(records: ParsedTrailRecord[]) {
+  let pending = "";
+  let lineNumber = 1;
+  return {
+    pushText(text: string) {
+      pending += text;
+      let newlineIndex = pending.indexOf("\n");
+      while (newlineIndex !== -1) {
+        pushParsedLine(
+          records,
+          stripTrailingCarriageReturn(pending.slice(0, newlineIndex)),
+          lineNumber,
+        );
+        pending = pending.slice(newlineIndex + 1);
+        lineNumber += 1;
+        newlineIndex = pending.indexOf("\n");
+      }
+    },
+    pushParseError(code: string) {
+      records.push({ line: lineNumber, record: { type: "x-parse-error", code } });
+      pending = "";
+    },
+    pushInvalidLine(code: string) {
+      records.push({ line: lineNumber, record: { type: "x-parse-error", code } });
+      pending = "";
+      lineNumber += 1;
+    },
+    consumeLine() {
+      pending = "";
+      lineNumber += 1;
+    },
+    finish() {
+      if (pending.length === 0) return;
+      pushParsedLine(records, stripTrailingCarriageReturn(pending), lineNumber);
+    },
+  };
+}
+
+function pushParsedLine(records: ParsedTrailRecord[], raw: string, line: number): void {
+  if (raw.trim().length === 0) {
+    records.push({ line, record: { type: "x-parse-error", code: "empty_line", raw } });
+    return;
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    records.push({ line, record: { type: "x-parse-error", code: "invalid_json", raw } });
+    return;
+  }
+
+  const record = isJsonObject(parsed)
+    ? (parsed as TrailRecordLike)
+    : ({ type: "x-parse-error", code: "non_object", value: parsed } as UnknownTrailRecord);
+  records.push({ line, record });
+}
+
+function stripTrailingCarriageReturn(line: string): string {
+  return line.endsWith("\r") ? line.slice(0, -1) : line;
 }
 
 export function buildParsedTrail(records: ParsedTrailRecord[]): ParsedTrail {

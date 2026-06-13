@@ -16,7 +16,7 @@ import { numberDiagnostics, wellFormedStringDiagnostics } from "./scalars.js";
 import { segmentDiagnostics } from "./segments.js";
 import { sourceRawDiagnostics } from "./source-raw.js";
 import { streamDiagnostics } from "./stream.js";
-import { timestampDiagnostics } from "./timestamps.js";
+import { timestampDiagnostics, timestampSyntaxDiagnostics } from "./timestamps.js";
 import { toolPairingDiagnostics } from "./tool-pairing.js";
 import { userQueryDiagnostics } from "./user-query.js";
 import { vcsDiagnostics } from "./vcs.js";
@@ -35,6 +35,7 @@ export function wholeFileDiagnostics(
   }
 
   diagnostics.push(...wellFormedStringDiagnostics(trail.records, mode));
+  diagnostics.push(...timestampSyntaxDiagnostics(trail.records));
   diagnostics.push(...numberDiagnostics(trail.records));
   diagnostics.push(...manifestDiagnostics(trail));
   diagnostics.push(...segmentDiagnostics(trail));

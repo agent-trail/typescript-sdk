@@ -1,5 +1,5 @@
 import type { ParsedTrailRecord, SessionGroup, TrailDiagnostic } from "../index.js";
-import { diagnostic, readString } from "../shared.js";
+import { diagnostic, isJsonObject, readString } from "../shared.js";
 
 const isoMillisPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
@@ -8,24 +8,36 @@ export function timestampDiagnostics(
   groupIds: Map<string, ParsedTrailRecord>,
   skipParentComparisons: boolean,
 ): TrailDiagnostic[] {
-  const diagnostics = timestampSyntaxDiagnostics([group.header, ...group.events]);
-  if (skipParentComparisons) return diagnostics;
-
-  diagnostics.push(...parentTimestampDiagnostics(group.events, groupIds));
-  return diagnostics;
+  if (skipParentComparisons) return [];
+  return parentTimestampDiagnostics(group.events, groupIds);
 }
 
-function timestampSyntaxDiagnostics(records: ParsedTrailRecord[]): TrailDiagnostic[] {
+export function timestampSyntaxDiagnostics(records: ParsedTrailRecord[]): TrailDiagnostic[] {
   return records.flatMap((record) => timestampSyntaxDiagnostic(record));
 }
 
 function timestampSyntaxDiagnostic(record: ParsedTrailRecord): TrailDiagnostic[] {
-  const ts = readString(record.record, "ts");
-  if (ts === undefined) return [];
-  if (!isoMillisPattern.test(ts)) return [diagnostic(record.line, "/ts", "error", "schema")];
-  if (!isValidUtcIsoMillis(ts))
-    return [diagnostic(record.line, "/ts", "error", "invalid_timestamp")];
+  return [
+    ...timestampValueDiagnostic(record, "/ts", readString(record.record, "ts")),
+    ...timestampValueDiagnostic(record, "/stream/started_at", streamStartedAt(record.record)),
+  ];
+}
+
+function timestampValueDiagnostic(
+  record: ParsedTrailRecord,
+  path: string,
+  value: string | undefined,
+): TrailDiagnostic[] {
+  if (value === undefined) return [];
+  if (!isoMillisPattern.test(value)) return [diagnostic(record.line, path, "error", "schema")];
+  if (!isValidUtcIsoMillis(value))
+    return [diagnostic(record.line, path, "error", "invalid_timestamp")];
   return [];
+}
+
+function streamStartedAt(record: unknown): string | undefined {
+  if (!isJsonObject(record) || !isJsonObject(record.stream)) return undefined;
+  return readString(record.stream, "started_at");
 }
 
 function parentTimestampDiagnostics(

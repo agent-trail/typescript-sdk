@@ -87,12 +87,6 @@ export function segmentSeq(header: Header | UnknownTrailRecord | undefined): num
   return header.segment?.seq ?? 1;
 }
 
-export function hasSegment(trail: ParsedTrail): boolean {
-  return trail.groups.some(
-    (group) => isHeader(group.header.record) && group.header.record.segment !== undefined,
-  );
-}
-
 export function readString(record: unknown, key: string): string | undefined {
   return isJsonObject(record) && typeof record[key] === "string" ? record[key] : undefined;
 }

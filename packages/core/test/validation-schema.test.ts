@@ -17,12 +17,24 @@ test("accepts slashed custom agent names and rejects legacy hyphenated custom na
 
 test("rejects calendar-invalid timestamps and non-canonical id casing", async () => {
   const invalidTimestamp = await codes([{ ...baseHeader, ts: "2026-02-30T00:00:00.000Z" }]);
+  const invalidEnvelopeTimestamp = await codes([
+    { ...baseEnvelope, ts: "2026-02-30T00:00:00.000Z" },
+    baseHeader,
+  ]);
+  const invalidStreamTimestamp = await codes([
+    {
+      ...baseHeader,
+      stream: { state: "open", started_at: "2026-02-30T00:00:00.000Z" },
+    },
+  ]);
   const lowercaseUlid = await codes([{ ...baseHeader, id: "01hsess0000000000000000001" }]);
   const uppercaseUuid = await codes([
     { ...baseHeader, id: "00000000-0000-5000-8000-ABCDEFABCDEF" },
   ]);
 
   expect(invalidTimestamp).toContain("invalid_timestamp");
+  expect(invalidEnvelopeTimestamp).toContain("invalid_timestamp");
+  expect(invalidStreamTimestamp).toContain("invalid_timestamp");
   expect(lowercaseUlid).toContain("schema");
   expect(uppercaseUuid).toContain("schema");
 });

@@ -111,12 +111,20 @@ test("reports duplicate sequence numbers and still emits a merged trail", async 
   expect(result.trails[0]?.groups[0]?.header.record).not.toHaveProperty("segment");
 });
 
-test("passes through single non-segmented trails when session_uid is unique", async () => {
-  const parsed = await trail([baseHeader, userMessage("01HEVTA0000000000000000001")]);
-  const result = reconcileSegments([parsed]);
+test("passes through single trails when session_uid is unique", async () => {
+  const inputs = [
+    await trail([baseHeader, userMessage("01HEVTA0000000000000000001")]),
+    await trail([
+      { ...baseHeader, segment: { seq: 1 } },
+      userMessage("01HEVTA0000000000000000002"),
+    ]),
+  ];
 
-  expect(result.diagnostics).toEqual([]);
-  expect(result.trails).toEqual([parsed]);
+  for (const parsed of inputs) {
+    const result = reconcileSegments([parsed]);
+    expect(result.diagnostics).toEqual([]);
+    expect(result.trails).toEqual([parsed]);
+  }
 });
 
 test("does not mutate caller-owned segment trails during merge", async () => {

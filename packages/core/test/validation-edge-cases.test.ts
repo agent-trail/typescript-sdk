@@ -37,6 +37,136 @@ test("reader tolerant mode warns for unknown payload fields but keeps strict pay
   );
 });
 
+test("reader tolerant mode keeps real payload schema errors when unknown fields are present", async () => {
+  const result = await diagnostics(
+    [
+      baseHeader,
+      event("user_message", "01HEVTA0000000000000000001", "2026-05-17T14:00:01.000Z", {
+        future_field: true,
+      }),
+    ],
+    "tolerant",
+  );
+
+  expect(result).toContainEqual(
+    expect.objectContaining({ code: "schema", path: "/payload/text", severity: "error" }),
+  );
+  expect(result).toContainEqual(
+    expect.objectContaining({
+      code: "reader_tolerant_unknown_payload_field",
+      path: "/payload/future_field",
+      severity: "warning",
+    }),
+  );
+});
+
+test("reader tolerant mode warns for schema-derived unknown payload fields", async () => {
+  const commandInvoke = await diagnostics(
+    [
+      baseHeader,
+      event("command_invoke", "01HEVTA0000000000000000001", "2026-05-17T14:00:01.000Z", {
+        name: "shell",
+        kind: "builtin",
+        via: "agent_invoked",
+        future_field: true,
+      }),
+    ],
+    "tolerant",
+  );
+  const metadataUpdate = await diagnostics(
+    [
+      baseHeader,
+      event("session_metadata_update", "01HEVTA0000000000000000001", "2026-05-17T14:00:01.000Z", {
+        field: "name",
+        value: "updated",
+        reason: "user_set",
+        future_field: true,
+      }),
+    ],
+    "tolerant",
+  );
+
+  expect(commandInvoke).toContainEqual(
+    expect.objectContaining({
+      code: "reader_tolerant_unknown_payload_field",
+      path: "/payload/future_field",
+      severity: "warning",
+    }),
+  );
+  expect(metadataUpdate).toContainEqual(
+    expect.objectContaining({
+      code: "reader_tolerant_unknown_payload_field",
+      path: "/payload/future_field",
+      severity: "warning",
+    }),
+  );
+});
+
+test("reader tolerant mode handles unevaluated payload fields without hiding entry errors", async () => {
+  const validToolCall = await diagnostics(
+    [
+      baseHeader,
+      event("tool_call", "01HEVTA0000000000000000001", "2026-05-17T14:00:01.000Z", {
+        tool: "file_read",
+        args: { path: "README.md" },
+        future_field: true,
+      }),
+    ],
+    "tolerant",
+  );
+  const invalidEntry = await diagnostics(
+    [
+      baseHeader,
+      {
+        type: "user_message",
+        id: "bad",
+        ts: "2026-05-17T14:00:01.000Z",
+        payload: { text: "hello", future_field: true },
+      },
+    ],
+    "tolerant",
+  );
+
+  expect(validToolCall).toContainEqual(
+    expect.objectContaining({
+      code: "reader_tolerant_unknown_payload_field",
+      path: "/payload/future_field",
+      severity: "warning",
+    }),
+  );
+  expect(validToolCall).not.toContainEqual(
+    expect.objectContaining({ code: "schema", severity: "error" }),
+  );
+  expect(invalidEntry).toContainEqual(
+    expect.objectContaining({ code: "schema", path: "/id", severity: "error" }),
+  );
+  expect(invalidEntry).toContainEqual(
+    expect.objectContaining({
+      code: "reader_tolerant_unknown_payload_field",
+      path: "/payload/future_field",
+      severity: "warning",
+    }),
+  );
+});
+
+test("reader tolerant patch schema versions keep unrelated header errors", async () => {
+  const result = await diagnostics(
+    [{ ...baseHeader, schema_version: "0.1.1", id: "bad" }],
+    "tolerant",
+  );
+
+  expect(result).toContainEqual(
+    expect.objectContaining({
+      code: "reader_tolerant_schema_version",
+      path: "/schema_version",
+      severity: "warning",
+    }),
+  );
+  expect(result).toContainEqual(
+    expect.objectContaining({ code: "schema", path: "/id", severity: "error" }),
+  );
+});
+
 test("reader tolerant mode preserves unknown future records", async () => {
   const result = await validateTrailJsonl(
     jsonl([

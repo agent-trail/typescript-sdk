@@ -1,6 +1,6 @@
 import type { ParsedTrail } from "../index.js";
 import { buildParsedTrail } from "../parse.js";
-import { firstHeader, hasSegment, segmentSeq } from "../shared.js";
+import { firstHeader, segmentSeq } from "../shared.js";
 
 export function groupReconciliationInputs(
   inputs: ParsedTrail[],
@@ -12,10 +12,7 @@ export function groupReconciliationInputs(
 
   for (const trail of sessionInputs) {
     const header = firstHeader(trail);
-    if (
-      header?.session_uid === undefined ||
-      (!hasSegment(trail) && sessionUidCounts.get(header.session_uid) === 1)
-    ) {
+    if (header?.session_uid === undefined || sessionUidCounts.get(header.session_uid) === 1) {
       passThrough.push(trail);
       continue;
     }

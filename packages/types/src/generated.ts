@@ -1,0 +1,951 @@
+/* This file is generated from @agent-trail/schema. Run `bun run generate:types` to update it. */
+
+/**
+ * Validates a single Agent Trail JSONL record: trail envelope, session header, or event entry. File layout rules such as envelope position and multi-session grouping are enforced by whole-file validation; per-event payload shapes are enforced via the events subschemas.
+ */
+export type AgentTrailV010 = TrailEnvelope | Header | Entry;
+/**
+ * Writer timestamp: UTC ISO-8601 with millisecond precision. Format-aware validators may use the date-time annotation; whole-file validation rule 6 remains authoritative for calendar validity.
+ */
+export type Iso8601 = string;
+/**
+ * SHA-256 hash as lowercase hex (64 chars)
+ */
+export type Sha256Hex = string;
+export type Vcs = Vcs1 & {
+  type: ("git" | "jj" | "hg" | "svn") | string;
+  revision: string | null;
+  /**
+   * Canonical remote URL for the working tree. Adapters MUST normalize before emission: strip embedded credentials, strip trailing .git for git URLs, and normalize SSH/HTTPS variants to a single canonical form (https://host/path).
+   */
+  remote_url?: string;
+  /**
+   * Active branch / bookmark / topic name the session is running on. For git, the short branch name (e.g., `feature/x`). Detached-HEAD sessions MAY omit this field.
+   */
+  branch?: string;
+  /**
+   * Commit hash at session start (lowercase hex, 7-64 chars). For git this is typically the same value as `revision`; the field exists as an explicit, version-control-neutral alias and survives across VCS migrations.
+   */
+  head_commit?: string;
+  worktree?: Worktree;
+};
+export type Vcs1 =
+  | {
+      revision?: string;
+      [k: string]: unknown;
+    }
+  | {
+      revision?: null;
+      branch: string;
+      [k: string]: unknown;
+    };
+export type AgentName =
+  | (
+      | "claude-code"
+      | "pi"
+      | "openclaw"
+      | "codex-cli"
+      | "cursor"
+      | "opencode"
+      | "aider"
+      | "amp"
+      | "cline"
+      | "crush"
+      | "kimi-code"
+      | "qwen-code"
+      | "factory"
+      | "vibe"
+      | "copilot-cli"
+      | "copilot-chat"
+      | "chatgpt"
+      | "clawdbot"
+    )
+  | string;
+/**
+ * Session header. The first session header is required at line 1, or at line 2 when a trail envelope occupies line 1. Multi-session files (spec §9.6) carry additional session headers later in the file; each opens a new (header, events*) group. Not part of the event graph.
+ */
+export type Header = {
+  [k: string]: unknown;
+} & {
+  type: "session";
+  schema_version: "0.1.0";
+  /**
+   * Globally-unique identifier shape: canonical uppercase ULID (26 Crockford base32 chars), lowercase hyphenated UUID (36 chars), or lowercase unhyphenated UUID (32 hex chars). Header ids, event ids, and envelope ids share this shape so cross-segment reconciliation can dedup by exact string equality (spec §9.5).
+   */
+  id: string;
+  name?: string;
+  description?: string;
+  tags?: string[];
+  /**
+   * Globally-unique source-session identifier. Stable across all segments of one source session (spec §9.5). Reconcilers group segments by session_uid. Optional in v0.1 single-segment trails; writers SHOULD emit it for forward-compat. Required (and enforced by the header allOf if/then) when segment.seq > 1. ULID is recommended (lexicographic tie-breaker); UUID accepted.
+   */
+  session_uid?: string;
+  segment?: Segment;
+  content_hash?: Sha256Hex | "<pending>";
+  ts: Iso8601;
+  /**
+   * Live-capture marker. Present means writer is actively appending or last appended in streaming mode. Absent means non-streaming or unaware writer.
+   */
+  stream?: {
+    state: "open" | "closed";
+    started_at?: Iso8601;
+  };
+  agent: {
+    name: AgentName;
+    version?: string;
+    model_default?: string;
+  };
+  cwd?: string;
+  vcs?: Vcs;
+  fork_from?: {
+    /**
+     * Globally-unique identifier shape: canonical uppercase ULID (26 Crockford base32 chars), lowercase hyphenated UUID (36 chars), or lowercase unhyphenated UUID (32 hex chars). Header ids, event ids, and envelope ids share this shape so cross-segment reconciliation can dedup by exact string equality (spec §9.5).
+     */
+    session_id: string;
+    content_hash?: Sha256Hex;
+    /**
+     * Globally-unique identifier shape: canonical uppercase ULID (26 Crockford base32 chars), lowercase hyphenated UUID (36 chars), or lowercase unhyphenated UUID (32 hex chars). Header ids, event ids, and envelope ids share this shape so cross-segment reconciliation can dedup by exact string equality (spec §9.5).
+     */
+    entry_id?: string;
+  };
+  redacted_from?: {
+    content_hash: Sha256Hex;
+  };
+  parse_fidelity?: ParseFidelity;
+  source?: {
+    agent?: AgentName;
+    path?: string;
+    format_version?: string;
+  };
+  /**
+   * Free-form vendor extensions. Recommended keys use the x-<vendor>/<name> extension grammar (spec §8.3).
+   */
+  meta?: {
+    [k: string]: unknown;
+  };
+};
+/**
+ * Multi-segment marker. Absent or {seq:1} for a single-segment trail. Reconciler primitive for daemon resume and multi-file sessions (spec §9.5).
+ */
+export type Segment =
+  | {
+      seq: 1;
+    }
+  | {
+      seq: number;
+      prev_content_hash: Sha256Hex | null;
+    };
+export type Entry = EntryBase &
+  (
+    | UserMessage
+    | AgentMessage
+    | TaskPlanUpdate
+    | ToolCall
+    | ToolResult
+    | ToolCallAborted
+    | UserQuery
+    | UserQueryResponse
+    | SessionSummary
+    | SystemEvent
+    | AgentThinking
+    | UserInterrupt
+    | ContextCompact
+    | BranchPoint
+    | BranchSummary
+    | ModelChange
+    | ModeChange
+    | ThinkingLevelChange
+    | SessionTerminated
+    | SessionEnd
+    | CommandInvoke
+    | CapabilityChange
+    | SessionMetadataUpdate
+  );
+export type ToolKind =
+  | "file_read"
+  | "file_write"
+  | "file_edit"
+  | "file_patch"
+  | "file_list"
+  | "file_search"
+  | "shell_command"
+  | "shell_output"
+  | "shell_input"
+  | "mcp_call"
+  | "web_fetch"
+  | "web_search"
+  | "tool_search"
+  | "notebook_edit"
+  | "subagent_invoke"
+  | "other";
+/**
+ * An image or file carried by a message or tool result, by reference. v0.1.0 uri schemes are references only (https:, local file:, content-addressed sha256:); inline data: payloads are deferred.
+ */
+export type Attachment = Attachment1 & {
+  kind: "image" | "file" | "other";
+  media_type?: string;
+  uri?: string;
+  name?: string;
+};
+export type Attachment1 =
+  | {
+      uri: unknown;
+      [k: string]: unknown;
+    }
+  | {
+      name: unknown;
+      [k: string]: unknown;
+    };
+/**
+ * Token usage for this source agent envelope. May appear on agent_message, agent_thinking, or tool_call when that entry is the first entry derived from the envelope. input_tokens/output_tokens are deltas for this envelope; *_cumulative variants are running totals through this point. total_tokens/total_tokens_cumulative are source-reported inclusive totals for exact total-token analytics. cache_read_tokens and cache_creation_tokens are independent billing categories. context_input_tokens captures source-reported prompt/context pressure for this request, cache-inclusive when the source exposes enough detail; context_window_tokens captures the model context-window size when exposed. When present, usage must include either input/output coverage or total-token coverage.
+ */
+export type AgentMessageUsage = AgentMessageUsage1 & {
+  input_tokens?: number;
+  output_tokens?: number;
+  input_tokens_cumulative?: number;
+  output_tokens_cumulative?: number;
+  total_tokens?: number;
+  total_tokens_cumulative?: number;
+  cache_read_tokens?: number;
+  cache_creation_tokens?: number;
+  reasoning_tokens?: number;
+  context_input_tokens?: number;
+  context_window_tokens?: number;
+};
+export type AgentMessageUsage1 =
+  | ((
+      | {
+          input_tokens: unknown;
+          [k: string]: unknown;
+        }
+      | {
+          input_tokens_cumulative: unknown;
+          [k: string]: unknown;
+        }
+    ) &
+      (
+        | {
+            output_tokens: unknown;
+            [k: string]: unknown;
+          }
+        | {
+            output_tokens_cumulative: unknown;
+            [k: string]: unknown;
+          }
+      ))
+  | {
+      total_tokens: unknown;
+      [k: string]: unknown;
+    }
+  | {
+      total_tokens_cumulative: unknown;
+      [k: string]: unknown;
+    };
+export type TaskPlanStatus = "pending" | "in_progress" | "completed" | "cancelled" | "blocked";
+export type TaskPlanDelta =
+  | {
+      kind: "added";
+      item_id: string;
+      to_content: string;
+      to_status: TaskPlanStatus;
+      to_active_form?: string;
+    }
+  | {
+      kind: "removed";
+      item_id: string;
+      from_content: string;
+      from_status: TaskPlanStatus;
+      from_active_form?: string;
+    }
+  | {
+      kind: "status_changed";
+      item_id: string;
+      from_status: TaskPlanStatus;
+      to_status: TaskPlanStatus;
+    }
+  | {
+      kind: "content_changed";
+      item_id: string;
+      from_content: string;
+      to_content: string;
+    };
+export type SessionTerminationReason =
+  | ("eof_with_open_tool_calls" | "process_terminated" | "truncated" | "user_abort")
+  | {
+      [k: string]: unknown;
+    };
+export type SessionTerminationReason1 = string;
+
+/**
+ * Optional trail envelope record (line 1). File-level metadata; not part of the event graph. When present, MUST appear at line 1 and the first session header MUST follow on line 2. At most one per file. Multi-session files (spec §9.6) carry one envelope followed by N session groups in file order.
+ */
+export interface TrailEnvelope {
+  type: "trail";
+  schema_version: "0.1.0";
+  /**
+   * Globally-unique identifier shape: canonical uppercase ULID (26 Crockford base32 chars), lowercase hyphenated UUID (36 chars), or lowercase unhyphenated UUID (32 hex chars). Header ids, event ids, and envelope ids share this shape so cross-segment reconciliation can dedup by exact string equality (spec §9.5).
+   */
+  id: string;
+  name?: string;
+  description?: string;
+  ts: Iso8601;
+  producer: string;
+  content_hash?: Sha256Hex | "<pending>";
+  tags?: string[];
+  vcs?: Vcs;
+  fork_from?: {
+    /**
+     * Globally-unique identifier shape: canonical uppercase ULID (26 Crockford base32 chars), lowercase hyphenated UUID (36 chars), or lowercase unhyphenated UUID (32 hex chars). Header ids, event ids, and envelope ids share this shape so cross-segment reconciliation can dedup by exact string equality (spec §9.5).
+     */
+    trail_id: string;
+    content_hash?: Sha256Hex;
+  };
+  redacted_from?: {
+    content_hash: Sha256Hex;
+  };
+  /**
+   * Optional manifest of sessions contained in the file, one entry per session group in file order (spec §8.4, §9.6). Validator warns on length mismatch or per-entry drift vs actual file content.
+   */
+  sessions?: {
+    /**
+     * Globally-unique identifier shape: canonical uppercase ULID (26 Crockford base32 chars), lowercase hyphenated UUID (36 chars), or lowercase unhyphenated UUID (32 hex chars). Header ids, event ids, and envelope ids share this shape so cross-segment reconciliation can dedup by exact string equality (spec §9.5).
+     */
+    id: string;
+    agent: AgentName;
+  }[];
+  /**
+   * Free-form vendor extensions. Recommended keys use the x-<vendor>/<name> extension grammar.
+   */
+  meta?: {
+    [k: string]: unknown;
+  };
+}
+/**
+ * Worktree context when the session ran inside a working-tree clone or worktree (git worktree, jj workspace, etc.).
+ */
+export interface Worktree {
+  name: string;
+  path: string;
+  /**
+   * Working directory of the parent repository at the time the worktree was created.
+   */
+  original_cwd?: string;
+  /**
+   * Branch the parent repository was on when the worktree was created.
+   */
+  original_branch?: string;
+  /**
+   * Commit hash the worktree was forked from.
+   */
+  original_head_commit?: string;
+}
+/**
+ * At-a-glance session parse fidelity summary. When present, quarantined_count MUST equal the number of x-* /unknown_record system_event entries in the session group; termination_reason MUST match the final session_terminated reason when one exists.
+ */
+export interface ParseFidelity {
+  /**
+   * Number of quarantined source records emitted as x-* /unknown_record system_event entries in this session group.
+   */
+  quarantined_count: number;
+  /**
+   * Final abnormal session termination reason, when a session_terminated event is present.
+   */
+  termination_reason?: (
+    | ("eof_with_open_tool_calls" | "process_terminated" | "truncated" | "user_abort")
+    | {
+        [k: string]: unknown;
+      }
+  ) &
+    string;
+}
+export interface EntryBase {
+  type: string;
+  /**
+   * Globally-unique identifier shape: canonical uppercase ULID (26 Crockford base32 chars), lowercase hyphenated UUID (36 chars), or lowercase unhyphenated UUID (32 hex chars). Header ids, event ids, and envelope ids share this shape so cross-segment reconciliation can dedup by exact string equality (spec §9.5).
+   */
+  id: string;
+  parent_id?: string | null;
+  ts: Iso8601;
+  payload: {
+    [k: string]: unknown;
+  };
+  semantic?: SemanticMetadata;
+  source?: SourceMetadata;
+  meta?: {
+    /**
+     * Number of redactor mutations applied to this event entry.
+     */
+    redaction_count?: number;
+    [k: string]: unknown;
+  };
+}
+/**
+ * Semantic linking for cross-event references when explicit IDs are unreliable.
+ */
+export interface SemanticMetadata {
+  group_id?: string;
+  call_id?: string;
+  tool_kind?: ToolKind;
+}
+/**
+ * Adapter-provided metadata about the source event.
+ */
+export interface SourceMetadata {
+  agent?: AgentName;
+  original_type?: string;
+  schema_version?: string;
+  /**
+   * Opaque source object preserved verbatim. If an object, may use envelope_ref to reference an earlier entry's inlined envelope.
+   */
+  raw?: {
+    [k: string]: unknown;
+  };
+  synthesized?: boolean;
+}
+export interface UserMessage {
+  type?: "user_message";
+  payload?: {
+    text: string;
+    /**
+     * Authorship marker for user-role text. Absent means user-authored.
+     */
+    origin?: (
+      | ("user" | "injected" | "mixed")
+      | {
+          [k: string]: unknown;
+        }
+    ) &
+      string;
+    attachments?: Attachment[];
+  };
+  [k: string]: unknown;
+}
+export interface AgentMessage {
+  type?: "agent_message";
+  payload?: {
+    text: string;
+    model?: string;
+    stop_reason?: string;
+    usage?: AgentMessageUsage;
+    attachments?: Attachment[];
+  };
+  [k: string]: unknown;
+}
+export interface TaskPlanUpdate {
+  type?: "task_plan_update";
+  payload?: {
+    explanation?: string;
+    items: TaskPlanItem[];
+    deltas?: TaskPlanDelta[];
+    minItems?: 0;
+  };
+  [k: string]: unknown;
+}
+export interface TaskPlanItem {
+  id: string;
+  content: string;
+  status: TaskPlanStatus;
+  active_form?: string;
+}
+export interface ToolCall {
+  type?: "tool_call";
+  payload?: {
+    [k: string]: unknown;
+  };
+  [k: string]: unknown;
+}
+export interface ToolResult {
+  type?: "tool_result";
+  payload?: {
+    /**
+     * Globally-unique identifier shape: canonical uppercase ULID (26 Crockford base32 chars), lowercase hyphenated UUID (36 chars), or lowercase unhyphenated UUID (32 hex chars). Header ids, event ids, and envelope ids share this shape so cross-segment reconciliation can dedup by exact string equality (spec §9.5).
+     */
+    for_id?: string;
+    ok: boolean;
+    output?: string;
+    truncated?: boolean;
+    /**
+     * UTF-8 byte length of the original output before truncation. Required when truncated is true.
+     */
+    output_size?: number;
+    overflow_ref?: string | null;
+    error?: string | null;
+    attachments?: Attachment[];
+    /**
+     * Structured per-toolkind outputs, keyed by the originating tool_call.tool. Optional; consumers fall back to payload.output when the relevant key is absent. Registered keys are writer-strict; unregistered/future toolkinds are opaque objects. Vendors extend a registered key via x-<vendor>/<name> pattern keys.
+     */
+    meta?: {
+      mcp_call?: {
+        content_blocks?: {
+          type: "text" | "image" | "resource";
+          text?: string;
+          data?: string;
+          mime_type?: string;
+          uri?: string;
+        }[];
+        is_error?: boolean;
+        /**
+         * This interface was referenced by `undefined`'s JSON-Schema definition
+         * via the `patternProperty` "^x-[a-z0-9]+(?:-[a-z0-9]+)*\/[a-z0-9][a-z0-9_-]*$".
+         */
+        [k: string]: unknown;
+      };
+      file_read?: {
+        /**
+         * @minItems 2
+         * @maxItems 2
+         */
+        range?: [number, number];
+        total_lines?: number;
+        encoding?: string;
+        truncated_at_line?: number | null;
+        /**
+         * This interface was referenced by `undefined`'s JSON-Schema definition
+         * via the `patternProperty` "^x-[a-z0-9]+(?:-[a-z0-9]+)*\/[a-z0-9][a-z0-9_-]*$".
+         */
+        [k: string]: unknown;
+      };
+      shell_command?: {
+        stdout?: string;
+        stderr?: string;
+        exit_code?: number | null;
+        signal?: string | null;
+        duration_ms?: number;
+        /**
+         * This interface was referenced by `undefined`'s JSON-Schema definition
+         * via the `patternProperty` "^x-[a-z0-9]+(?:-[a-z0-9]+)*\/[a-z0-9][a-z0-9_-]*$".
+         */
+        [k: string]: unknown;
+      };
+      [k: string]: {
+        [k: string]: unknown;
+      };
+    };
+  };
+  [k: string]: unknown;
+}
+export interface ToolCallAborted {
+  type?: "tool_call_aborted";
+  payload?: {
+    [k: string]: unknown;
+  };
+  [k: string]: unknown;
+}
+export interface UserQuery {
+  type?: "user_query";
+  payload?: {
+    /**
+     * @minItems 1
+     */
+    questions: [
+      {
+        id: string;
+        question: string;
+        header?: string;
+        multi_select?: boolean;
+        is_secret?: boolean;
+        allow_other?: boolean;
+        options?: {
+          id?: string;
+          label: string;
+          description?: string;
+        }[];
+      },
+      ...{
+        id: string;
+        question: string;
+        header?: string;
+        multi_select?: boolean;
+        is_secret?: boolean;
+        allow_other?: boolean;
+        options?: {
+          id?: string;
+          label: string;
+          description?: string;
+        }[];
+      }[],
+    ];
+  };
+  [k: string]: unknown;
+}
+export interface UserQueryResponse {
+  type?: "user_query_response";
+  payload?: {
+    /**
+     * Globally-unique identifier shape: canonical uppercase ULID (26 Crockford base32 chars), lowercase hyphenated UUID (36 chars), or lowercase unhyphenated UUID (32 hex chars). Header ids, event ids, and envelope ids share this shape so cross-segment reconciliation can dedup by exact string equality (spec §9.5).
+     */
+    for_id: string;
+    answers: {
+      [k: string]: {
+        selected: string[];
+        other?: string;
+      };
+    };
+  };
+  [k: string]: unknown;
+}
+export interface SessionSummary {
+  type?: "session_summary";
+  payload?: {
+    scope: "session";
+    text: string;
+    model?: string;
+  };
+  [k: string]: unknown;
+}
+export interface SystemEvent {
+  type?: "system_event";
+  payload?: {
+    /**
+     * Lifecycle/hook signal category. Either one of the reserved cross-agent values, or a vendor-namespaced extension of the form `x-<vendor>/<name>`.
+     */
+    kind: (
+      | (
+          | "session_start"
+          | "turn_start"
+          | "turn_end"
+          | "subagent_start"
+          | "subagent_end"
+          | "pre_tool_use"
+          | "post_tool_use"
+          | "hook_fired"
+          | "permission_request"
+          | "permission_decision"
+          | "cwd_change"
+          | "env_snapshot"
+          | "task_started"
+          | "task_completed"
+          | "plan_completed"
+          | "turn_aborted"
+          | "tool_decision"
+          | "context_injected"
+          | "hook_progress"
+          | "queue_operation"
+          | "heartbeat"
+          | "agent_error"
+          | "agent_warning"
+          | "api_error"
+          | "stream_error"
+          | "deprecation_notice"
+          | "guardian_alert"
+          | "model_rerouted"
+          | "hook_failed"
+          | "vcs_commit"
+        )
+      | {
+          [k: string]: unknown;
+        }
+    ) &
+      string;
+    text?: string;
+    data?: {
+      [k: string]: unknown;
+    };
+  };
+  [k: string]: unknown;
+}
+export interface AgentThinking {
+  type?: "agent_thinking";
+  payload?: {
+    text: string;
+    model?: string;
+    level?: string;
+    usage?: AgentMessageUsage;
+  };
+  [k: string]: unknown;
+}
+export interface UserInterrupt {
+  type?: "user_interrupt";
+  payload?: {
+    reason?: string;
+  };
+  [k: string]: unknown;
+}
+export interface ContextCompact {
+  type?: "context_compact";
+  payload?: {
+    summary: string;
+    trigger?: (
+      | ("manual" | "auto")
+      | {
+          [k: string]: unknown;
+        }
+    ) &
+      string;
+    tokens_before?: number;
+    tokens_after?: number;
+    /**
+     * Agent Trail entry IDs folded or replaced by this compaction summary. Provenance-only; readers must not require same-file resolution.
+     */
+    replaced_message_ids?: string[];
+  };
+  [k: string]: unknown;
+}
+export interface BranchPoint {
+  type?: "branch_point";
+  payload?: {
+    /**
+     * Globally-unique identifier shape: canonical uppercase ULID (26 Crockford base32 chars), lowercase hyphenated UUID (36 chars), or lowercase unhyphenated UUID (32 hex chars). Header ids, event ids, and envelope ids share this shape so cross-segment reconciliation can dedup by exact string equality (spec §9.5).
+     */
+    from_id: string;
+    reason?: string;
+  };
+  [k: string]: unknown;
+}
+export interface BranchSummary {
+  type?: "branch_summary";
+  payload?: {
+    /**
+     * Globally-unique identifier shape: canonical uppercase ULID (26 Crockford base32 chars), lowercase hyphenated UUID (36 chars), or lowercase unhyphenated UUID (32 hex chars). Header ids, event ids, and envelope ids share this shape so cross-segment reconciliation can dedup by exact string equality (spec §9.5).
+     */
+    abandoned_branch_id: string;
+    summary: string;
+    model?: string;
+  };
+  [k: string]: unknown;
+}
+export interface ModelChange {
+  type?: "model_change";
+  payload?: {
+    from_model?: string;
+    to_model: string;
+    from_provider?: string;
+    to_provider?: string;
+    reason?: string;
+    trigger?: (
+      | ("initial" | "user_set" | "agent_set" | "runtime_inferred" | "auto_reroute" | "external")
+      | {
+          [k: string]: unknown;
+        }
+    ) &
+      string;
+    turn_id?: string;
+  };
+  [k: string]: unknown;
+}
+export interface ModeChange {
+  type?: "mode_change";
+  payload?: {
+    scope: (
+      | ("collaboration" | "permission" | "execution" | "ui")
+      | {
+          [k: string]: unknown;
+        }
+    ) &
+      string;
+    from_mode?: string;
+    to_mode: string;
+    reason?: string;
+    trigger?: (
+      | ("initial" | "user_set" | "agent_set" | "runtime_inferred" | "auto_reroute" | "external")
+      | {
+          [k: string]: unknown;
+        }
+    ) &
+      string;
+    turn_id?: string;
+    data?: {
+      [k: string]: unknown;
+    };
+  };
+  [k: string]: unknown;
+}
+export interface ThinkingLevelChange {
+  type?: "thinking_level_change";
+  payload?: {
+    from_level?: string;
+    to_level: string;
+    reason?: string;
+    trigger?: (
+      | ("initial" | "user_set" | "agent_set" | "runtime_inferred" | "auto_reroute" | "external")
+      | {
+          [k: string]: unknown;
+        }
+    ) &
+      string;
+    turn_id?: string;
+    data?: {
+      [k: string]: unknown;
+    };
+  };
+  [k: string]: unknown;
+}
+export interface SessionTerminated {
+  type?: "session_terminated";
+  payload?: {
+    reason: SessionTerminationReason & SessionTerminationReason1;
+    open_call_ids?: string[];
+  };
+  [k: string]: unknown;
+}
+export interface SessionEnd {
+  type?: "session_end";
+  payload?: {
+    reason: (
+      | ("complete" | "user_quit" | "agent_idle")
+      | {
+          [k: string]: unknown;
+        }
+    ) &
+      string;
+    /**
+     * Globally-unique identifier shape: canonical uppercase ULID (26 Crockford base32 chars), lowercase hyphenated UUID (36 chars), or lowercase unhyphenated UUID (32 hex chars). Header ids, event ids, and envelope ids share this shape so cross-segment reconciliation can dedup by exact string equality (spec §9.5).
+     */
+    final_message_id?: string;
+  };
+  [k: string]: unknown;
+}
+export interface CommandInvoke {
+  type?: "command_invoke";
+  payload?: {
+    /**
+     * User-visible identifier of the invoked capability. Leading slash for slash/builtin/custom_prompt commands (`/clear`); bare name for skills (`webapp-testing`).
+     */
+    name: string;
+    /**
+     * What kind of capability was invoked.
+     */
+    kind: (
+      | ("slash" | "builtin" | "skill" | "custom_prompt" | "plugin")
+      | {
+          [k: string]: unknown;
+        }
+    ) &
+      string;
+    /**
+     * How the invocation reached the agent. `auto_trigger` covers description-matched skill activation with no user action; adapters MAY synthesize it (set source.synthesized=true).
+     */
+    via: (
+      | ("user_typed" | "auto_trigger" | "agent_invoked")
+      | {
+          [k: string]: unknown;
+        }
+    ) &
+      string;
+    args?: {
+      [k: string]: unknown;
+    };
+    expansion_text?: string;
+    /**
+     * What the runtime did with the invocation. Either one of the reserved values, a vendor-namespaced extension of the form `x-<vendor>/<name>`, or null.
+     */
+    result_action?: ("compact" | "clear" | "expand" | "load_skill" | "noop") | string | null;
+  };
+  [k: string]: unknown;
+}
+export interface CapabilityChange {
+  type?: "capability_change";
+  payload?: {
+    scope: (
+      | ("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin")
+      | {
+          [k: string]: unknown;
+        }
+    ) &
+      string;
+    reason: (
+      | (
+          | "initial"
+          | "registered"
+          | "deregistered"
+          | "connected"
+          | "disconnected"
+          | "loaded"
+          | "unloaded"
+          | "error"
+          | "instructions_updated"
+        )
+      | {
+          [k: string]: unknown;
+        }
+    ) &
+      string;
+    /**
+     * @minItems 1
+     */
+    added?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+    /**
+     * @minItems 1
+     */
+    removed?: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
+    /**
+     * @minItems 1
+     */
+    changed?: [CapabilityChangedItem, ...CapabilityChangedItem[]];
+    /**
+     * @minItems 1
+     */
+    snapshot?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+  } & {
+    [k: string]: unknown;
+  };
+  [k: string]: unknown;
+}
+export interface CapabilityAddedItem {
+  name: string;
+  metadata?: {
+    [k: string]: unknown;
+  };
+}
+export interface CapabilityRemovedItem {
+  name: string;
+}
+export interface CapabilityChangedItem {
+  name: string;
+  field: string;
+  from?: unknown;
+  to?: unknown;
+}
+export interface SessionMetadataUpdate {
+  type?: "session_metadata_update";
+  payload?:
+    | {
+        field: "name" | "description" | "agent.model_default" | "vcs.branch";
+        value: string;
+        previous_value?: string;
+        reason: (
+          | ("ai_generated" | "user_set" | "runtime_inferred" | "external")
+          | {
+              [k: string]: unknown;
+            }
+        ) &
+          string;
+      }
+    | {
+        field: "tags";
+        value: string[];
+        previous_value?: string[];
+        reason: (
+          | ("ai_generated" | "user_set" | "runtime_inferred" | "external")
+          | {
+              [k: string]: unknown;
+            }
+        ) &
+          string;
+      }
+    | {
+        field: "vcs.worktree";
+        value: Worktree;
+        previous_value?: Worktree;
+        reason: (
+          | ("ai_generated" | "user_set" | "runtime_inferred" | "external")
+          | {
+              [k: string]: unknown;
+            }
+        ) &
+          string;
+      }
+    | {
+        field: string;
+        value: unknown;
+        previous_value?: unknown;
+        reason: (
+          | ("ai_generated" | "user_set" | "runtime_inferred" | "external")
+          | {
+              [k: string]: unknown;
+            }
+        ) &
+          string;
+      };
+  [k: string]: unknown;
+}

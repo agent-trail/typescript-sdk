@@ -1,0 +1,28 @@
+{
+  "name": "@agent-trail/schema",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "fixtures",
+    "schema",
+    "spec-artifacts.json",
+    "package.json"
+  ],
+  "exports": {
+    ".": {
+      "default": "./schema/v0.1.0.json"
+    },
+    "./v0.1.0": {
+      "default": "./schema/v0.1.0.json"
+    },
+    "./schema/v0.1.0.json": {
+      "default": "./schema/v0.1.0.json"
+    },
+    "./fixtures/validation/*": "./fixtures/validation/*",
+    "./package.json": "./package.json"
+  }
+}

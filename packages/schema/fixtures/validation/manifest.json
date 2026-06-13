@@ -1,0 +1,3889 @@
+{
+  "schema_version": "0.1.0",
+  "fixtures": [
+    {
+      "path": "hash-mismatch/content-hash-invalid-hex.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 1
+          },
+          {
+            "line": 1,
+            "path": "/content_hash",
+            "severity": "error",
+            "code": "content_hash_invalid"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1
+          },
+          {
+            "line": 1,
+            "path": "/content_hash",
+            "severity": "error",
+            "code": "content_hash_invalid"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R2"
+      ]
+    },
+    {
+      "path": "hash-mismatch/content-hash-mismatch.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 1,
+            "path": "/content_hash",
+            "severity": "error",
+            "code": "content_hash_mismatch"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1,
+            "path": "/content_hash",
+            "severity": "warning",
+            "code": "content_hash_mismatch"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R2"
+      ]
+    },
+    {
+      "path": "hash-mismatch/trail-envelope-content-hash-mismatch.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 1,
+            "path": "/content_hash",
+            "severity": "error",
+            "code": "content_hash_mismatch"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1,
+            "path": "/content_hash",
+            "severity": "warning",
+            "code": "content_hash_mismatch"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R2"
+      ]
+    },
+    {
+      "path": "hash-vectors/absent-content-hash.trail.jsonl",
+      "comment": "Oracle: Go github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467 + crypto/sha256",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "expected": {
+        "session_hashes": [
+          "b69b9cafe47e606415d4f23868297bbe8a3e3efca32363b676a9eff8cdc5819f"
+        ]
+      },
+      "classes": [
+        "W",
+        "R2"
+      ]
+    },
+    {
+      "path": "hash-vectors/envelope-two-tier.trail.jsonl",
+      "comment": "Oracle: Go github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467 + crypto/sha256",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "expected": {
+        "session_hashes": [
+          "44b16ddea9fd914442eaf8f21c90b6f0eeb913ab499eb668a9c0c6e06b988522"
+        ],
+        "file_hash": "a55a96d3a19b624aa8f2e38337521046facf5a6f2a04c3f3c3f7a14880774443"
+      },
+      "classes": [
+        "W",
+        "R2"
+      ]
+    },
+    {
+      "path": "hash-vectors/jcs-stress.trail.jsonl",
+      "comment": "Oracle: Go github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467 + crypto/sha256",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "expected": {
+        "session_hashes": [
+          "24b3a1d99f3e725092cd0126c7d9fb84246e467ec5d2d1fd416f462ae8a58e14"
+        ]
+      },
+      "classes": [
+        "W",
+        "R2"
+      ]
+    },
+    {
+      "path": "hash-vectors/minimal-pending-roundtrip.trail.jsonl",
+      "comment": "Oracle: Go github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467 + crypto/sha256",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "expected": {
+        "session_hashes": [
+          "f215ed334d3928e1abde804f2c4a870431b18d4fa7d755ec94d94be2a6ddd06e"
+        ]
+      },
+      "classes": [
+        "W",
+        "R2"
+      ]
+    },
+    {
+      "path": "hash-vectors/multi-session-slice.trail.jsonl",
+      "comment": "Oracle: Go github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467 + crypto/sha256",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "expected": {
+        "session_hashes": [
+          "0805ade157038a1cbb2895c55383b39b5a42aaa7d6ccc164174c0b3346d8fc14",
+          "f7fe8ccdeaeddf70b868838614730c0a613d937bafeac48a42bb585e6df3ead7"
+        ]
+      },
+      "classes": [
+        "W",
+        "R2"
+      ]
+    },
+    {
+      "path": "hash-vectors/replacement-char.trail.jsonl",
+      "comment": "Oracle: Go github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467 + crypto/sha256",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "expected": {
+        "session_hashes": [
+          "594a06fa452fc097bce145be95dd614ddb81b6adf8fe2baf80cbe6e13fcaf4f2"
+        ]
+      },
+      "classes": [
+        "W",
+        "R2"
+      ]
+    },
+    {
+      "path": "hash-vectors/segment-chain-seq1.trail.jsonl",
+      "comment": "Oracle: Go github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467 + crypto/sha256",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "expected": {
+        "session_hashes": [
+          "b12c68969624665898a4e3ec4dc5c0d06f7a7f305f8f7b16e347e18ccd2f6e67"
+        ]
+      },
+      "classes": [
+        "W",
+        "R2"
+      ]
+    },
+    {
+      "path": "hash-vectors/segment-chain-seq2.trail.jsonl",
+      "comment": "Oracle: Go github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467 + crypto/sha256",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "expected": {
+        "session_hashes": [
+          "3a676114740d09c2620c1c5e106ea8066bfc3926e478faf5cabd0cedfff398ec"
+        ]
+      },
+      "classes": [
+        "W",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/ambiguous-sequential-pairing-with-session-end.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 4,
+            "path": "/payload",
+            "severity": "warning",
+            "code": "ambiguous_sequential_pairing"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 4,
+            "path": "/payload",
+            "severity": "warning",
+            "code": "ambiguous_sequential_pairing"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/ambiguous-sequential-pairing.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          },
+          {
+            "line": 4,
+            "path": "/payload",
+            "severity": "warning",
+            "code": "ambiguous_sequential_pairing"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          },
+          {
+            "line": 4,
+            "path": "/payload",
+            "severity": "warning",
+            "code": "ambiguous_sequential_pairing"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/branch-point-unknown-from-id.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/from_id",
+            "severity": "warning",
+            "code": "unknown_branch_point_from_id"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/from_id",
+            "severity": "warning",
+            "code": "unknown_branch_point_from_id"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/branch-summary-unknown-abandoned-branch-id.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/abandoned_branch_id",
+            "severity": "warning",
+            "code": "unknown_abandoned_branch_id"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/abandoned_branch_id",
+            "severity": "warning",
+            "code": "unknown_abandoned_branch_id"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/duplicate-id.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/id",
+            "severity": "error",
+            "code": "duplicate_id"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/id",
+            "severity": "error",
+            "code": "duplicate_id"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/duplicate-option-labels-mixed-ids.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/questions/0/options/1/label",
+            "severity": "warning",
+            "code": "duplicate_option_labels"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/questions/0/options/1/label",
+            "severity": "warning",
+            "code": "duplicate_option_labels"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/duplicate-option-labels.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/questions/0/options/1/label",
+            "severity": "warning",
+            "code": "duplicate_option_labels"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/questions/0/options/1/label",
+            "severity": "warning",
+            "code": "duplicate_option_labels"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/duplicate-segment-seq.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/segment/seq",
+            "severity": "warning",
+            "code": "duplicate_segment_seq"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/segment/seq",
+            "severity": "warning",
+            "code": "duplicate_segment_seq"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/duplicate-tool-result-for-id.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/envelope-not-at-line-1.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/type",
+            "severity": "error",
+            "code": "envelope_not_at_line_1"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/type",
+            "severity": "error",
+            "code": "envelope_not_at_line_1"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/envelope-sessions-manifest-empty.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 1,
+            "path": "/sessions",
+            "severity": "warning",
+            "code": "envelope_sessions_manifest_drift"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1,
+            "path": "/sessions",
+            "severity": "warning",
+            "code": "envelope_sessions_manifest_drift"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/envelope-sessions-manifest-multiple.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 1,
+            "path": "/sessions",
+            "severity": "warning",
+            "code": "envelope_sessions_manifest_drift"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1,
+            "path": "/sessions",
+            "severity": "warning",
+            "code": "envelope_sessions_manifest_drift"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/envelope-without-session-header.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "",
+            "severity": "error",
+            "code": "missing_header_after_envelope"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "",
+            "severity": "error",
+            "code": "missing_header_after_envelope"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/header-has-parent-id.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 1
+          },
+          {
+            "line": 1,
+            "path": "/parent_id",
+            "severity": "error",
+            "code": "header_has_parent_id"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1
+          },
+          {
+            "line": 1,
+            "path": "/parent_id",
+            "severity": "error",
+            "code": "header_has_parent_id"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/multi-session-cross-group-parent.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 4,
+            "path": "/parent_id",
+            "severity": "error",
+            "code": "unknown_parent_id"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 4,
+            "path": "/parent_id",
+            "severity": "error",
+            "code": "unknown_parent_id"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/multi-session-orphan-prelude.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 1
+          },
+          {
+            "line": 1,
+            "path": "/type",
+            "severity": "error",
+            "code": "events_before_first_session_header"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1
+          },
+          {
+            "line": 1,
+            "path": "/type",
+            "severity": "error",
+            "code": "events_before_first_session_header"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/multiple-envelopes.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/type",
+            "severity": "error",
+            "code": "events_before_first_session_header"
+          },
+          {
+            "line": 2,
+            "path": "/type",
+            "severity": "error",
+            "code": "multiple_envelopes"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/type",
+            "severity": "error",
+            "code": "events_before_first_session_header"
+          },
+          {
+            "line": 2,
+            "path": "/type",
+            "severity": "error",
+            "code": "multiple_envelopes"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/non-interoperable-number.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/source/raw/snowflake",
+            "severity": "warning",
+            "code": "non_interoperable_number"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/source/raw/snowflake",
+            "severity": "warning",
+            "code": "non_interoperable_number"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/non-monotonic-event-ts.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/ts",
+            "severity": "warning",
+            "code": "non_monotonic_event_ts"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/ts",
+            "severity": "warning",
+            "code": "non_monotonic_event_ts"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/out-of-order-segment-seq.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/segment/seq",
+            "severity": "warning",
+            "code": "out_of_order_segment_seq"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/segment/seq",
+            "severity": "warning",
+            "code": "out_of_order_segment_seq"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/parent-cycle.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/parent_id",
+            "severity": "error",
+            "code": "parent_cycle"
+          },
+          {
+            "line": 3,
+            "path": "/parent_id",
+            "severity": "error",
+            "code": "parent_cycle"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/parent_id",
+            "severity": "error",
+            "code": "parent_cycle"
+          },
+          {
+            "line": 3,
+            "path": "/parent_id",
+            "severity": "error",
+            "code": "parent_cycle"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/parse-fidelity-drift.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 1,
+            "path": "/parse_fidelity/quarantined_count",
+            "severity": "error",
+            "code": "parse_fidelity_drift"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1,
+            "path": "/parse_fidelity/quarantined_count",
+            "severity": "error",
+            "code": "parse_fidelity_drift"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/sequential-pairing-stays-in-branch.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/sequential-pairing-stays-in-sibling-branch.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/sequential-pairing-stays-in-subagent-sibling-branch.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          },
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          },
+          {
+            "line": 3,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          },
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          },
+          {
+            "line": 2,
+            "path": "/payload/args/prompt",
+            "severity": "warning",
+            "code": "reader_tolerant_unknown_payload_field"
+          },
+          {
+            "line": 3,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/session-end-forward-final-message-id.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/final_message_id",
+            "severity": "warning",
+            "code": "unknown_final_message_id"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/final_message_id",
+            "severity": "warning",
+            "code": "unknown_final_message_id"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/session-end-unknown-final-message-id.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/payload/final_message_id",
+            "severity": "warning",
+            "code": "unknown_final_message_id"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/payload/final_message_id",
+            "severity": "warning",
+            "code": "unknown_final_message_id"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/stream-open-with-content-hash.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 1,
+            "path": "/content_hash",
+            "severity": "error",
+            "code": "content_hash_mismatch"
+          },
+          {
+            "line": 1,
+            "path": "/content_hash",
+            "severity": "warning",
+            "code": "stream_open_with_content_hash"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1,
+            "path": "/content_hash",
+            "severity": "warning",
+            "code": "content_hash_mismatch"
+          },
+          {
+            "line": 1,
+            "path": "/content_hash",
+            "severity": "warning",
+            "code": "stream_open_with_content_hash"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/tool-args-unredacted-secret.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/args/headers/Authorization",
+            "severity": "warning",
+            "code": "tool_args_unredacted_secret"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/args/headers/Authorization",
+            "severity": "warning",
+            "code": "tool_args_unredacted_secret"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/tool-call-aborted-turn-scope-does-not-close-call.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/tool-result-for-id-wins-over-semantic-conflict.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/unknown-parent-id.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/parent_id",
+            "severity": "error",
+            "code": "unknown_parent_id"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/parent_id",
+            "severity": "error",
+            "code": "unknown_parent_id"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/unmatched-tool-call-at-eof.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/unmatched-tool-call-partial-suppression.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/unmatched-tool-call-session-terminated-without-open-call-ids.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-graph/user-query-response-unknown-for-id.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/for_id",
+            "severity": "warning",
+            "code": "unknown_user_query_for_id"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/for_id",
+            "severity": "warning",
+            "code": "unknown_user_query_for_id"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/agent-message-attachment-bad-uri.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/agent-message-usage-extra-field.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/payload/usage/cost_usd",
+            "severity": "warning",
+            "code": "reader_tolerant_unknown_payload_field"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/agent-message-usage-missing-output.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/agent-message-usage-missing-required.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/agent-message-usage-zero-context-window.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/agent-thinking-usage-missing-output.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/capability-change-bad-reason.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/capability-change-bad-scope.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/capability-change-empty.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/command-invoke-bad-kind.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/command-invoke-bad-result-action.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/command-invoke-missing-kind.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/command-invoke-missing-name.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/envelope-missing-producer.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 1
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/header-wrong-schema-version.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 1
+          },
+          {
+            "line": 1,
+            "path": "",
+            "severity": "error",
+            "code": "missing_header"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1
+          },
+          {
+            "line": 1,
+            "path": "",
+            "severity": "error",
+            "code": "missing_header"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/redaction-count-non-integer.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/segment-seq-1-with-prev-hash.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 1
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/segment-seq-2-without-prev-hash.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 1
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/segment-seq-2-without-session-uid.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 1
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/segment-seq-zero.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 1
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/session-end-final-message-id-null.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/session-metadata-update-bad-field-cwd.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/session-metadata-update-bad-reason.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/session-metadata-update-bad-tags-value.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/session-metadata-update-bad-worktree.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/session-uid-not-ulid-or-uuid.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 1
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/tool-call-aborted-bad-reason.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/tool-call-aborted-tool-scope-missing-for-id.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/tool-call-aborted-turn-scope-with-for-id.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/tool-call-file-list-missing-path.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          },
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          },
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/tool-call-file-patch-empty-files.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          },
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          },
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/tool-call-file-patch-file-missing-diff.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          },
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          },
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/tool-call-missing-args-path.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          },
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          },
+          {
+            "line": 2,
+            "path": "/id",
+            "severity": "warning",
+            "code": "unmatched_tool_call_at_eof"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/tool-call-usage-missing-output.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/tool-result-attachment-extra-field.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3
+          },
+          {
+            "line": 3,
+            "path": "/payload/attachments/0/width",
+            "severity": "warning",
+            "code": "reader_tolerant_unknown_payload_field"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/tool-result-meta-file-read-range-wrong-length.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/tool-result-meta-mcp-call-block-missing-type.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/tool-result-meta-shell-command-extra-field.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/payload/meta/shell_command/exitcode",
+            "severity": "warning",
+            "code": "reader_tolerant_unknown_payload_field"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/tool-result-truncated-missing-output-size.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/user-message-missing-text.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/user-message-non-string-text.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/vcs-null-revision-with-empty-branch.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 1
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/vcs-null-revision-with-head-commit.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 1
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "invalid-schema/vcs-null-revision-without-branch.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 1
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "reader-tolerant/capability-change-unknown-payload-field.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/future_field",
+            "severity": "warning",
+            "code": "reader_tolerant_unknown_payload_field"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "reader-tolerant/ill-formed-string.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/text",
+            "severity": "error",
+            "code": "ill_formed_string"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/text",
+            "severity": "warning",
+            "code": "ill_formed_string"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "reader-tolerant/nested-unknown-payload-field.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/attachments/0/future_field",
+            "severity": "warning",
+            "code": "reader_tolerant_unknown_payload_field"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "reader-tolerant/patch-compatible-schema-version.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 1
+          },
+          {
+            "line": 1,
+            "path": "",
+            "severity": "error",
+            "code": "missing_header"
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 1,
+            "path": "/schema_version",
+            "severity": "warning",
+            "code": "reader_tolerant_schema_version"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "reader-tolerant/reserved-future-event-type.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/type",
+            "severity": "warning",
+            "code": "reader_tolerant_unknown_record"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "reader-tolerant/tool-result-meta-registered-extra-field.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 3
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 3,
+            "path": "/payload/meta/shell_command/exitcode",
+            "severity": "warning",
+            "code": "reader_tolerant_unknown_payload_field"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "reader-tolerant/unknown-event-type.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/type",
+            "severity": "warning",
+            "code": "reader_tolerant_unknown_record"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "reader-tolerant/unknown-payload-field.trail.jsonl",
+      "strict": {
+        "valid": false,
+        "diagnostics": [
+          {
+            "line": 2
+          }
+        ]
+      },
+      "tolerant": {
+        "clean": false,
+        "diagnostics": [
+          {
+            "line": 2,
+            "path": "/payload/future_field",
+            "severity": "warning",
+            "code": "reader_tolerant_unknown_payload_field"
+          }
+        ]
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/agent-message-attachments-multiple.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/agent-message-attachments.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/agent-message-usage.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/agent-thinking-usage.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/capability-change-initial-snapshot.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/capability-change.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/command-invoke-extension-kind.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/command-invoke-full.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/command-invoke-minimal.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/command-invoke-plugin.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/command-invoke-result-action-ext.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/command-invoke-slash.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/context-compact-provenance-only-ids.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/context-compact-replaced-message-ids.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/linear-with-parent-ids.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/minimal-linear.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/minimal-with-content-hash.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/multi-segment-seg1.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/multi-segment-seg2.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/multi-session-fork-from-chain.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/multi-session-two-no-envelope.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/multi-session-with-envelope.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/multiple-session-end-events.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/redaction-count-meta.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/session-end-final-message-id-references-header.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/session-end-with-final-message-id.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/session-header-metadata-base.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/session-metadata-update-agent-model-default.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/session-metadata-update-name.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/session-metadata-update-tags.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/session-metadata-update-vcs-branch.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/session-metadata-update-vendor.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/spec-example-incomplete-session.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/spec-example-mcp-call.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/spec-example-synthesized-event.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/spec-example-tool-call-semantic-pairing.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/spec-example-tool-result-fallback-pairing.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/spec-example-tree-abandoned-branch.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/streaming-finalized-clean.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/streaming-open.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/system-event-vcs-commit.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-call-aborted-closes-call.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-call-aborted-extension-scope-reason.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-call-aborted-turn-scope.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-call-file-list.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-call-file-patch.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-call-matched-by-for-id.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-call-matched-by-semantic-call-id.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-call-matched-same-parent-siblings.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-call-matched-sequentially.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-call-usage.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-result-attachments-with-mcp-meta.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-result-attachments.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-result-for-id-targets-header-falls-through.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-result-meta-file-read.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-result-meta-mcp-call.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-result-meta-shell-command.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-result-meta-toplevel-vendor-kind.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-result-meta-unregistered-kind.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-result-meta-vendor-extension.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/tool-result-output-size-truncated.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/unmatched-tool-call-suppressed-by-session-end.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/unmatched-tool-call-suppressed-by-session-terminated.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/user-message-origin-injected.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/user-query-duplicate-labels-with-ids.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/vcs-unborn-head.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/with-trail-envelope-all-fields.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/with-trail-envelope-and-hash.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    },
+    {
+      "path": "valid/with-trail-envelope.trail.jsonl",
+      "strict": {
+        "valid": true,
+        "diagnostics": []
+      },
+      "tolerant": {
+        "clean": true,
+        "diagnostics": []
+      },
+      "classes": [
+        "W",
+        "R1",
+        "R2"
+      ]
+    }
+  ]
+}

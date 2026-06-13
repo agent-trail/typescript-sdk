@@ -6,7 +6,15 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!node_modules", "!dist", "!coverage", "!.fallow"]
+    "includes": [
+      "**",
+      "!node_modules",
+      "!dist",
+      "!coverage",
+      "!.fallow",
+      "!packages/schema/fixtures",
+      "!packages/schema/schema"
+    ]
   },
   "formatter": {
     "enabled": true,

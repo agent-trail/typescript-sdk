@@ -68,23 +68,31 @@ function collectSchemaRefs(value: unknown): string[] {
 }
 
 function tightenGeneratedTypes(generated: string): string {
-  return generated
-    .replace(
-      `  payload: {
+  let tightened = generated;
+  tightened = replaceRequired(
+    tightened,
+    `  payload: {
     [k: string]: unknown | undefined;
   };`,
-      "  payload: unknown;",
-    )
-    .replace("\n    minItems?: 0;", "")
-    .replace(
-      `export interface ToolCall {
+    "  payload: object;",
+    "EntryBase.payload",
+  );
+  tightened = replaceRequired(
+    tightened,
+    "\n    minItems?: 0;",
+    "",
+    "TaskPlanUpdate.payload.minItems",
+  );
+  tightened = replaceRequired(
+    tightened,
+    `export interface ToolCall {
   type?: "tool_call";
   payload?: {
     [k: string]: unknown | undefined;
   };
   [k: string]: unknown | undefined;
 }`,
-      `export interface ToolCall {
+    `export interface ToolCall {
   type?: "tool_call";
   payload?: ToolCallPayload;
   [k: string]: unknown | undefined;
@@ -255,16 +263,18 @@ export type ToolCallPayloadByTool =
       };
     };
 `,
-    )
-    .replace(
-      `export interface ToolCallAborted {
+    "ToolCall.payload",
+  );
+  tightened = replaceRequired(
+    tightened,
+    `export interface ToolCallAborted {
   type?: "tool_call_aborted";
   payload?: {
     [k: string]: unknown | undefined;
   };
   [k: string]: unknown | undefined;
 }`,
-      `export interface ToolCallAborted {
+    `export interface ToolCallAborted {
   type?: "tool_call_aborted";
   payload?: ToolCallAbortedPayload;
   [k: string]: unknown | undefined;
@@ -302,9 +312,11 @@ export type ToolCallAbortedPayload = {
     }
 );
 `,
-    )
-    .replace(
-      `  payload?: {
+    "ToolCallAborted.payload",
+  );
+  tightened = replaceRequired(
+    tightened,
+    `  payload?: {
     scope: (
       | ("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin")
       | {
@@ -348,7 +360,7 @@ export type ToolCallAbortedPayload = {
   } & {
     [k: string]: unknown | undefined;
   };`,
-      `  payload?: {
+    `  payload?: {
     scope: (
       | ("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin")
       | {
@@ -403,7 +415,21 @@ export type ToolCallAbortedPayload = {
         snapshot: [CapabilityAddedItem, ...CapabilityAddedItem[]];
       }
   );`,
-    );
+    "CapabilityChange.payload",
+  );
+  return tightened;
+}
+
+function replaceRequired(
+  text: string,
+  searchValue: string,
+  replaceValue: string,
+  label: string,
+): string {
+  if (!text.includes(searchValue)) {
+    throw new Error(`generated type tightening target not found: ${label}`);
+  }
+  return text.replace(searchValue, replaceValue);
 }
 
 if (import.meta.main) {

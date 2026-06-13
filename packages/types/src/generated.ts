@@ -366,7 +366,7 @@ export interface EntryBase {
   id: string;
   parent_id?: string | null;
   ts: Iso8601;
-  payload: unknown;
+  payload: object;
   semantic?: SemanticMetadata;
   source?: SourceMetadata;
   meta?: {

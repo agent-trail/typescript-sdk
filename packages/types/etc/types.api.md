@@ -237,7 +237,7 @@ export interface EntryBase {
     // (undocumented)
     parent_id?: string | null;
     // (undocumented)
-    payload: unknown;
+    payload: object;
     // (undocumented)
     semantic?: SemanticMetadata;
     // (undocumented)

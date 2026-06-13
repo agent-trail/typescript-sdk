@@ -31,7 +31,7 @@ export async function generateTypes(
     unreachableDefinitions: true,
     unknownAny: true,
   });
-  const normalized = `${generated.trimEnd()}\n`;
+  const normalized = `${tightenGeneratedTypes(generated).trimEnd()}\n`;
 
   if (options.write ?? true) {
     const outputPath = path.join(root, GENERATED_TYPES_PATH);
@@ -65,6 +65,167 @@ function collectSchemaRefs(value: unknown): string[] {
     refs.push(...collectSchemaRefs(child));
   }
   return refs;
+}
+
+function tightenGeneratedTypes(generated: string): string {
+  return generated
+    .replace(
+      `export interface ToolCall {
+  type?: "tool_call";
+  payload?: {
+    [k: string]: unknown | undefined;
+  };
+  [k: string]: unknown | undefined;
+}`,
+      `export interface ToolCall {
+  type?: "tool_call";
+  payload?: {
+    tool: ToolKind;
+    args: {
+      [k: string]: unknown | undefined;
+    };
+    usage?: AgentMessageUsage;
+    truncated?: boolean;
+    /**
+     * UTF-8 byte length of the original args object before truncation. Required when truncated is true.
+     */
+    args_size?: number;
+    overflow_ref?: string | null;
+  };
+  [k: string]: unknown | undefined;
+}`,
+    )
+    .replace(
+      `export interface ToolCallAborted {
+  type?: "tool_call_aborted";
+  payload?: {
+    [k: string]: unknown | undefined;
+  };
+  [k: string]: unknown | undefined;
+}`,
+      `export interface ToolCallAborted {
+  type?: "tool_call_aborted";
+  payload?: {
+    /**
+     * Abort granularity. tool_call aborts reference a specific tool_call by for_id; turn aborts describe a broader turn-level stop when the source cannot identify one call.
+     */
+    scope: (("tool_call" | "turn") | { [k: string]: unknown | undefined }) & string;
+    /**
+     * Globally-unique identifier shape: canonical uppercase ULID (26 Crockford base32 chars), lowercase hyphenated UUID (36 chars), or lowercase unhyphenated UUID (32 hex chars). Header ids, event ids, and envelope ids share this shape so cross-segment reconciliation can dedup by exact string equality (spec §9.5).
+     */
+    for_id?: string;
+    /**
+     * Why execution stopped before a normal tool_result.
+     */
+    reason:
+      | ("user_interrupt" | "hook_blocked" | "timeout" | "permission_denied" | "runtime_error")
+      | string;
+    blocked_by?: string;
+  };
+  [k: string]: unknown | undefined;
+}`,
+    )
+    .replace(
+      `  payload?: {
+    scope: (
+      | ("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin")
+      | {
+          [k: string]: unknown | undefined;
+        }
+    ) &
+      string;
+    reason: (
+      | (
+          | "initial"
+          | "registered"
+          | "deregistered"
+          | "connected"
+          | "disconnected"
+          | "loaded"
+          | "unloaded"
+          | "error"
+          | "instructions_updated"
+        )
+      | {
+          [k: string]: unknown | undefined;
+        }
+    ) &
+      string;
+    /**
+     * @minItems 1
+     */
+    added?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+    /**
+     * @minItems 1
+     */
+    removed?: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
+    /**
+     * @minItems 1
+     */
+    changed?: [CapabilityChangedItem, ...CapabilityChangedItem[]];
+    /**
+     * @minItems 1
+     */
+    snapshot?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+  } & {
+    [k: string]: unknown | undefined;
+  };`,
+      `  payload?: {
+    scope: (
+      | ("tool" | "skill" | "mcp_server" | "mcp_tool" | "plugin")
+      | {
+          [k: string]: unknown | undefined;
+        }
+    ) &
+      string;
+    reason: (
+      | (
+          | "initial"
+          | "registered"
+          | "deregistered"
+          | "connected"
+          | "disconnected"
+          | "loaded"
+          | "unloaded"
+          | "error"
+          | "instructions_updated"
+        )
+      | {
+          [k: string]: unknown | undefined;
+        }
+    ) &
+      string;
+    /**
+     * @minItems 1
+     */
+    added?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+    /**
+     * @minItems 1
+     */
+    removed?: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
+    /**
+     * @minItems 1
+     */
+    changed?: [CapabilityChangedItem, ...CapabilityChangedItem[]];
+    /**
+     * @minItems 1
+     */
+    snapshot?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+  } & (
+    | {
+        added: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+      }
+    | {
+        removed: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
+      }
+    | {
+        changed: [CapabilityChangedItem, ...CapabilityChangedItem[]];
+      }
+    | {
+        snapshot: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+      }
+  );`,
+    );
 }
 
 if (import.meta.main) {

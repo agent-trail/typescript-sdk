@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { cpSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { assertNoExternalSchemaRefs } from "../scripts/generate-types.ts";
@@ -67,6 +67,23 @@ test("rejects manifests that drift from pinned release metadata", async () => {
   ).toEqual(
     expect.arrayContaining([
       expect.stringContaining("manifest assets.schema.sha256 drifted from pinned release"),
+    ]),
+  );
+});
+
+test("rejects schema package exports that drift from the pinned schema path", async () => {
+  const root = createVendoredCopy();
+  const manifest = await readSpecArtifactManifest(root);
+  const packageJsonPath = path.join(root, SCHEMA_PACKAGE_DIR, "package.json");
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as {
+    exports: Record<string, { default: string }>;
+  };
+  packageJson.exports["./v0.1.0"] = { default: "./schema/old.json" };
+  writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
+
+  expect(await verifyVendoredSpecArtifacts(root, manifest)).toEqual(
+    expect.arrayContaining([
+      expect.stringContaining("packages/schema package export ./v0.1.0 drifted"),
     ]),
   );
 });

@@ -32,8 +32,10 @@ async function main(root = process.cwd()): Promise<number> {
   await downloadAsset(FIXTURES_ASSET.url, fixturesAssetPath, FIXTURES_ASSET.sha256);
 
   const packageDir = path.join(root, SCHEMA_PACKAGE_DIR);
-  await mkdir(path.join(packageDir, "schema"), { recursive: true });
   await mkdir(packageDir, { recursive: true });
+  const schemaDir = path.dirname(path.join(packageDir, SCHEMA_ASSET.targetPath));
+  await rm(schemaDir, { force: true, recursive: true });
+  await mkdir(schemaDir, { recursive: true });
   await writeFile(path.join(packageDir, SCHEMA_ASSET.targetPath), await readFile(schemaAssetPath));
 
   const fixturesDir = path.join(packageDir, FIXTURES_ASSET.targetPath);

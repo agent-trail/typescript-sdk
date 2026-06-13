@@ -149,9 +149,15 @@ export interface CapabilityChange {
         removed?: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
         changed?: [CapabilityChangedItem, ...CapabilityChangedItem[]];
         snapshot?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
-    } & {
-        [k: string]: unknown | undefined;
-    };
+    } & ({
+        added: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+    } | {
+        removed: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
+    } | {
+        changed: [CapabilityChangedItem, ...CapabilityChangedItem[]];
+    } | {
+        snapshot: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+    });
     // (undocumented)
     type?: "capability_change";
 }
@@ -569,7 +575,14 @@ export interface ToolCall {
     [k: string]: unknown | undefined;
     // (undocumented)
     payload?: {
-        [k: string]: unknown | undefined;
+        tool: ToolKind;
+        args: {
+            [k: string]: unknown | undefined;
+        };
+        usage?: AgentMessageUsage;
+        truncated?: boolean;
+        args_size?: number;
+        overflow_ref?: string | null;
     };
     // (undocumented)
     type?: "tool_call";
@@ -581,7 +594,12 @@ export interface ToolCallAborted {
     [k: string]: unknown | undefined;
     // (undocumented)
     payload?: {
-        [k: string]: unknown | undefined;
+        scope: (("tool_call" | "turn") | {
+            [k: string]: unknown | undefined;
+        }) & string;
+        for_id?: string;
+        reason: ("user_interrupt" | "hook_blocked" | "timeout" | "permission_denied" | "runtime_error") | string;
+        blocked_by?: string;
     };
     // (undocumented)
     type?: "tool_call_aborted";

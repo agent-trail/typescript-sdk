@@ -450,7 +450,17 @@ export interface TaskPlanItem {
 export interface ToolCall {
   type?: "tool_call";
   payload?: {
-    [k: string]: unknown | undefined;
+    tool: ToolKind;
+    args: {
+      [k: string]: unknown | undefined;
+    };
+    usage?: AgentMessageUsage;
+    truncated?: boolean;
+    /**
+     * UTF-8 byte length of the original args object before truncation. Required when truncated is true.
+     */
+    args_size?: number;
+    overflow_ref?: string | null;
   };
   [k: string]: unknown | undefined;
 }
@@ -529,7 +539,21 @@ export interface ToolResult {
 export interface ToolCallAborted {
   type?: "tool_call_aborted";
   payload?: {
-    [k: string]: unknown | undefined;
+    /**
+     * Abort granularity. tool_call aborts reference a specific tool_call by for_id; turn aborts describe a broader turn-level stop when the source cannot identify one call.
+     */
+    scope: (("tool_call" | "turn") | { [k: string]: unknown | undefined }) & string;
+    /**
+     * Globally-unique identifier shape: canonical uppercase ULID (26 Crockford base32 chars), lowercase hyphenated UUID (36 chars), or lowercase unhyphenated UUID (32 hex chars). Header ids, event ids, and envelope ids share this shape so cross-segment reconciliation can dedup by exact string equality (spec §9.5).
+     */
+    for_id?: string;
+    /**
+     * Why execution stopped before a normal tool_result.
+     */
+    reason:
+      | ("user_interrupt" | "hook_blocked" | "timeout" | "permission_denied" | "runtime_error")
+      | string;
+    blocked_by?: string;
   };
   [k: string]: unknown | undefined;
 }
@@ -880,9 +904,20 @@ export interface CapabilityChange {
      * @minItems 1
      */
     snapshot?: [CapabilityAddedItem, ...CapabilityAddedItem[]];
-  } & {
-    [k: string]: unknown | undefined;
-  };
+  } & (
+    | {
+        added: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+      }
+    | {
+        removed: [CapabilityRemovedItem, ...CapabilityRemovedItem[]];
+      }
+    | {
+        changed: [CapabilityChangedItem, ...CapabilityChangedItem[]];
+      }
+    | {
+        snapshot: [CapabilityAddedItem, ...CapabilityAddedItem[]];
+      }
+  );
   [k: string]: unknown | undefined;
 }
 export interface CapabilityAddedItem {

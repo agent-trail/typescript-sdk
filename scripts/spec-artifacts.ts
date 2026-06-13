@@ -163,6 +163,7 @@ export async function verifyVendoredSpecArtifacts(
   verifyPinnedManifestMetadata(manifest, errors);
   await verifyFileHash(schemaPath, manifest.assets.schema.sha256, errors);
   await verifySchemaDirectory(packageDir, manifest, errors);
+  await verifySchemaPackageExports(packageDir, manifest, errors);
 
   const expectedFiles = new Map<string, string>();
   for (const file of manifest.extractedFiles) {
@@ -225,6 +226,54 @@ async function verifySchemaDirectory(
   for (const filePath of actualFiles) {
     if (filePath !== expectedSchemaPath)
       errors.push(`unexpected vendored schema file: ${filePath}`);
+  }
+}
+
+async function verifySchemaPackageExports(
+  packageDir: string,
+  manifest: SpecArtifactManifest,
+  errors: string[],
+): Promise<void> {
+  const packageJson = requireRecord(
+    JSON.parse(await readFile(path.join(packageDir, "package.json"), "utf8")) as unknown,
+    "packages/schema/package.json",
+  );
+  const exportsRecord = requireRecord(packageJson.exports, "packages/schema/package.json.exports");
+  const schemaExportPath = `./${manifest.assets.schema.targetPath}`;
+
+  verifyPackageExport(".", schemaExportPath, exportsRecord, errors);
+  verifyPackageExport(`./v${manifest.specVersion}`, schemaExportPath, exportsRecord, errors);
+  verifyPackageExport(schemaExportPath, schemaExportPath, exportsRecord, errors);
+}
+
+function verifyPackageExport(
+  subpath: string,
+  expectedDefault: string,
+  exportsRecord: Record<string, unknown>,
+  errors: string[],
+): void {
+  const exportValue = exportsRecord[subpath];
+  if (typeof exportValue === "string") {
+    if (exportValue !== expectedDefault) {
+      errors.push(
+        `packages/schema package export ${subpath} drifted from pinned schema path: expected ${expectedDefault} got ${exportValue}`,
+      );
+    }
+    return;
+  }
+
+  const exportRecord = requireRecord(
+    exportValue,
+    `packages/schema/package.json.exports.${subpath}`,
+  );
+  const actualDefault = requireString(
+    exportRecord.default,
+    `packages/schema/package.json.exports.${subpath}.default`,
+  );
+  if (actualDefault !== expectedDefault) {
+    errors.push(
+      `packages/schema package export ${subpath} drifted from pinned schema path: expected ${expectedDefault} got ${actualDefault}`,
+    );
   }
 }
 

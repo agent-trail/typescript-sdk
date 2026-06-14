@@ -1,0 +1,20 @@
+packages/core/src/validation/tool-pairing.ts
+  s_1276b0959ffd41::t_a7399eb5ac5d4d 15-17,32,34,36-38,42,47-54,56-60,64,119,128,132-138,145
+  s_1276b0959ffd41::t_a7c8bf54250f95 55,80-81,86-103,146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "42c31ee8383cff1b18ba56b23045f5e7bdf1d676",
+  "prompts": {},
+  "sessions": {
+    "s_1276b0959ffd41": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec0f1-1d7c-7ba1-a721-447a182bf364",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

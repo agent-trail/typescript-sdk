@@ -79,7 +79,9 @@ A canonical trail file with a verified `content_hash`, stored at
 **Catalog**:
 SQLite metadata under the local store root. It records finalized object
 metadata, adapter source sessions, generated trail links, and latest Gist share
-state.
+state. Catalog list rows are session-centric: source sessions appear once,
+linked generated trails add trail/share fields to the source row, and unlinked
+registered session objects appear as registered rows.
 
 **Pending hash**:
 A header `content_hash` value of `"<pending>"` or an omitted content hash. It

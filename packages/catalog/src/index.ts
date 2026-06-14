@@ -9,6 +9,28 @@ import { join } from "node:path";
 
 const CATALOG_SCHEMA_VERSION = 1;
 const SHA256_HEX_PATTERN = /^[0-9a-f]{64}$/;
+const CATALOG_INDEX_SQL = `
+  CREATE INDEX IF NOT EXISTS trail_objects_session_uid_idx
+    ON trail_objects(session_uid);
+
+  CREATE INDEX IF NOT EXISTS source_sessions_session_date_idx
+    ON source_sessions(session_date);
+
+  CREATE INDEX IF NOT EXISTS source_sessions_agent_name_idx
+    ON source_sessions(agent_name);
+
+  CREATE INDEX IF NOT EXISTS source_sessions_cwd_idx
+    ON source_sessions(cwd);
+
+  CREATE INDEX IF NOT EXISTS source_sessions_branch_idx
+    ON source_sessions(branch);
+
+  CREATE INDEX IF NOT EXISTS trail_objects_agent_name_idx
+    ON trail_objects(agent_name);
+
+  CREATE INDEX IF NOT EXISTS trail_objects_session_date_idx
+    ON trail_objects(session_date);
+`;
 
 /**
  * SQLite parameter value accepted by the catalog driver.
@@ -57,6 +79,8 @@ export type SourceSessionKey = {
 export type DiscoveredCatalogSession = SourceSessionKey & {
   name?: string | null;
   path: string;
+  cwd?: string | null;
+  branch?: string | null;
   session_date: string;
 };
 
@@ -98,6 +122,11 @@ export type CatalogTrailObject = {
   source_path: string | null;
   session_uid: string | null;
   registered_at: string;
+  agent_name?: string | null;
+  name?: string | null;
+  cwd?: string | null;
+  branch?: string | null;
+  session_date?: string | null;
 };
 
 /**
@@ -121,31 +150,50 @@ export type MarkGistSharedInput = SourceSessionKey & {
 };
 
 /**
- * Options for listing source sessions from the catalog.
+ * Catalog row state for session-centric list views.
  *
  * @public
  */
-export type ListCatalogSessionsOptions = {
+export type CatalogEntryState = "source" | "source+registered" | "registered";
+
+/**
+ * Options for listing source and registered session entries from the catalog.
+ *
+ * @public
+ */
+export type ListCatalogEntriesOptions = {
   include_missing?: boolean;
+  states?: readonly CatalogEntryState[];
   agent_name?: string;
+  cwd?: string;
+  branch?: string;
+  date_from?: string;
+  date_to?: string;
+  query?: string;
+  case_sensitive?: boolean;
   limit?: number;
 };
 
 /**
- * Flat catalog row for source-session list views.
+ * Flat catalog row for session-centric source and registered object list views.
  *
  * @public
  */
-export type CatalogSessionRow = {
-  source_id: string;
+export type CatalogEntryRow = {
+  state: CatalogEntryState;
+  source_id: string | null;
+  content_hash: string | null;
+  agent_name: string | null;
   name: string | null;
-  path: string;
-  agent_name: string;
-  has_generated_trail: boolean;
+  path: string | null;
+  cwd: string | null;
+  branch: string | null;
+  session_date: string | null;
+  latest_at: string | null;
   trail_path: string | null;
-  gist_id: string | null;
-  session_date: string;
+  registered_at: string | null;
   trail_generated_at: string | null;
+  gist_id: string | null;
   gist_shared_at: string | null;
 };
 
@@ -185,11 +233,11 @@ export async function initializeCatalog(db: CatalogDb): Promise<void> {
     );
   }
   if (version === 0) {
-    await createCatalogSchemaV1(db);
+    await createCatalogSchema(db);
   }
 }
 
-async function createCatalogSchemaV1(db: CatalogDb): Promise<void> {
+async function createCatalogSchema(db: CatalogDb): Promise<void> {
   await db.exec("BEGIN IMMEDIATE");
   try {
     await db.exec(`
@@ -198,6 +246,8 @@ async function createCatalogSchemaV1(db: CatalogDb): Promise<void> {
         source_id TEXT NOT NULL,
         name TEXT,
         path TEXT NOT NULL,
+        cwd TEXT,
+        branch TEXT,
         session_date TEXT NOT NULL,
         missing INTEGER NOT NULL DEFAULT 0,
         first_seen_at TEXT NOT NULL,
@@ -212,7 +262,12 @@ async function createCatalogSchemaV1(db: CatalogDb): Promise<void> {
         object_path TEXT NOT NULL,
         source_path TEXT,
         session_uid TEXT,
-        registered_at TEXT NOT NULL
+        registered_at TEXT NOT NULL,
+        agent_name TEXT,
+        name TEXT,
+        cwd TEXT,
+        branch TEXT,
+        session_date TEXT
       );
 
       CREATE TABLE source_trail_links (
@@ -230,12 +285,8 @@ async function createCatalogSchemaV1(db: CatalogDb): Promise<void> {
           REFERENCES trail_objects(content_hash)
       );
 
-      CREATE INDEX trail_objects_session_uid_idx
-        ON trail_objects(session_uid);
-
-      CREATE INDEX source_sessions_session_date_idx
-        ON source_sessions(session_date);
     `);
+    await db.exec(CATALOG_INDEX_SQL);
     await db.exec(`PRAGMA user_version = ${CATALOG_SCHEMA_VERSION}`);
     await db.exec("COMMIT");
   } catch (error) {
@@ -262,20 +313,35 @@ export async function upsertDiscoveredSessions(
         source_id,
         name,
         path,
+        cwd,
+        branch,
         session_date,
         missing,
         first_seen_at,
         last_seen_at,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
       ON CONFLICT(agent_name, source_id) DO UPDATE SET
         name = excluded.name,
         path = excluded.path,
+        cwd = excluded.cwd,
+        branch = excluded.branch,
         session_date = excluded.session_date,
         missing = 0,
         last_seen_at = excluded.last_seen_at,
         updated_at = excluded.updated_at`,
-      [row.agent_name, row.source_id, row.name ?? null, row.path, row.session_date, now, now, now],
+      [
+        row.agent_name,
+        row.source_id,
+        row.name ?? null,
+        row.path,
+        row.cwd ?? null,
+        row.branch ?? null,
+        row.session_date,
+        now,
+        now,
+        now,
+      ],
     );
   }
 }
@@ -323,14 +389,24 @@ export async function upsertTrailObject(db: CatalogDb, row: CatalogTrailObject):
       object_path,
       source_path,
       session_uid,
-      registered_at
-    ) VALUES (?, ?, ?, ?, ?, ?)
+      registered_at,
+      agent_name,
+      name,
+      cwd,
+      branch,
+      session_date
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(content_hash) DO UPDATE SET
       kind = excluded.kind,
       object_path = excluded.object_path,
       source_path = excluded.source_path,
       session_uid = excluded.session_uid,
-      registered_at = excluded.registered_at`,
+      registered_at = excluded.registered_at,
+      agent_name = excluded.agent_name,
+      name = excluded.name,
+      cwd = excluded.cwd,
+      branch = excluded.branch,
+      session_date = excluded.session_date`,
     [
       row.content_hash,
       row.kind,
@@ -338,6 +414,11 @@ export async function upsertTrailObject(db: CatalogDb, row: CatalogTrailObject):
       row.source_path,
       row.session_uid,
       row.registered_at,
+      row.agent_name ?? null,
+      row.name ?? null,
+      row.cwd ?? null,
+      row.branch ?? null,
+      row.session_date ?? null,
     ],
   );
 }
@@ -404,14 +485,32 @@ export async function markGistShared(db: CatalogDb, input: MarkGistSharedInput):
 }
 
 /**
- * List source sessions with derived trail and share state.
+ * List source sessions and registered session objects with derived trail and share state.
  *
  * @public
  */
-export async function listCatalogSessions(
+export async function listCatalogEntries(
   db: CatalogDb,
-  opts: ListCatalogSessionsOptions = {},
-): Promise<CatalogSessionRow[]> {
+  opts: ListCatalogEntriesOptions = {},
+): Promise<CatalogEntryRow[]> {
+  validateListCatalogEntriesOptions(opts);
+  const rows = [...(await sourceEntryRows(db, opts)), ...(await registeredEntryRows(db, opts))];
+  const filtered = rows.filter((row) => entryMatches(row, opts));
+  filtered.sort(compareEntries);
+  return opts.limit === undefined ? filtered : filtered.slice(0, opts.limit);
+}
+
+async function sourceEntryRows(
+  db: CatalogDb,
+  opts: ListCatalogEntriesOptions,
+): Promise<CatalogEntryRow[]> {
+  if (
+    opts.states !== undefined &&
+    !opts.states.includes("source") &&
+    !opts.states.includes("source+registered")
+  ) {
+    return [];
+  }
   const conditions: string[] = [];
   const params: CatalogValue[] = [];
   if (opts.include_missing !== true) conditions.push("s.missing = 0");
@@ -419,19 +518,28 @@ export async function listCatalogSessions(
     conditions.push("s.agent_name = ?");
     params.push(opts.agent_name);
   }
+  if (opts.cwd !== undefined) {
+    conditions.push("s.cwd = ?");
+    params.push(opts.cwd);
+  }
+  if (opts.branch !== undefined) {
+    conditions.push("s.branch = ?");
+    params.push(opts.branch);
+  }
   const where = conditions.length === 0 ? "" : `WHERE ${conditions.join(" AND ")}`;
-  const limit = opts.limit === undefined ? "" : "LIMIT ?";
-  if (opts.limit !== undefined) params.push(opts.limit);
-  const rows = await db.all<{
+  const sourceRows = await db.all<{
     source_id: string;
     name: string | null;
     path: string;
     agent_name: string;
-    has_generated_trail: 0 | 1;
-    trail_path: string | null;
-    gist_id: string | null;
+    cwd: string | null;
+    branch: string | null;
     session_date: string;
+    content_hash: string | null;
+    trail_path: string | null;
+    registered_at: string | null;
     trail_generated_at: string | null;
+    gist_id: string | null;
     gist_shared_at: string | null;
   }>(
     `SELECT
@@ -439,25 +547,107 @@ export async function listCatalogSessions(
       s.name,
       s.path,
       s.agent_name,
-      CASE WHEN l.content_hash IS NULL THEN 0 ELSE 1 END AS has_generated_trail,
-      o.object_path AS trail_path,
-      l.gist_id,
+      s.cwd,
+      s.branch,
       s.session_date,
+      l.content_hash,
+      o.object_path AS trail_path,
+      o.registered_at,
       l.trail_generated_at,
+      l.gist_id,
       l.gist_shared_at
     FROM source_sessions s
     LEFT JOIN source_trail_links l
       ON l.agent_name = s.agent_name AND l.source_id = s.source_id
     LEFT JOIN trail_objects o
       ON o.content_hash = l.content_hash
-    ${where}
-    ORDER BY s.session_date DESC, s.agent_name ASC, s.source_id ASC
-    ${limit}`,
+    ${where}`,
     params,
   );
-  return rows.map((row) => ({
-    ...row,
-    has_generated_trail: row.has_generated_trail === 1,
+  return sourceRows.map((row) => ({
+    state: row.content_hash === null ? "source" : "source+registered",
+    source_id: row.source_id,
+    content_hash: row.content_hash,
+    agent_name: row.agent_name,
+    name: row.name,
+    path: row.path,
+    cwd: row.cwd,
+    branch: row.branch,
+    session_date: row.session_date,
+    latest_at: latestTimestamp(row.session_date, row.registered_at, row.trail_generated_at),
+    trail_path: row.trail_path,
+    registered_at: row.registered_at,
+    trail_generated_at: row.trail_generated_at,
+    gist_id: row.gist_id,
+    gist_shared_at: row.gist_shared_at,
+  }));
+}
+
+async function registeredEntryRows(
+  db: CatalogDb,
+  opts: ListCatalogEntriesOptions,
+): Promise<CatalogEntryRow[]> {
+  if (opts.states !== undefined && !opts.states.includes("registered")) return [];
+  const conditions = ["o.kind = 'session'"];
+  const params: CatalogValue[] = [];
+  if (opts.agent_name !== undefined) {
+    conditions.push("o.agent_name = ?");
+    params.push(opts.agent_name);
+  }
+  if (opts.cwd !== undefined) {
+    conditions.push("o.cwd = ?");
+    params.push(opts.cwd);
+  }
+  if (opts.branch !== undefined) {
+    conditions.push("o.branch = ?");
+    params.push(opts.branch);
+  }
+  const objectRows = await db.all<{
+    content_hash: string;
+    object_path: string;
+    source_path: string | null;
+    registered_at: string;
+    agent_name: string | null;
+    name: string | null;
+    cwd: string | null;
+    branch: string | null;
+    session_date: string | null;
+  }>(
+    `SELECT
+      o.content_hash,
+      o.object_path,
+      o.source_path,
+      o.registered_at,
+      o.agent_name,
+      o.name,
+      o.cwd,
+      o.branch,
+      o.session_date
+    FROM trail_objects o
+    WHERE ${conditions.join(" AND ")}
+      AND NOT EXISTS (
+        SELECT 1
+        FROM source_trail_links l
+        WHERE l.content_hash = o.content_hash
+      )`,
+    params,
+  );
+  return objectRows.map((row) => ({
+    state: "registered",
+    source_id: null,
+    content_hash: row.content_hash,
+    agent_name: row.agent_name,
+    name: row.name,
+    path: row.source_path,
+    cwd: row.cwd,
+    branch: row.branch,
+    session_date: row.session_date,
+    latest_at: latestTimestamp(row.session_date, row.registered_at),
+    trail_path: row.object_path,
+    registered_at: row.registered_at,
+    trail_generated_at: null,
+    gist_id: null,
+    gist_shared_at: null,
   }));
 }
 
@@ -483,6 +673,109 @@ export async function findTrailObjectsBySessionUid(
     ORDER BY registered_at ASC, content_hash ASC`,
     [session_uid],
   );
+}
+
+function entryMatches(row: CatalogEntryRow, opts: ListCatalogEntriesOptions): boolean {
+  return [
+    stateMatches(row.state, opts.states),
+    exactMatch(row.agent_name, opts.agent_name),
+    exactMatch(row.cwd, opts.cwd),
+    exactMatch(row.branch, opts.branch),
+    boundedBy(row.latest_at, opts.date_from, opts.date_to),
+    queryMatches(row, opts),
+  ].every(Boolean);
+}
+
+function validateListCatalogEntriesOptions(opts: ListCatalogEntriesOptions): void {
+  if (opts.limit !== undefined && (!Number.isInteger(opts.limit) || opts.limit < 1)) {
+    throw new Error(`invalid limit: expected positive integer, got ${opts.limit}`);
+  }
+  assertDateOption("date_from", opts.date_from);
+  assertDateOption("date_to", opts.date_to);
+}
+
+function assertDateOption(name: string, value: string | undefined): void {
+  if (value === undefined) return;
+  if (Number.isNaN(Date.parse(value))) {
+    throw new Error(`invalid ${name}: ${value}`);
+  }
+}
+
+function stateMatches(
+  state: CatalogEntryState,
+  allowed: readonly CatalogEntryState[] | undefined,
+): boolean {
+  return allowed === undefined || allowed.includes(state);
+}
+
+function exactMatch(actual: string | null, expected: string | undefined): boolean {
+  return expected === undefined || actual === expected;
+}
+
+function queryMatches(row: CatalogEntryRow, opts: ListCatalogEntriesOptions): boolean {
+  return opts.query === undefined || matchesQuery(row, opts.query, opts.case_sensitive === true);
+}
+
+function boundedBy(
+  value: string | null,
+  from: string | undefined,
+  to: string | undefined,
+): boolean {
+  const fromMs = timestampMs(from);
+  const toMs = timestampMs(to);
+  if (fromMs === null && toMs === null) return true;
+  const valueMs = timestampMs(value);
+  return valueMs !== null && lowerBoundMatches(valueMs, fromMs) && upperBoundMatches(valueMs, toMs);
+}
+
+function timestampMs(value: string | null | undefined): number | null {
+  if (value === null || value === undefined) return null;
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function lowerBoundMatches(value: number, from: number | null): boolean {
+  return from === null || value >= from;
+}
+
+function upperBoundMatches(value: number, to: number | null): boolean {
+  return to === null || value < to;
+}
+
+function matchesQuery(row: CatalogEntryRow, query: string, caseSensitive: boolean): boolean {
+  const haystack = [row.name, row.path, row.agent_name, row.cwd, row.branch, row.content_hash]
+    .filter((value): value is string => value !== null)
+    .join("\n");
+  if (caseSensitive) return haystack.includes(query);
+  return haystack.toLowerCase().includes(query.toLowerCase());
+}
+
+function compareEntries(left: CatalogEntryRow, right: CatalogEntryRow): number {
+  const byLatest = compareNullableTimestamps(right.latest_at, left.latest_at);
+  if (byLatest !== 0) return byLatest;
+  return entryIdentity(left).localeCompare(entryIdentity(right));
+}
+
+function entryIdentity(row: CatalogEntryRow): string {
+  return row.source_id ?? row.content_hash ?? "";
+}
+
+function latestTimestamp(...values: (string | null)[]): string | null {
+  return values.reduce<string | null>((latest, value) => {
+    return compareNullableTimestamps(value, latest) > 0 ? value : latest;
+  }, null);
+}
+
+function compareNullableTimestamps(left: string | null, right: string | null): number {
+  if (left === null && right === null) return 0;
+  if (left === null) return -1;
+  if (right === null) return 1;
+  const leftMs = Date.parse(left);
+  const rightMs = Date.parse(right);
+  if (Number.isNaN(leftMs) && Number.isNaN(rightMs)) return left.localeCompare(right);
+  if (Number.isNaN(leftMs)) return -1;
+  if (Number.isNaN(rightMs)) return 1;
+  return leftMs - rightMs;
 }
 
 async function assertSourceExists(db: CatalogDb, key: SourceSessionKey): Promise<void> {

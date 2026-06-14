@@ -29,7 +29,7 @@ Planned packages:
 | `@agent-trail/adapter-kit` | Adapter primitives, mapping helpers, reader interfaces, source schema selection, and source schema validation. |
 | `@agent-trail/source-schemas` | JSON evidence packages for verified upstream source-agent formats. |
 | `@agent-trail/adapters` | Concrete source-agent parsers and default adapter registry. |
-| `@agent-trail/catalog` | SQLite catalog for finalized object metadata, adapter source sessions, generated trail links, and latest share state. |
+| `@agent-trail/catalog` | SQLite catalog for finalized object metadata, adapter source sessions, session-centric list filters, generated trail links, and latest share state. |
 | `@agent-trail/redact` | Redaction rules, detector packs, trail transforms, and mutation accounting. |
 | `@agent-trail/store` | Content-addressed local store, object registration, and catalog-backed object metadata. |
 | `@agent-trail/render-model` | Shared transcript/rendering model for web and terminal viewers. |

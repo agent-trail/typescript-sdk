@@ -72,6 +72,18 @@ they are not the Agent Trail format contract.
 The SDK-owned content-addressed store for finalized trail artifacts and a
 rebuildable metadata index.
 
+**Finalized object**:
+A canonical trail file with a verified `content_hash`, stored at
+`objects/sha256/<hash>.trail.jsonl` under the local store.
+
+**Index**:
+Mutable metadata at `index/objects.json` under the local store. It records
+object registration metadata and can be rebuilt from finalized objects.
+
+**Pending hash**:
+A header `content_hash` value of `"<pending>"` or an omitted content hash. It
+keeps an in-progress trail out of the local store as a finalized object.
+
 **Redaction**:
 SDK behavior that transforms raw trails into redacted trails before sharing or
 export. Redaction packages own detector rules and mutation accounting.

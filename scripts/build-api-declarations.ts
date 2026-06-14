@@ -31,7 +31,8 @@ function main(root = process.cwd()): number {
 }
 
 function packageTsconfig(packageDir: string): string {
-  return path.join(packageDir, "tsconfig.json");
+  const buildConfig = path.join(packageDir, "tsconfig.build.json");
+  return existsSync(buildConfig) ? buildConfig : path.join(packageDir, "tsconfig.json");
 }
 
 function sortByWorkspaceDependencies(apiPackages: ApiPackage[]): ApiPackage[] {

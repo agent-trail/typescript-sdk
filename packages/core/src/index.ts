@@ -6,6 +6,7 @@
 import type { AgentTrailV010, Entry, Header, TrailEnvelope } from "@agent-trail/types";
 import {
   computeContentHashes as computeContentHashesImpl,
+  serializeTrailJsonl as serializeTrailJsonlImpl,
   stampContentHashes as stampContentHashesImpl,
 } from "./hashing.js";
 import { parseTrailJsonl as parseTrailJsonlImpl } from "./parse.js";
@@ -186,6 +187,15 @@ export function computeContentHashes(trail: ParsedTrail): ContentHashes {
  */
 export function stampContentHashes(trail: ParsedTrail): StampedTrail {
   return stampContentHashesImpl(trail);
+}
+
+/**
+ * Serialize parsed Agent Trail records as canonical JSONL.
+ *
+ * @public
+ */
+export function serializeTrailJsonl(trail: ParsedTrail): string {
+  return serializeTrailJsonlImpl(trail);
 }
 
 /**

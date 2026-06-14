@@ -87,6 +87,22 @@ export async function trail(records: unknown[]): Promise<ParsedTrail> {
   return parseTrailJsonl(jsonl(records));
 }
 
+export async function brokenSegmentTrails(): Promise<[ParsedTrail, ParsedTrail]> {
+  const first = await trail([
+    { ...baseHeader, segment: { seq: 1 } },
+    userMessage("01HEVTA0000000000000000001", "one"),
+  ]);
+  const second = await trail([
+    {
+      ...baseHeader,
+      id: "01HSESS0000000000000000002",
+      segment: { seq: 2, prev_content_hash: "a".repeat(64) },
+    },
+    agentMessage("01HEVTA0000000000000000002", "two"),
+  ]);
+  return [first, second];
+}
+
 export async function* chunks(parts: (string | Uint8Array)[]): AsyncIterable<string | Uint8Array> {
   for (const part of parts) yield part;
 }

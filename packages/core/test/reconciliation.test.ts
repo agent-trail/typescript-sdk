@@ -5,6 +5,7 @@ import {
   agentMessage,
   baseEnvelope,
   baseHeader,
+  brokenSegmentTrails,
   segmentChainBreakWarning,
   sessionMetadataUpdate,
   sessionTerminated,
@@ -186,18 +187,7 @@ test("reconciles multiple session_uids independently", async () => {
 });
 
 test("reports broken segment chains and still emits a merged trail", async () => {
-  const first = await trail([
-    { ...baseHeader, segment: { seq: 1 } },
-    userMessage("01HEVTA0000000000000000001", "one"),
-  ]);
-  const second = await trail([
-    {
-      ...baseHeader,
-      id: "01HSESS0000000000000000002",
-      segment: { seq: 2, prev_content_hash: "a".repeat(64) },
-    },
-    agentMessage("01HEVTA0000000000000000002", "two"),
-  ]);
+  const [first, second] = await brokenSegmentTrails();
 
   const result = reconcileSegments([second, first]);
 

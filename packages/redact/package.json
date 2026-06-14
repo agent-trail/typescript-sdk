@@ -1,0 +1,27 @@
+{
+  "name": "@agent-trail/redact",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "package.json"
+  ],
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@agent-trail/core": "workspace:*",
+    "@redactpii/node": "1.0.17",
+    "safe-regex2": "5.1.1",
+    "yaml": "2.9.0"
+  }
+}

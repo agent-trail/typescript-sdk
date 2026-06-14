@@ -1,0 +1,34 @@
+/**
+ * Agent Trail local content-addressed object store.
+ *
+ * Finalized trail artifacts live under
+ * `<storeRoot>/objects/sha256/<content_hash>.trail.jsonl`, with mutable
+ * metadata at `<storeRoot>/index/objects.json`. `storeRoot` defaults to
+ * `~/.local/share/trail` and is overridable via the `AGENT_TRAIL_HOME`
+ * env var or an explicit `storeRoot` option. See `docs/PRD.md` §8.3 for
+ * the local-store contract.
+ *
+ * - `registerTrail` — validate + hash + write a trail to the store.
+ *   Downstream CLI verbs (`trail share`, `trail load`, `trail handoff`,
+ *   `trail view`) call this directly so users never type
+ *   `trail register`.
+ * - `rebuildIndex` — regenerate `index/objects.json` from on-disk
+ *   objects after corruption or manual edits.
+ * - `resolveStoreRoot` — resolve the effective store root for the
+ *   current call site.
+ */
+export type { TrailDiagnostic } from "@agent-trail/core";
+export type { IndexEntry, IndexEntryKind, IndexFile } from "./index-file.js";
+export {
+  findEntriesBySessionUid,
+  IndexCorruptError,
+  IndexVersionError,
+  readIndex,
+} from "./index-file.js";
+export { objectPath, resolveStoreRoot } from "./paths.js";
+export type { RebuildIndexOptions, RebuildIndexResult } from "./rebuild.js";
+export { rebuildIndex } from "./rebuild.js";
+export type { ReconcileIncomingResult } from "./reconcile-incoming.js";
+export { reconcileIncomingSegment } from "./reconcile-incoming.js";
+export type { RegisterOptions, RegisterResult, RegisterStatus } from "./register.js";
+export { registerTrail } from "./register.js";

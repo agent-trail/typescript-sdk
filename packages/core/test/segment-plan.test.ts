@@ -1,20 +1,9 @@
 import { expect, test } from "bun:test";
 import { buildSegmentPlan } from "../src/reconciliation/segment-plan/index.ts";
-import { agentMessage, baseHeader, trail, userMessage } from "./helpers";
+import { baseHeader, brokenSegmentTrails, trail, userMessage } from "./helpers";
 
 test("segment plan separates pass-through trails and orders merge groups with diagnostics", async () => {
-  const first = await trail([
-    { ...baseHeader, segment: { seq: 1 } },
-    userMessage("01HEVTA0000000000000000001", "one"),
-  ]);
-  const second = await trail([
-    {
-      ...baseHeader,
-      id: "01HSESS0000000000000000002",
-      segment: { seq: 2, prev_content_hash: "a".repeat(64) },
-    },
-    agentMessage("01HEVTA0000000000000000002", "two"),
-  ]);
+  const [first, second] = await brokenSegmentTrails();
   const passThrough = await trail([
     { ...baseHeader, session_uid: undefined },
     userMessage("01HEVTA0000000000000000003", "single"),

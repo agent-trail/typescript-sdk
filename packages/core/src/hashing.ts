@@ -46,7 +46,11 @@ export function stampContentHashes(trail: ParsedTrail): StampedTrail {
   }
 
   const hashes = fileHash === undefined ? { sessionHashes } : { sessionHashes, fileHash };
-  return { trail: clonedTrail, hashes, jsonl: serializeRecords(clonedTrail.records) };
+  return { trail: clonedTrail, hashes, jsonl: serializeTrailRecords(clonedTrail.records) };
+}
+
+export function serializeTrailJsonl(trail: ParsedTrail): string {
+  return serializeTrailRecords(trail.records);
 }
 
 export function hashRecords(records: ParsedTrailRecord[], tier: "session" | "file"): string {
@@ -67,6 +71,6 @@ export function hashRecords(records: ParsedTrailRecord[], tier: "session" | "fil
   return createHash("sha256").update(`${bytes}\n`).digest("hex");
 }
 
-function serializeRecords(records: ParsedTrailRecord[]): string {
+function serializeTrailRecords(records: ParsedTrailRecord[]): string {
   return `${records.map(({ record }) => canonicalize(record)).join("\n")}\n`;
 }

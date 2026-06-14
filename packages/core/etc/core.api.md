@@ -54,6 +54,9 @@ export type ReconciliationResult = {
 };
 
 // @public
+export function serializeTrailJsonl(trail: ParsedTrail): string;
+
+// @public
 export type SessionGroup = {
     header: ParsedTrailRecord<Header | UnknownTrailRecord>;
     events: ParsedTrailRecord<Entry | UnknownTrailRecord>[];

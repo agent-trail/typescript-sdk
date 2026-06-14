@@ -69,8 +69,21 @@ are mapped to Agent Trail records. Source schemas document adapter evidence;
 they are not the Agent Trail format contract.
 
 **Local store**:
-The SDK-owned content-addressed store for finalized trail artifacts and a
-rebuildable metadata index.
+The SDK-owned content-addressed store for finalized trail artifacts. Query
+metadata for stored objects and adapter sessions belongs to the catalog.
+
+**Finalized object**:
+A canonical trail file with a verified `content_hash`, stored at
+`objects/sha256/<hash>.trail.jsonl` under the local store.
+
+**Catalog**:
+SQLite metadata under the local store root. It records finalized object
+metadata, adapter source sessions, generated trail links, and latest Gist share
+state.
+
+**Pending hash**:
+A header `content_hash` value of `"<pending>"` or an omitted content hash. It
+keeps an in-progress trail out of the local store as a finalized object.
 
 **Redaction**:
 SDK behavior that transforms raw trails into redacted trails before sharing or

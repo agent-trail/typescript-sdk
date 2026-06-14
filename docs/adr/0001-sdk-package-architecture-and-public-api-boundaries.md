@@ -29,8 +29,9 @@ Planned packages:
 | `@agent-trail/adapter-kit` | Adapter primitives, mapping helpers, reader interfaces, source schema selection, and source schema validation. |
 | `@agent-trail/source-schemas` | JSON evidence packages for verified upstream source-agent formats. |
 | `@agent-trail/adapters` | Concrete source-agent parsers and default adapter registry. |
+| `@agent-trail/catalog` | SQLite catalog for finalized object metadata, adapter source sessions, generated trail links, and latest share state. |
 | `@agent-trail/redact` | Redaction rules, detector packs, trail transforms, and mutation accounting. |
-| `@agent-trail/store` | Content-addressed local store, object registration, rebuildable index, and store-level lookup helpers. |
+| `@agent-trail/store` | Content-addressed local store, object registration, and catalog-backed object metadata. |
 | `@agent-trail/render-model` | Shared transcript/rendering model for web and terminal viewers. |
 | `@agent-trail/sessions` | Workflow orchestration for discover, load, list, share, and export. |
 
@@ -41,6 +42,8 @@ Dependency direction:
 - `core` depends on `schema` and `types`.
 - `adapter-kit` depends on `core` and `source-schemas`.
 - `adapters` depends on `adapter-kit`, `core`, and `types`.
+- `catalog` is a low-level injected-driver package used by `store` and future
+  `sessions` workflows.
 - `redact`, `store`, and `render-model` depend on `core` and types where needed.
 - `sessions` is the top orchestration package and may depend on `adapters`,
   `redact`, `store`, and `core`.

@@ -8,7 +8,12 @@ import { isSchemaObject, jsonPointerSegments } from "./pointers.js";
 export function isDeclaredEventProperty(record: TrailRecordLike, error: ErrorObject): boolean {
   const type = readString(record, "type");
   const propertyName = unknownPropertyName(error);
-  const eventSchema = type === undefined ? undefined : schemaRoot.$defs?.events?.[type];
+  const eventSchema =
+    type !== undefined &&
+    schemaRoot.$defs?.events !== undefined &&
+    Object.hasOwn(schemaRoot.$defs.events, type)
+      ? schemaRoot.$defs.events[type]
+      : undefined;
   if (eventSchema === undefined || propertyName === undefined) return false;
   return schemaDeclaresProperty(eventSchema, error.instancePath, propertyName);
 }

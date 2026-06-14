@@ -39,7 +39,8 @@ export function eventSchemaErrors(record: TrailRecordLike): ErrorObject[] | unde
 export function eventValidator(type: string): ValidateFunction | undefined {
   const existing = eventValidators.get(type);
   if (existing !== undefined) return existing;
-  if (schemaRoot.$defs?.events?.[type] === undefined) return undefined;
+  if (schemaRoot.$defs?.events === undefined || !Object.hasOwn(schemaRoot.$defs.events, type))
+    return undefined;
   const validator = ajv.compile({ $ref: `${schemaRoot.$id}#/$defs/events/${type}` });
   eventValidators.set(type, validator);
   return validator;

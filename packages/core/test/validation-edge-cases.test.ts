@@ -198,6 +198,29 @@ test("reader tolerant mode preserves unknown future records", async () => {
   );
 });
 
+test("reader tolerant mode does not treat prototype property names as event schemas", async () => {
+  const result = await validateTrailJsonl(
+    jsonl([
+      baseHeader,
+      {
+        type: "toString",
+        id: "01HEVTA0000000000000000001",
+        ts: "2026-05-17T14:00:01.000Z",
+        payload: { text: "hello" },
+      },
+    ]),
+    { mode: "tolerant" },
+  );
+
+  expect(result.diagnostics).toContainEqual(
+    expect.objectContaining({
+      code: "reader_tolerant_unknown_record",
+      path: "/type",
+      severity: "warning",
+    }),
+  );
+});
+
 test("strict errors and tolerant warns for ill formed strings", async () => {
   const records = [
     baseHeader,

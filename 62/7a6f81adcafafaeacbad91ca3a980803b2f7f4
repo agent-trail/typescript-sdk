@@ -1,0 +1,34 @@
+packages/catalog/test/catalog.test.ts
+  s_41a01eab7e41e9::t_44d6f403076359 586,592-596,607,621,629,643
+  s_41a01eab7e41e9::t_7853084196224b 581-585,587-591,597-606,608-620,622-628,630-642
+  s_41a01eab7e41e9::t_0ced81253ba8f9 153-180
+packages/store/test/register.test.ts
+  s_41a01eab7e41e9::t_a92974b67828df 154-217,504-505
+packages/store/src/register.ts
+  s_41a01eab7e41e9::t_39ea6f940c22bc 144
+packages/store/src/rebuild.ts
+  s_41a01eab7e41e9::t_edeca18fe9cc2a 87
+packages/store/src/trail-metadata.ts
+  s_41a01eab7e41e9::t_078ed79aeaff47 10-11,20-25,33,39,42-48,53-56,111-115
+  s_41a01eab7e41e9::t_814c088eb51160 26,116-117
+packages/catalog/src/index.ts
+  s_41a01eab7e41e9::t_48ddd0ed509e5a 847
+  s_41a01eab7e41e9::t_5d90b6c3bfff5c 385-389,410-429,442-446,695-700,846
+  s_41a01eab7e41e9::t_b6ca26249c0ee4 790-796
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "627a6f81adcafafaeacbad91ca3a980803b2f7f4",
+  "prompts": {},
+  "sessions": {
+    "s_41a01eab7e41e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec547-b5c0-7200-b226-4f1ef52334a0",
+        "model": "gpt-5.5"
+      },
+      "human_author": null
+    }
+  }
+}

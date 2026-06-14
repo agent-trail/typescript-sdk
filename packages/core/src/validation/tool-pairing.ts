@@ -1,4 +1,4 @@
-import type { ParsedTrailRecord, SessionGroup, TrailDiagnostic } from "../index.js";
+import type { ParsedTrailRecord, TrailDiagnostic } from "../index.js";
 import {
   diagnostic,
   isCallMatched,
@@ -8,6 +8,7 @@ import {
   resultToolName,
   semanticCallId,
 } from "../shared.js";
+import type { GroupValidationContext } from "./context.js";
 
 type ToolPairingContext = {
   calls: ParsedTrailRecord[];
@@ -19,20 +20,20 @@ type ToolPairingContext = {
   explicitResults: Set<ParsedTrailRecord>;
 };
 
-export function toolPairingDiagnostics(group: SessionGroup): TrailDiagnostic[] {
-  const context = buildToolPairingContext(group);
-  const diagnostics = semanticConflictDiagnostics(context, group.header.line);
+export function toolPairingDiagnostics(groupContext: GroupValidationContext): TrailDiagnostic[] {
+  const context = buildToolPairingContext(groupContext);
+  const diagnostics = semanticConflictDiagnostics(context, groupContext.group.header.line);
   matchImplicitResults(context, diagnostics);
-  matchAbortedCalls(group, context.matchedResultsByCall);
-  diagnostics.push(...unmatchedCallDiagnostics(group, context));
+  matchAbortedCalls(groupContext, context.matchedResultsByCall);
+  diagnostics.push(...unmatchedCallDiagnostics(groupContext, context));
   return diagnostics;
 }
 
-function buildToolPairingContext(group: SessionGroup): ToolPairingContext {
-  const calls = group.events.filter((event) => event.record.type === "tool_call");
+function buildToolPairingContext(groupContext: GroupValidationContext): ToolPairingContext {
+  const calls = groupContext.group.events.filter((event) => event.record.type === "tool_call");
   const context = {
     calls,
-    results: group.events.filter((event) => event.record.type === "tool_result"),
+    results: groupContext.group.events.filter((event) => event.record.type === "tool_result"),
     callsById: new Map<string, ParsedTrailRecord[]>(),
     callsBySemanticId: new Map<string, ParsedTrailRecord[]>(),
     callsByParentId: new Map<string | undefined, ParsedTrailRecord[]>(),
@@ -165,10 +166,12 @@ function matchCall(
 }
 
 function matchAbortedCalls(
-  group: SessionGroup,
+  groupContext: GroupValidationContext,
   matchedResultsByCall: Map<string, ParsedTrailRecord[]>,
 ): void {
-  for (const abort of group.events.filter((event) => event.record.type === "tool_call_aborted")) {
+  for (const abort of groupContext.group.events.filter(
+    (event) => event.record.type === "tool_call_aborted",
+  )) {
     const forId = payloadString(abort.record, "for_id");
     if (forId === undefined) continue;
     matchedResultsByCall.set(forId, [abort]);
@@ -176,12 +179,14 @@ function matchAbortedCalls(
 }
 
 function unmatchedCallDiagnostics(
-  group: SessionGroup,
+  groupContext: GroupValidationContext,
   context: ToolPairingContext,
 ): TrailDiagnostic[] {
   const diagnostics: TrailDiagnostic[] = [];
-  const terminalSuppression = group.events.some((event) => event.record.type === "session_end");
-  const terminatedOpenIds = terminatedOpenCallIds(group);
+  const terminalSuppression = groupContext.group.events.some(
+    (event) => event.record.type === "session_end",
+  );
+  const terminatedOpenIds = terminatedOpenCallIds(groupContext);
   for (const call of context.calls) {
     const id = readString(call.record, "id");
     if (
@@ -197,9 +202,9 @@ function unmatchedCallDiagnostics(
   return diagnostics;
 }
 
-function terminatedOpenCallIds(group: SessionGroup): Set<string> {
+function terminatedOpenCallIds(groupContext: GroupValidationContext): Set<string> {
   return new Set(
-    group.events
+    groupContext.group.events
       .filter(
         (event) =>
           event.record.type === "session_terminated" &&

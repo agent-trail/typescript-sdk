@@ -1,14 +1,15 @@
 import { hashRecords } from "../hashing.js";
-import type { CoreValidationMode, ParsedTrail, SessionGroup, TrailDiagnostic } from "../index.js";
+import type { ParsedTrail, SessionGroup, TrailDiagnostic } from "../index.js";
 import { diagnostic, isEnvelope, isHeader } from "../shared.js";
+import type { ValidationContext } from "./context.js";
 
 const sha256Pattern = /^[a-f0-9]{64}$/;
 
-export function hashDiagnostics(trail: ParsedTrail, mode: CoreValidationMode): TrailDiagnostic[] {
-  const severity = mode === "strict" ? "error" : "warning";
+export function hashDiagnostics(context: ValidationContext): TrailDiagnostic[] {
+  const severity = context.mode === "strict" ? "error" : "warning";
   return [
-    ...sessionHashDiagnostics(trail.groups, severity),
-    ...fileHashDiagnostics(trail, severity),
+    ...sessionHashDiagnostics(context.trail.groups, severity),
+    ...fileHashDiagnostics(context.trail, severity),
   ];
 }
 

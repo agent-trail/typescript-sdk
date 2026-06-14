@@ -8,10 +8,11 @@ import type {
 } from "../index.js";
 import { parseTrailJsonl } from "../parse.js";
 import { uniqueDiagnostics } from "../shared.js";
+import { buildValidationContext } from "./context.js";
 import { wholeFileDiagnostics } from "./file.js";
 import { hashDiagnostics } from "./hash.js";
 import { layoutDiagnostics } from "./layout.js";
-import { schemaDiagnostics } from "./schema.js";
+import { schemaDiagnostics } from "./schema/index.js";
 
 export async function validateTrailJsonl(
   input: TrailJsonlInput,
@@ -29,11 +30,12 @@ export async function validateTrailJsonl(
 }
 
 function validateParsedTrail(trail: ParsedTrail, mode: CoreValidationMode): TrailDiagnostic[] {
+  const context = buildValidationContext(trail, mode);
   return uniqueDiagnostics([
-    ...schemaDiagnostics(trail, mode),
-    ...layoutDiagnostics(trail, mode),
-    ...wholeFileDiagnostics(trail, mode),
-    ...hashDiagnostics(trail, mode),
+    ...schemaDiagnostics(context),
+    ...layoutDiagnostics(context),
+    ...wholeFileDiagnostics(context),
+    ...hashDiagnostics(context),
   ]).sort(
     (left, right) =>
       left.line - right.line ||

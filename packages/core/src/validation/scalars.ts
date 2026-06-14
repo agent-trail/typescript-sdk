@@ -1,23 +1,21 @@
-import type { CoreValidationMode, ParsedTrailRecord, TrailDiagnostic } from "../index.js";
+import type { TrailDiagnostic } from "../index.js";
 import { diagnostic, findValues, hasUnpairedSurrogate } from "../shared.js";
+import type { ValidationContext } from "./context.js";
 
 const secretPattern =
   /(authorization:\s*bearer\s+[A-Za-z0-9._~+/=-]+|^bearer\s+[A-Za-z0-9._~+/=-]+$|api[_-]?key\s*[=:]\s*[A-Za-z0-9._~+/=-]+|token\s*[=:]\s*[A-Za-z0-9._~+/=-]+)/i;
 const credentialKeyPattern = /(?:^|\/)(?:api[_-]?key|authorization|password|secret|token)$/i;
 const redactedPattern = /^(?:<redacted>|\[redacted\]|\*\*\*)$/i;
 
-export function wellFormedStringDiagnostics(
-  records: ParsedTrailRecord[],
-  mode: CoreValidationMode,
-): TrailDiagnostic[] {
-  return records.flatMap((record) =>
+export function wellFormedStringDiagnostics(context: ValidationContext): TrailDiagnostic[] {
+  return context.trail.records.flatMap((record) =>
     findValues(record.record, "").flatMap(({ path, value }) => {
       if (typeof value === "string" && hasUnpairedSurrogate(value)) {
         return [
           diagnostic(
             record.line,
             path,
-            mode === "strict" ? "error" : "warning",
+            context.mode === "strict" ? "error" : "warning",
             "ill_formed_string",
           ),
         ];
@@ -27,8 +25,8 @@ export function wellFormedStringDiagnostics(
   );
 }
 
-export function numberDiagnostics(records: ParsedTrailRecord[]): TrailDiagnostic[] {
-  return records.flatMap((record) =>
+export function numberDiagnostics(context: ValidationContext): TrailDiagnostic[] {
+  return context.trail.records.flatMap((record) =>
     findValues(record.record, "").flatMap(({ path, value }) => {
       if (typeof value === "number" && Number.isInteger(value) && !Number.isSafeInteger(value)) {
         return [diagnostic(record.line, path, "warning", "non_interoperable_number")];

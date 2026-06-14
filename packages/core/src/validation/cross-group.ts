@@ -1,14 +1,15 @@
 import type { Header } from "@agent-trail/types";
-import type { ParsedTrail, TrailDiagnostic } from "../index.js";
+import type { TrailDiagnostic } from "../index.js";
 import { diagnostic, isHeader } from "../shared.js";
+import type { ValidationContext } from "./context.js";
 
-export function crossGroupDiagnostics(trail: ParsedTrail): TrailDiagnostic[] {
+export function crossGroupDiagnostics(context: ValidationContext): TrailDiagnostic[] {
   const bySessionId = new Map<string, Header>();
-  for (const group of trail.groups) {
+  for (const group of context.trail.groups) {
     if (isHeader(group.header.record)) bySessionId.set(group.header.record.id, group.header.record);
   }
 
-  return trail.groups.flatMap((group) => {
+  return context.trail.groups.flatMap((group) => {
     if (!isHeader(group.header.record)) return [];
     const forkFrom = group.header.record.fork_from;
     if (forkFrom?.content_hash === undefined) return [];

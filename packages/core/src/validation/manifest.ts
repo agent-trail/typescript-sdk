@@ -1,7 +1,9 @@
-import type { ParsedTrail, TrailDiagnostic } from "../index.js";
+import type { TrailDiagnostic } from "../index.js";
 import { diagnostic, isEnvelope, isHeader } from "../shared.js";
+import type { ValidationContext } from "./context.js";
 
-export function manifestDiagnostics(trail: ParsedTrail): TrailDiagnostic[] {
+export function manifestDiagnostics(context: ValidationContext): TrailDiagnostic[] {
+  const { trail } = context;
   if (
     trail.envelope === undefined ||
     !isEnvelope(trail.envelope.record) ||

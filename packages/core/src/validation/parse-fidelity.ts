@@ -1,8 +1,10 @@
-import type { SessionGroup, TrailDiagnostic } from "../index.js";
+import type { TrailDiagnostic } from "../index.js";
 import { deriveParseFidelity } from "../parse-fidelity/index.js";
 import { diagnostic, isHeader } from "../shared.js";
+import type { GroupValidationContext } from "./context.js";
 
-export function parseFidelityDiagnostics(group: SessionGroup): TrailDiagnostic[] {
+export function parseFidelityDiagnostics(context: GroupValidationContext): TrailDiagnostic[] {
+  const { group } = context;
   if (!isHeader(group.header.record) || group.header.record.parse_fidelity === undefined) return [];
   const expected = deriveParseFidelity(group.events);
   const fidelity = group.header.record.parse_fidelity;

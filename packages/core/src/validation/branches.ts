@@ -1,16 +1,13 @@
-import type { SessionGroup, TrailDiagnostic } from "../index.js";
+import type { TrailDiagnostic } from "../index.js";
 import { diagnostic, payloadString } from "../shared.js";
-import type { SessionGraph } from "./session-graph/index.js";
+import type { GroupValidationContext } from "./context.js";
 
-export function branchReferenceDiagnostics(
-  group: SessionGroup,
-  graph: SessionGraph,
-): TrailDiagnostic[] {
+export function branchReferenceDiagnostics(context: GroupValidationContext): TrailDiagnostic[] {
   const diagnostics: TrailDiagnostic[] = [];
-  for (const event of group.events) {
+  for (const event of context.group.events) {
     if (event.record.type === "branch_point") {
       const fromId = payloadString(event.record, "from_id");
-      if (fromId !== undefined && !graph.hasPriorId(fromId, event)) {
+      if (fromId !== undefined && !context.graph.hasPriorId(fromId, event)) {
         diagnostics.push(
           diagnostic(event.line, "/payload/from_id", "warning", "unknown_branch_point_from_id"),
         );
@@ -18,7 +15,7 @@ export function branchReferenceDiagnostics(
     }
     if (event.record.type === "branch_summary") {
       const branchId = payloadString(event.record, "abandoned_branch_id");
-      if (branchId !== undefined && !graph.hasPriorId(branchId, event)) {
+      if (branchId !== undefined && !context.graph.hasPriorId(branchId, event)) {
         diagnostics.push(
           diagnostic(
             event.line,

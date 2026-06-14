@@ -1,20 +1,17 @@
-import type { ParsedTrailRecord, SessionGroup, TrailDiagnostic } from "../index.js";
+import type { ParsedTrailRecord, TrailDiagnostic } from "../index.js";
 import { diagnostic, isJsonObject, readString } from "../shared.js";
+import type { GroupValidationContext, ValidationContext } from "./context.js";
 import type { SessionGraph } from "./session-graph/index.js";
 
 const isoMillisPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
-export function timestampDiagnostics(
-  group: SessionGroup,
-  graph: SessionGraph,
-  skipParentComparisons: boolean,
-): TrailDiagnostic[] {
-  if (skipParentComparisons) return [];
-  return parentTimestampDiagnostics(group.events, graph);
+export function timestampDiagnostics(context: GroupValidationContext): TrailDiagnostic[] {
+  if (context.hasParentCycles) return [];
+  return parentTimestampDiagnostics(context.group.events, context.graph);
 }
 
-export function timestampSyntaxDiagnostics(records: ParsedTrailRecord[]): TrailDiagnostic[] {
-  return records.flatMap((record) => timestampSyntaxDiagnostic(record));
+export function timestampSyntaxDiagnostics(context: ValidationContext): TrailDiagnostic[] {
+  return context.trail.records.flatMap((record) => timestampSyntaxDiagnostic(record));
 }
 
 function timestampSyntaxDiagnostic(record: ParsedTrailRecord): TrailDiagnostic[] {

@@ -1,7 +1,9 @@
-import type { SessionGroup, TrailDiagnostic } from "../index.js";
+import type { TrailDiagnostic } from "../index.js";
 import { diagnostic, isHeader, isJsonObject, readString } from "../shared.js";
+import type { GroupValidationContext } from "./context.js";
 
-export function vcsDiagnostics(group: SessionGroup): TrailDiagnostic[] {
+export function vcsDiagnostics(context: GroupValidationContext): TrailDiagnostic[] {
+  const { group } = context;
   const header = group.header.record;
   if (!isHeader(header) || !isJsonObject(header.vcs)) return [];
   const remoteUrl = readString(header.vcs, "remote_url");

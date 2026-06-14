@@ -5,10 +5,12 @@ import type {
   TrailDiagnostic,
 } from "../index.js";
 import { diagnostic, readString } from "../shared.js";
+import type { ValidationContext } from "./context.js";
 
 const readerCompatiblePatchVersionPattern = /^0\.1\.\d+$/;
 
-export function layoutDiagnostics(trail: ParsedTrail, mode: CoreValidationMode): TrailDiagnostic[] {
+export function layoutDiagnostics(context: ValidationContext): TrailDiagnostic[] {
+  const { trail, mode } = context;
   const first = trail.records[0];
   if (first === undefined) {
     return [diagnostic(1, "", "error", "missing_header")];

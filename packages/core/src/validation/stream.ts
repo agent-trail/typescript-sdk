@@ -1,8 +1,9 @@
-import type { SessionGroup, TrailDiagnostic } from "../index.js";
+import type { TrailDiagnostic } from "../index.js";
 import { diagnostic, isHeader } from "../shared.js";
-import type { SessionGraph } from "./session-graph/index.js";
+import type { GroupValidationContext } from "./context.js";
 
-export function streamDiagnostics(group: SessionGroup, graph: SessionGraph): TrailDiagnostic[] {
+export function streamDiagnostics(context: GroupValidationContext): TrailDiagnostic[] {
+  const { group } = context;
   if (!isHeader(group.header.record) || group.header.record.stream?.state !== "open") return [];
   const diagnostics: TrailDiagnostic[] = [];
   if (
@@ -13,7 +14,7 @@ export function streamDiagnostics(group: SessionGroup, graph: SessionGraph): Tra
       diagnostic(group.header.line, "/content_hash", "warning", "stream_open_with_content_hash"),
     );
   }
-  const terminal = graph.firstTerminalEvent();
+  const terminal = context.graph.firstTerminalEvent();
   if (terminal !== undefined)
     diagnostics.push(
       diagnostic(terminal.line, "/type", "warning", "stream_open_with_terminal_event"),

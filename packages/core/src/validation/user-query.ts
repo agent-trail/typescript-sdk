@@ -1,10 +1,11 @@
-import type { ParsedTrailRecord, SessionGroup, TrailDiagnostic } from "../index.js";
+import type { ParsedTrailRecord, TrailDiagnostic } from "../index.js";
 import { diagnostic, escapeJsonPointer, isJsonObject, readString } from "../shared.js";
+import type { GroupValidationContext } from "./context.js";
 
-export function userQueryDiagnostics(group: SessionGroup): TrailDiagnostic[] {
+export function userQueryDiagnostics(context: GroupValidationContext): TrailDiagnostic[] {
   const diagnostics: TrailDiagnostic[] = [];
   const queryQuestions = new Map<string, Set<string>>();
-  for (const event of group.events) {
+  for (const event of context.group.events) {
     diagnostics.push(...recordUserQuery(event, queryQuestions));
     diagnostics.push(...recordUserQueryResponse(event, queryQuestions));
   }

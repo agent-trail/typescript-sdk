@@ -1,18 +1,18 @@
-import type { SessionGroup, TrailDiagnostic } from "../index.js";
+import type { TrailDiagnostic } from "../index.js";
 import { diagnostic, isJsonObject, readString } from "../shared.js";
+import type { GroupValidationContext } from "./context.js";
 import { secretDiagnostics } from "./scalars.js";
-import type { SessionGraph } from "./session-graph/index.js";
 
 const sourceRawSoftCapBytes = 8 * 1024;
 const sourceRawHardCapBytes = 32 * 1024;
 
-export function sourceRawDiagnostics(group: SessionGroup, graph: SessionGraph): TrailDiagnostic[] {
+export function sourceRawDiagnostics(context: GroupValidationContext): TrailDiagnostic[] {
   const diagnostics: TrailDiagnostic[] = [];
-  for (const event of group.events) {
+  for (const event of context.group.events) {
     if (isJsonObject(event.record.source) && isJsonObject(event.record.source.raw)) {
       diagnostics.push(...sourceRawSizeDiagnostics(event.record.source.raw, event.line));
       const envelopeRef = readString(event.record.source.raw, "envelope_ref");
-      if (envelopeRef !== undefined && !graph.hasPriorId(envelopeRef, event)) {
+      if (envelopeRef !== undefined && !context.graph.hasPriorId(envelopeRef, event)) {
         diagnostics.push(
           diagnostic(
             event.line,

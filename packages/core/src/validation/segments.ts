@@ -1,11 +1,12 @@
-import type { ParsedTrail, TrailDiagnostic } from "../index.js";
+import type { TrailDiagnostic } from "../index.js";
 import { diagnostic, isHeader, segmentSeq } from "../shared.js";
+import type { ValidationContext } from "./context.js";
 
-export function segmentDiagnostics(trail: ParsedTrail): TrailDiagnostic[] {
+export function segmentDiagnostics(context: ValidationContext): TrailDiagnostic[] {
   const diagnostics: TrailDiagnostic[] = [];
   const seen = new Map<string, number>();
   const lastSeq = new Map<string, number>();
-  for (const group of trail.groups) {
+  for (const group of context.trail.groups) {
     if (!isHeader(group.header.record) || group.header.record.session_uid === undefined) continue;
     const key = `${group.header.record.session_uid}:${segmentSeq(group.header.record)}`;
     if (seen.has(key))

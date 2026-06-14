@@ -113,6 +113,22 @@ test("redactTrailJsonl redacts extra payload fields on known event types", async
   expect(result.summary.counts.openai_api_key).toBe(1);
 });
 
+test("redactTrailJsonl ignores malformed null payloads without crashing", async () => {
+  const result = await redactTrailJsonl(
+    jsonl([
+      header,
+      {
+        type: "user_message",
+        id: "01HEVTA0000000000000000010",
+        ts: "2026-05-17T14:00:10.000Z",
+        payload: null,
+      },
+    ]),
+  );
+
+  expect(result.trail.records[1]?.record).toHaveProperty("payload", null);
+});
+
 test("redactTrailJsonl visits known payload fields once when allowlisted", async () => {
   const key = openAiApiKeyFixture();
   const result = await redactTrailJsonl(
@@ -148,6 +164,28 @@ test("redactTrailJsonl keeps literal allowlisted email tokens intact", async () 
   );
 
   expect(result.jsonl).toContain("__AGENT_TRAIL_EMAIL_ALLOWLIST_0__");
+  expect(result.jsonl).toContain("actions@github.com");
+  expect(result.jsonl).not.toContain("leak@example.com");
+});
+
+test("redactTrailJsonl preserves source text that looks like an allowlisted email token", async () => {
+  const tokenLikeText = "__AGENT_TRAIL_EMAIL_ALLOWLIST_0__";
+  const result = await redactTrailJsonl(
+    jsonl([
+      header,
+      {
+        type: "user_message",
+        id: "01HEVTA0000000000000000011",
+        ts: "2026-05-17T14:00:11.000Z",
+        payload: {
+          text: `${tokenLikeText} actions@github.com leak@example.com`,
+        },
+      },
+    ]),
+    { pii: { email: true } },
+  );
+
+  expect(result.jsonl).toContain(tokenLikeText);
   expect(result.jsonl).toContain("actions@github.com");
   expect(result.jsonl).not.toContain("leak@example.com");
 });

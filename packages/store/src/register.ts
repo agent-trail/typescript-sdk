@@ -15,8 +15,14 @@ import {
 } from "./object-index-policy.js";
 import { objectPath as computeObjectPath, resolveStoreRoot } from "./paths.js";
 
+/**
+ * @public
+ */
 export type RegisterStatus = "finalized" | "already_present" | "skipped_pending" | "invalid";
 
+/**
+ * @public
+ */
 export type RegisterResult = {
   status: RegisterStatus;
   contentHash: string | null;
@@ -24,6 +30,9 @@ export type RegisterResult = {
   diagnostics: TrailDiagnostic[];
 };
 
+/**
+ * @public
+ */
 export type RegisterOptions = {
   storeRoot?: string;
   /**
@@ -36,6 +45,9 @@ export type RegisterOptions = {
   sourcePath?: string | null;
 };
 
+/**
+ * @public
+ */
 export async function registerTrail(
   filePath: string,
   opts: RegisterOptions = {},

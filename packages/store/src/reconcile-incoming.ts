@@ -26,6 +26,8 @@ import { objectPath } from "./paths.js";
  *     records could be loaded (all reads/parses failed).
  *   - `undefined`: no priors matched, or only the incoming segment survived
  *     reconciliation. Intentional, not an error.
+ *
+ * @public
  */
 export type ReconcileIncomingResult =
   | {
@@ -50,6 +52,8 @@ export type ReconcileIncomingResult =
  * Never throws: failures degrade to a `passthrough` result with `reason`
  * set so the caller can surface the cause. See `ReconcileIncomingResult`
  * for the full list of reasons.
+ *
+ * @public
  */
 export async function reconcileIncomingSegment(
   storeRoot: string,

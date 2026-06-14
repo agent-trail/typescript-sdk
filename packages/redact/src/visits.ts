@@ -144,7 +144,7 @@ export function* visitStrings(
 ): Generator<Visit> {
   for (const [index, record] of records.entries()) {
     const value = record.value as Record<string, unknown>;
-    const payload = value.payload as Record<string, unknown> | undefined;
+    const payload = value.payload;
     const type = value.type;
 
     yield* uniqueVisits([
@@ -202,16 +202,13 @@ function* visitRecordHeaderStrings(
   }
 }
 
-function* visitPayloadStrings(
-  payload: Record<string, unknown> | undefined,
-  type: unknown,
-  index: number,
-): Generator<Visit> {
-  if (payload === undefined) return;
-  yield* visitTextLikePayload(payload, type, index);
-  yield* visitStructuredPayload(payload, type, index);
-  yield* visitToolPayload(payload, type, index);
-  yield* visitForwardCompatiblePayload(payload, type, index);
+function* visitPayloadStrings(payload: unknown, type: unknown, index: number): Generator<Visit> {
+  if (payload === null || typeof payload !== "object") return;
+  const payloadRecord = payload as Record<string, unknown>;
+  yield* visitTextLikePayload(payloadRecord, type, index);
+  yield* visitStructuredPayload(payloadRecord, type, index);
+  yield* visitToolPayload(payloadRecord, type, index);
+  yield* visitForwardCompatiblePayload(payloadRecord, type, index);
 }
 
 function* visitTextLikePayload(

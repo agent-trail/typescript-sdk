@@ -6,14 +6,23 @@ import { objectsDir, resolveStoreRoot } from "./paths.js";
 
 const OBJECT_NAME = /^([0-9a-f]{64})\.trail\.jsonl$/;
 
+/**
+ * @public
+ */
 export type RebuildIndexOptions = {
   storeRoot?: string;
 };
 
+/**
+ * @public
+ */
 export type RebuildIndexResult = {
   entries: number;
 };
 
+/**
+ * @public
+ */
 export async function rebuildIndex(opts: RebuildIndexOptions = {}): Promise<RebuildIndexResult> {
   const storeRoot = resolveStoreRoot(opts.storeRoot);
   const dir = objectsDir(storeRoot);

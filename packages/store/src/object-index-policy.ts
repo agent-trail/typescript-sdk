@@ -6,17 +6,26 @@ import {
 } from "@agent-trail/core";
 import type { IndexEntryKind } from "./index-file.js";
 
+/**
+ * @internal
+ */
 export type FinalizedObjectIndexRow = {
   contentHash: string;
   kind: IndexEntryKind;
   session_uid: string | null;
 };
 
+/**
+ * @internal
+ */
 export type FinalizedObjectIndexPolicy = {
   rows: FinalizedObjectIndexRow[];
   primaryHash: string | undefined;
 };
 
+/**
+ * @internal
+ */
 export type WriterStrictObjectIndexPolicy =
   | {
       status: "valid";
@@ -28,6 +37,9 @@ export type WriterStrictObjectIndexPolicy =
       diagnostics: TrailDiagnostic[];
     };
 
+/**
+ * @internal
+ */
 export async function writerStrictObjectIndexPolicy(
   raw: string,
 ): Promise<WriterStrictObjectIndexPolicy> {

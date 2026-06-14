@@ -122,6 +122,27 @@ test("redactTrailJsonl visits known payload fields once when allowlisted", async
   expect(result.summary.counts.allowlisted_skip).toBe(1);
 });
 
+test("redactTrailJsonl keeps literal allowlisted email tokens intact", async () => {
+  const result = await redactTrailJsonl(
+    jsonl([
+      header,
+      {
+        type: "user_message",
+        id: "01HEVTA0000000000000000005",
+        ts: "2026-05-17T14:00:05.000Z",
+        payload: {
+          text: "__AGENT_TRAIL_EMAIL_ALLOWLIST_0__ actions@github.com leak@example.com",
+        },
+      },
+    ]),
+    { pii: { email: true } },
+  );
+
+  expect(result.jsonl).toContain("__AGENT_TRAIL_EMAIL_ALLOWLIST_0__");
+  expect(result.jsonl).toContain("actions@github.com");
+  expect(result.jsonl).not.toContain("leak@example.com");
+});
+
 test("redactTrailJsonl does not skip colliding payload paths", async () => {
   const key = "sk-proj-AbCdEfGhIjKlMnOpQrStUv0123456789-_AbCdEfGhIjKlMnOpQrStUv0123456789";
   const result = await redactTrailJsonl(

@@ -7,6 +7,7 @@ const TOKEN_PATTERN = /\b(EMAIL|PHONE|SSN|CREDIT_CARD|NAME|PERSON)_(\d+)\b/g;
 const PHONE_PATTERN =
   /(?<!\w)(?:\+1[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|(?:1[-\s])?\(\d{3}\)\s?\d{3}[-.\s]?\d{4}|(?:1[-\s])?\d{3}[-\s]\d{3}[-\s]\d{4})\b/g;
 const EMAIL_PATTERN = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
+const ALLOWLISTED_EMAIL_TOKEN_PATTERN = /__AGENT_TRAIL_EMAIL_ALLOWLIST_(\d+)__/g;
 const DEFAULT_EMAIL_ALLOWLIST = [
   "actions@github.com",
   "*@users.noreply.github.com",
@@ -256,23 +257,47 @@ function protectAllowlistedEmails(
 ): { text: string; restore: (value: string) => string; count: number } {
   const allowlist = [...DEFAULT_EMAIL_ALLOWLIST, ...configuredAllowlist];
   const protectedValues: string[] = [];
+  const tokens: string[] = [];
+  const tokenAllocator = allowlistedEmailTokenAllocator(text);
   EMAIL_PATTERN.lastIndex = 0;
   const protectedText = text.replace(EMAIL_PATTERN, (email) => {
     if (!allowedSecrets.has(email) && !isEmailAllowlisted(email, allowlist)) return email;
-    const token = `__AGENT_TRAIL_EMAIL_ALLOWLIST_${protectedValues.length}__`;
+    const token = tokenAllocator();
     protectedValues.push(email);
+    tokens.push(token);
     return token;
   });
   return {
     text: protectedText,
     count: protectedValues.length,
     restore: (value: string) =>
-      protectedValues.reduce(
-        (current, email, index) =>
-          current.replaceAll(`__AGENT_TRAIL_EMAIL_ALLOWLIST_${index}__`, email),
-        value,
-      ),
+      protectedValues.reduce((current, email, index) => {
+        const token = tokens[index];
+        return token === undefined ? current : current.replaceAll(token, email);
+      }, value),
   };
+}
+
+function allowlistedEmailTokenAllocator(text: string): () => string {
+  const occupied = new Set<number>();
+  for (const match of text.matchAll(ALLOWLISTED_EMAIL_TOKEN_PATTERN)) {
+    const rawIndex = match[1];
+    if (rawIndex !== undefined) occupied.add(Number.parseInt(rawIndex, 10));
+  }
+  let next = 0;
+  return () => {
+    while (occupied.has(next)) {
+      next += 1;
+    }
+    const token = allowlistedEmailTokenAt(next);
+    occupied.add(next);
+    next += 1;
+    return token;
+  };
+}
+
+function allowlistedEmailTokenAt(index: number): string {
+  return `__AGENT_TRAIL_EMAIL_ALLOWLIST_${index}__`;
 }
 
 function isEmailAllowlisted(email: string, allowlist: string[]): boolean {

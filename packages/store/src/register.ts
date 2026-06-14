@@ -2,9 +2,17 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import { dirname, resolve as resolvePath } from "node:path";
 import { gunzipSync } from "node:zlib";
-import { serializeTrailJsonl, type TrailDiagnostic } from "@agent-trail/core";
+import {
+  computeContentHashes,
+  type ParsedTrail,
+  serializeTrailJsonl,
+  type TrailDiagnostic,
+} from "@agent-trail/core";
 import { type IndexEntry, upsertIndexEntry } from "./index-file.js";
-import { writerStrictObjectIndexPolicy } from "./object-index-policy.js";
+import {
+  type FinalizedObjectIndexRow,
+  writerStrictObjectIndexPolicy,
+} from "./object-index-policy.js";
 import { objectPath as computeObjectPath, resolveStoreRoot } from "./paths.js";
 
 export type RegisterStatus = "finalized" | "already_present" | "skipped_pending" | "invalid";
@@ -64,12 +72,11 @@ export async function registerTrail(
     };
   }
 
-  // Multi-session files (spec §9.6) write one blob keyed by the envelope hash
-  // when present, and one blob per finalized session keyed by its session-
-  // level hash. Object storage dedups identical bytes. The index gains N+1
-  // rows pointing at the same source_path with distinct `kind` discriminators
-  // — `trail list` therefore renders N session rows plus one trail row per
-  // multi-session file rather than a single row per file.
+  // Multi-session files (spec §9.6) write one full-file object keyed by the
+  // envelope hash when present, plus one sliced session object per finalized
+  // session hash. Each object path therefore contains bytes for the hash in
+  // its filename; unrelated sibling sessions cannot overwrite a stable
+  // session-hash object.
   const canonical = serializeTrailJsonl(trail);
   const sourcePath = opts.sourcePath === undefined ? resolvePath(filePath) : opts.sourcePath;
   const registeredAt = new Date().toISOString();
@@ -88,27 +95,19 @@ export async function registerTrail(
     };
   }
   const primaryTarget = computeObjectPath(storeRoot, indexPolicy.primaryHash);
-  await mkdir(dirname(primaryTarget), { recursive: true });
-  const existing = await readFileIfExists(primaryTarget);
-  let status: RegisterStatus;
-  if (existing === canonical) {
-    status = "already_present";
-  } else {
-    await atomicWriteFile(primaryTarget, canonical);
-    status = "finalized";
-  }
+  let status: RegisterStatus = "already_present";
 
   // Per-session index rows for every finalized group. Pending groups are
   // skipped silently; a subsequent register call on the (now-finalized) file
   // picks them up.
   for (const row of indexPolicy.rows) {
     const target = computeObjectPath(storeRoot, row.contentHash);
-    if (target !== primaryTarget) {
-      await mkdir(dirname(target), { recursive: true });
-      const existingSession = await readFileIfExists(target);
-      if (existingSession !== canonical) {
-        await atomicWriteFile(target, canonical);
-      }
+    const bytes = objectBytesForRow(trail, row, canonical);
+    await mkdir(dirname(target), { recursive: true });
+    const existing = await readFileIfExists(target);
+    if (existing !== bytes) {
+      await atomicWriteFile(target, bytes);
+      if (target === primaryTarget) status = "finalized";
     }
     const entry: IndexEntry = {
       registered_at: registeredAt,
@@ -125,6 +124,24 @@ export async function registerTrail(
     objectPath: primaryTarget,
     diagnostics: [],
   };
+}
+
+function objectBytesForRow(
+  trail: ParsedTrail,
+  row: FinalizedObjectIndexRow,
+  canonical: string,
+): string {
+  if (row.kind === "trail") return canonical;
+  const hashes = computeContentHashes(trail).sessionHashes;
+  const groupIndex = hashes.findIndex((hash) => hash.hash === row.contentHash);
+  const group = trail.groups[groupIndex];
+  if (group === undefined) {
+    throw new Error(`Cannot locate finalized session for content hash ${row.contentHash}`);
+  }
+  return serializeTrailJsonl({
+    groups: [group],
+    records: [group.header, ...group.events],
+  });
 }
 
 async function readTrailFileText(
@@ -180,15 +197,17 @@ function assertGzippedTrailCompressedSize(path: string, byteLength: number): voi
 
 function decodeGzippedTrailBytes(bytes: Uint8Array, path: string): string {
   try {
-    const buffer = gunzipSync(bytes);
-    if (buffer.byteLength > GZIPPED_TRAIL_MAX_DECOMPRESSED_BYTES) {
+    const buffer = gunzipSync(bytes, {
+      maxOutputLength: GZIPPED_TRAIL_MAX_DECOMPRESSED_BYTES,
+    });
+    return new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+  } catch (error) {
+    if (error instanceof TrailFileDecodeError) throw error;
+    if ((error as NodeJS.ErrnoException).code === "ERR_BUFFER_TOO_LARGE") {
       throw new TrailFileDecodeError(
         `failed to decode gzip trail ${path}: decompressed payload exceeds ${GZIPPED_TRAIL_MAX_DECOMPRESSED_BYTES} bytes`,
       );
     }
-    return new TextDecoder("utf-8", { fatal: true }).decode(buffer);
-  } catch (error) {
-    if (error instanceof TrailFileDecodeError) throw error;
     if (error instanceof TypeError) {
       throw new TrailFileDecodeError(`failed to decode gzip trail ${path}: invalid UTF-8`);
     }

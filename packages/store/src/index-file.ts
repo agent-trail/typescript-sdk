@@ -7,6 +7,7 @@ import { indexDir, indexFilePath } from "./paths.js";
 const LOCK_ANCHOR = ".lockanchor";
 
 const INDEX_VERSION = 1;
+const CONTENT_HASH = /^[0-9a-f]{64}$/;
 
 export type IndexEntryKind = "session" | "trail";
 
@@ -100,6 +101,14 @@ export async function readIndex(storeRoot: string): Promise<IndexFile> {
       path,
       new Error("`entries` must be a plain object keyed by content_hash"),
     );
+  }
+  for (const contentHash of Object.keys(parsed.entries)) {
+    if (!CONTENT_HASH.test(contentHash)) {
+      throw new IndexCorruptError(
+        path,
+        new Error(`invalid content_hash index key ${JSON.stringify(contentHash)}`),
+      );
+    }
   }
   return parsed;
 }

@@ -3,6 +3,7 @@ import type { RedactionRecord } from "./records.js";
 export type Visit = {
   recordIndex: number;
   location: string;
+  identity: object;
   key?: string;
   get: () => string;
   set: (next: string) => void;
@@ -17,6 +18,8 @@ function arrayVisit(
   return {
     recordIndex,
     location,
+    identity: container,
+    key: String(index),
     get: () => container[index] as string,
     set: (next) => {
       container[index] = next;
@@ -33,6 +36,7 @@ export function keyVisit(
   return {
     recordIndex,
     location,
+    identity: container,
     key,
     get: () => container[key] as string,
     set: (next) => {
@@ -82,29 +86,6 @@ function* visitChild(
     yield* walkContainer(child as Record<string, unknown> | unknown[], recordIndex, path);
   }
 }
-
-// Event `type` values whose payloads are walked by an explicit branch below.
-// Any other type falls into the generic walk so unknown / future / vendor
-// events still get redacted.
-const HANDLED_EVENT_TYPES = new Set<string>([
-  "session",
-  "agent_message",
-  "user_message",
-  "session_summary",
-  "agent_thinking",
-  "system_event",
-  "user_interrupt",
-  "branch_point",
-  "context_compact",
-  "branch_summary",
-  "tool_call",
-  "tool_result",
-  "tool_call_aborted",
-  "user_query",
-  "user_query_response",
-  "capability_change",
-  "session_metadata_update",
-]);
 
 const TEXT_PAYLOAD_TYPES = new Set<string>([
   "agent_message",
@@ -166,11 +147,42 @@ export function* visitStrings(
     const payload = value.payload as Record<string, unknown> | undefined;
     const type = value.type;
 
-    yield* visitRecordHeaderStrings(value, type, index);
-    yield* visitPayloadStrings(payload, type, index);
-    yield* visitRecordMetaStrings(value, index);
-    if (includeSourceRaw) yield* visitSourceRawStrings(value, type, index);
+    yield* uniqueVisits([
+      visitRecordHeaderStrings(value, type, index),
+      visitParseErrorStrings(value, type, index),
+      visitPayloadStrings(payload, type, index),
+      visitRecordMetaStrings(value, index),
+      includeSourceRaw ? visitSourceRawStrings(value, type, index) : [],
+    ]);
   }
+}
+
+function* uniqueVisits(sources: Iterable<Visit>[]): Generator<Visit> {
+  const seen = new WeakMap<object, Set<string | undefined>>();
+  for (const source of sources) {
+    for (const visit of source) {
+      const keys = seen.get(visit.identity);
+      if (keys?.has(visit.key)) continue;
+      if (keys === undefined) {
+        seen.set(visit.identity, new Set([visit.key]));
+      } else {
+        keys.add(visit.key);
+      }
+      yield visit;
+    }
+  }
+}
+
+function* visitParseErrorStrings(
+  value: Record<string, unknown>,
+  type: unknown,
+  index: number,
+): Generator<Visit> {
+  if (type !== "x-parse-error") return;
+  if (typeof value.raw === "string") {
+    yield keyVisit(value, "raw", index, `records[${index}].raw`);
+  }
+  yield* visitObjectMember(value, "value", index, `records[${index}].value`);
 }
 
 function* visitRecordHeaderStrings(
@@ -259,10 +271,9 @@ function* visitToolPayload(
 
 function* visitForwardCompatiblePayload(
   payload: Record<string, unknown>,
-  type: unknown,
+  _type: unknown,
   index: number,
 ): Generator<Visit> {
-  if (typeof type !== "string" || HANDLED_EVENT_TYPES.has(type)) return;
   yield* walkContainer(payload, index, `records[${index}].payload`);
 }
 

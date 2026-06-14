@@ -76,7 +76,9 @@ export async function reconcileIncomingSegment(
     try {
       const raw = await readFile(objPath, "utf8");
       const trail = await parseTrailJsonl(raw);
-      if (!hasParseError(trail)) inputs.push(trail);
+      if (!hasParseError(trail)) {
+        inputs.push(...trailsForSessionUid(trail, incomingUid));
+      }
     } catch {
       // Skip unreadable / corrupted store entries; reconcile still proceeds
       // with whatever segments are intact.
@@ -106,4 +108,16 @@ function headerSessionUid(trail: ParsedTrail): string | null {
 
 function hasParseError(trail: ParsedTrail): boolean {
   return trail.records.some((record) => record.record.type === "x-parse-error");
+}
+
+function trailsForSessionUid(trail: ParsedTrail, sessionUid: string): ParsedTrail[] {
+  if (trail.groups.length <= 1) {
+    return headerSessionUid(trail) === sessionUid ? [trail] : [];
+  }
+  return trail.groups
+    .filter((group) => group.header.record.session_uid === sessionUid)
+    .map((group) => ({
+      groups: [group],
+      records: [group.header, ...group.events],
+    }));
 }

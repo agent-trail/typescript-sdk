@@ -6,7 +6,9 @@ export { redactTrailJsonl } from "./redactor.js";
 export type {
   LoadedRedactionPack,
   PiiConfig,
+  RedactedSessionGroup,
   RedactedTrail,
+  RedactedTrailRecord,
   RedactionPackSource,
   RedactionPackSummary,
   RedactionPattern,

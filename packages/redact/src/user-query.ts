@@ -62,7 +62,6 @@ function stripSecretResponse(
   mutationCounts: Map<number, number>,
 ): void {
   if (typeof payload?.for_id !== "string") return;
-  if (payload.answers === null || typeof payload.answers !== "object") return;
   const secretIds = secretByQueryId.get(payload.for_id);
   if (secretIds === undefined) return;
   stripSecretSourceRaw(
@@ -72,6 +71,23 @@ function stripSecretResponse(
     maxSamples,
     mutationCounts,
   );
+  if (
+    payload.answers === null ||
+    typeof payload.answers !== "object" ||
+    Array.isArray(payload.answers)
+  ) {
+    payload.answers = {};
+    recordSummaryMutation(
+      summary,
+      maxSamples,
+      "user_query_secret_answer",
+      `records[${index}].payload.answers`,
+      "[secret answers]",
+      "[STRIPPED]",
+    );
+    addMutationCount(mutationCounts, index, 1);
+    return;
+  }
   stripSecretAnswerValues(
     payload.answers as Record<string, unknown>,
     secretIds,
@@ -113,23 +129,53 @@ function stripSecretAnswerValues(
 ): void {
   for (const questionId of secretIds) {
     const answer = answers[questionId];
-    if (answer === null || typeof answer !== "object") continue;
+    if (answer === undefined) continue;
+    if (answer === null || typeof answer !== "object") {
+      stripOneSecretAnswer(answers, questionId, index, summary, maxSamples, mutationCounts);
+      continue;
+    }
     const answerObject = answer as Record<string, unknown>;
-    const hadSelected = Array.isArray(answerObject.selected) && answerObject.selected.length > 0;
+    if (!isCanonicalAnswerObject(answerObject)) {
+      stripOneSecretAnswer(answers, questionId, index, summary, maxSamples, mutationCounts);
+      continue;
+    }
+    const hadSelected = answerObject.selected.length > 0;
     const hadOther = typeof answerObject.other === "string" && answerObject.other.length > 0;
-    if (!hadSelected && !hadOther) continue;
-    answerObject.selected = [];
-    delete answerObject.other;
-    recordSummaryMutation(
-      summary,
-      maxSamples,
-      "user_query_secret_answer",
-      `records[${index}].payload.answers.${questionId}`,
-      "[secret answer]",
-      "[STRIPPED]",
-    );
-    addMutationCount(mutationCounts, index, 1);
+    if (hadSelected || hadOther) {
+      stripOneSecretAnswer(answers, questionId, index, summary, maxSamples, mutationCounts);
+    }
   }
+}
+
+function isCanonicalAnswerObject(answer: Record<string, unknown>): answer is {
+  selected: unknown[];
+  other?: string;
+} {
+  return (
+    Object.keys(answer).every((key) => key === "selected" || key === "other") &&
+    Array.isArray(answer.selected) &&
+    (answer.other === undefined || typeof answer.other === "string")
+  );
+}
+
+function stripOneSecretAnswer(
+  answers: Record<string, unknown>,
+  questionId: string,
+  index: number,
+  summary: RedactionSummary,
+  maxSamples: number,
+  mutationCounts: Map<number, number>,
+): void {
+  answers[questionId] = { selected: [] };
+  recordSummaryMutation(
+    summary,
+    maxSamples,
+    "user_query_secret_answer",
+    `records[${index}].payload.answers.${questionId}`,
+    "[secret answer]",
+    "[STRIPPED]",
+  );
+  addMutationCount(mutationCounts, index, 1);
 }
 
 function uniqueKey(preferred: string, used: Set<string>): string {
@@ -150,6 +196,7 @@ export function redactUserQueryQuestionIds(
   allowedSecrets: readonly string[],
   summary: RedactionSummary,
   maxSamples: number,
+  mutationCounts: Map<number, number>,
   enableEntropyRedaction: boolean,
   pii: PiiConfig,
 ): Map<string, Map<string, string>> {
@@ -169,6 +216,7 @@ export function redactUserQueryQuestionIds(
       allowedSecrets,
       summary,
       maxSamples,
+      mutationCounts,
       enableEntropyRedaction,
       pii,
     );
@@ -186,6 +234,7 @@ function redactQuestionIds(
   allowedSecrets: readonly string[],
   summary: RedactionSummary,
   maxSamples: number,
+  mutationCounts: Map<number, number>,
   enableEntropyRedaction: boolean,
   pii: PiiConfig,
 ): Map<string, string> {
@@ -202,6 +251,7 @@ function redactQuestionIds(
       allowedSecrets,
       summary,
       maxSamples,
+      mutationCounts,
       enableEntropyRedaction,
       pii,
     );
@@ -220,6 +270,7 @@ function redactedQuestionId(
   allowedSecrets: readonly string[],
   summary: RedactionSummary,
   maxSamples: number,
+  mutationCounts: Map<number, number>,
   enableEntropyRedaction: boolean,
   pii: PiiConfig,
 ): { before: string; after: string } | undefined {
@@ -241,7 +292,9 @@ function redactedQuestionId(
   const after = uniqueKey(redacted, used);
   questionObject.id = after;
   used.add(after);
-  return after === before ? undefined : { before, after };
+  if (after === before) return undefined;
+  addMutationCount(mutationCounts, recordIndex, 1);
+  return { before, after };
 }
 
 export function redactUserQueryAnswerKeys(
@@ -252,6 +305,7 @@ export function redactUserQueryAnswerKeys(
   allowedSecrets: readonly string[],
   summary: RedactionSummary,
   maxSamples: number,
+  mutationCounts: Map<number, number>,
   enableEntropyRedaction: boolean,
   pii: PiiConfig,
 ): void {
@@ -271,6 +325,7 @@ export function redactUserQueryAnswerKeys(
       allowedSecrets,
       summary,
       maxSamples,
+      mutationCounts,
       enableEntropyRedaction,
       pii,
     );
@@ -288,6 +343,7 @@ function redactAnswerKeys(
   allowedSecrets: readonly string[],
   summary: RedactionSummary,
   maxSamples: number,
+  mutationCounts: Map<number, number>,
   enableEntropyRedaction: boolean,
   pii: PiiConfig,
 ): Record<string, unknown> | undefined {
@@ -309,7 +365,10 @@ function redactAnswerKeys(
     const after = uniqueKey(idMap?.get(before) ?? redacted, used);
     used.add(after);
     rewritten[after] = answer;
-    if (after !== before) changed = true;
+    if (after !== before) {
+      changed = true;
+      addMutationCount(mutationCounts, index, 1);
+    }
   }
   return changed ? rewritten : undefined;
 }

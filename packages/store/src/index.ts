@@ -5,8 +5,7 @@
  * `<storeRoot>/objects/sha256/<content_hash>.trail.jsonl`, with mutable
  * metadata at `<storeRoot>/index/objects.json`. `storeRoot` defaults to
  * `~/.local/share/trail` and is overridable via the `AGENT_TRAIL_HOME`
- * env var or an explicit `storeRoot` option. See `docs/PRD.md` §8.3 for
- * the local-store contract.
+ * env var or an explicit `storeRoot` option.
  *
  * - `registerTrail` — validate + hash + write a trail to the store.
  *   Downstream CLI verbs (`trail share`, `trail load`, `trail handoff`,

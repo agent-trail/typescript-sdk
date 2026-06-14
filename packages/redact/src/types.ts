@@ -42,7 +42,21 @@ export type PiiConfig = {
   customLabels?: Record<string, string>;
 };
 
-export type RedactedTrail = import("@agent-trail/core").ParsedTrail;
+export type RedactedTrailRecord = {
+  line: number;
+  record: unknown;
+};
+
+export type RedactedSessionGroup = {
+  header: RedactedTrailRecord;
+  events: RedactedTrailRecord[];
+};
+
+export type RedactedTrail = {
+  records: RedactedTrailRecord[];
+  envelope?: RedactedTrailRecord;
+  groups: RedactedSessionGroup[];
+};
 
 export type RedactTrailOptions = {
   patterns?: RedactionPattern[];

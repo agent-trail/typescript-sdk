@@ -25,10 +25,24 @@ export type PiiConfig = {
     customLabels?: Record<string, string>;
 };
 
-// Warning: (ae-forgotten-export) The symbol "ParsedTrail" needs to be exported by the entry point index.d.ts
-//
 // @public (undocumented)
-export type RedactedTrail = ParsedTrail;
+export type RedactedSessionGroup = {
+    header: RedactedTrailRecord;
+    events: RedactedTrailRecord[];
+};
+
+// @public (undocumented)
+export type RedactedTrail = {
+    records: RedactedTrailRecord[];
+    envelope?: RedactedTrailRecord;
+    groups: RedactedSessionGroup[];
+};
+
+// @public (undocumented)
+export type RedactedTrailRecord = {
+    line: number;
+    record: unknown;
+};
 
 // @public (undocumented)
 export type RedactionConfig = {

@@ -93,6 +93,7 @@ async function redactRecords(
     config.allowedSecrets,
     rawSummary,
     config.maxSamples,
+    redactionCounts,
     config.enableEntropyRedaction,
     config.pii,
   );
@@ -104,6 +105,7 @@ async function redactRecords(
     config.allowedSecrets,
     rawSummary,
     config.maxSamples,
+    redactionCounts,
     config.enableEntropyRedaction,
     config.pii,
   );

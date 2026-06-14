@@ -9,7 +9,8 @@
     "unused-types": "warn"
   },
   "duplicates": {
-    "threshold": 0
+    "threshold": 0,
+    "ignore": ["packages/types/src/generated.ts"]
   },
   "production": false
 }

@@ -3,6 +3,9 @@ import path from "node:path";
 
 export type PackageJson = {
   name?: string;
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
   workspaces?: string[] | { packages?: string[] };
   types?: string;
   exports?: unknown;

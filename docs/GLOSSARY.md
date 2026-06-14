@@ -50,6 +50,19 @@ Adapters preserve source evidence while normalizing to the format contract.
 Shared primitives for building adapters, including mapping helpers, reader
 interfaces, and source schema validation.
 
+**Core package**:
+The SDK package `@agent-trail/core`. It owns JSONL parsing, validation result
+shapes, canonicalization, hashing, and segment reconciliation APIs.
+
+**Core diagnostic**:
+A normalized diagnostic emitted by `@agent-trail/core` with `line`, `path`,
+`severity`, `code`, and `message`. Core diagnostics are SDK API values, even
+when a diagnostic code comes from the format contract.
+
+**Core validation result**:
+The structured result returned by `@agent-trail/core` validation APIs. It
+contains parsed trail data, an `ok` verdict, and core diagnostics.
+
 **Source schema**:
 A JSON Schema describing normalized upstream source-agent records before they
 are mapped to Agent Trail records. Source schemas document adapter evidence;

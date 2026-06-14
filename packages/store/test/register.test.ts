@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -219,6 +219,67 @@ storeTest(
   },
 );
 
+storeTest("registerTrail reports finalized when a non-primary object is written", async () => {
+  const commonSession = {
+    type: "session",
+    schema_version: "0.1.0",
+    id: "00000000-0000-4000-8000-000000000401",
+    session_uid: "00000000-0000-4000-8000-000000000501",
+    ts: "2026-05-17T14:00:00.000Z",
+    agent: { name: "codex-cli" },
+  };
+  const commonEvent = {
+    type: "user_message",
+    id: "00000000-0000-4000-8000-000000000601",
+    ts: "2026-05-17T14:00:01.000Z",
+    payload: { text: "same" },
+  };
+  const firstPath = join(storeRoot, "first-no-envelope.trail.jsonl");
+  const secondPath = join(storeRoot, "second-no-envelope.trail.jsonl");
+  await writeFile(firstPath, await stampedJsonl([commonSession, commonEvent]), "utf8");
+  await writeFile(
+    secondPath,
+    await stampedJsonl([
+      commonSession,
+      commonEvent,
+      {
+        type: "session",
+        schema_version: "0.1.0",
+        id: "00000000-0000-4000-8000-000000000402",
+        session_uid: "00000000-0000-4000-8000-000000000502",
+        ts: "2026-05-17T14:02:00.000Z",
+        agent: { name: "codex-cli" },
+      },
+    ]),
+    "utf8",
+  );
+
+  await registerTrail(firstPath, { storeRoot, catalogDb });
+  const result = await registerTrail(secondPath, { storeRoot, catalogDb });
+
+  expect(result.status).toBe("finalized");
+});
+
+storeTest("registerTrail replaces symlinked object paths with regular object files", async () => {
+  const target = objectPath(storeRoot, finalizedHash);
+  const outside = join(storeRoot, "outside.trail.jsonl");
+  await mkdir(dirname(target), { recursive: true });
+  await writeFile(outside, "outside\n", "utf8");
+  await symlink(outside, target);
+
+  const result = await registerTrail(finalizedFixture, { storeRoot, catalogDb });
+
+  expect(result.status).toBe("finalized");
+  expect((await lstat(target)).isSymbolicLink()).toBe(false);
+  expect(await readFile(target, "utf8")).toBe(
+    serializeTrailJsonl(await parseTrailJsonl(await readFile(finalizedFixture, "utf8"))),
+  );
+});
+
+storeTest("objectPath rejects invalid content hashes", async () => {
+  expect(() => objectPath(storeRoot, "../escape")).toThrow("Invalid trail object content hash");
+});
+
 storeTest("registerTrail rejects gzipped trails over the decompressed size cap", async () => {
   const input = join(storeRoot, "oversized.trail.jsonl.gz");
   await writeFile(input, gzipSync("x".repeat(8_000_001)));
@@ -274,6 +335,7 @@ storeTest("indexExistingObjects skips corrupt objects and stray files", async ()
   await mkdir(dirname(corruptPath), { recursive: true });
   await writeFile(corruptPath, "{bad\n", "utf8");
   await writeFile(join(dirname(corruptPath), "not-a-hash.trail.jsonl"), "ignored\n", "utf8");
+  await symlink(finalizedFixture, objectPath(storeRoot, "d".repeat(64)));
 
   const result = await indexExistingObjects({ storeRoot, catalogDb });
 

@@ -1,15 +1,17 @@
-import { readFile } from "node:fs/promises";
+import { lstat, readFile } from "node:fs/promises";
 import {
   type CatalogDb,
   findTrailObjectsBySessionUid,
   initializeCatalog,
 } from "@agent-trail/catalog";
 import {
+  computeContentHashes,
   type ParsedTrail,
   parseTrailJsonl,
   reconcileSegments,
   serializeTrailJsonl,
 } from "@agent-trail/core";
+import { objectPath } from "./paths.js";
 
 /**
  * Outcome of attempting to reconcile an incoming segment trail against the
@@ -63,7 +65,6 @@ export async function reconcileIncomingSegment(
   incomingJsonl: string,
   catalogDb: CatalogDb,
 ): Promise<ReconcileIncomingResult> {
-  void storeRoot;
   const incomingTrail = await parseTrailJsonl(incomingJsonl);
   if (hasParseError(incomingTrail)) {
     return { kind: "passthrough", reason: "invalid_incoming" };
@@ -78,12 +79,14 @@ export async function reconcileIncomingSegment(
   } catch {
     return { kind: "passthrough", reason: "store_error" };
   }
-  if (matches.length === 0) return { kind: "passthrough" };
+  const incomingContentHash = sessionContentHash(incomingTrail, incomingUid);
+  const priorMatches = matches.filter((match) => match.content_hash !== incomingContentHash);
+  if (priorMatches.length === 0) return { kind: "passthrough" };
 
   const inputs = [incomingTrail];
-  for (const match of matches) {
+  for (const match of priorMatches) {
     try {
-      const raw = await readFile(match.object_path, "utf8");
+      const raw = await readStoreObjectFile(objectPath(storeRoot, match.content_hash));
       const trail = await parseTrailJsonl(raw);
       if (!hasParseError(trail)) {
         inputs.push(...trailsForSessionUid(trail, incomingUid));
@@ -117,6 +120,20 @@ function headerSessionUid(trail: ParsedTrail): string | null {
 
 function hasParseError(trail: ParsedTrail): boolean {
   return trail.records.some((record) => record.record.type === "x-parse-error");
+}
+
+function sessionContentHash(trail: ParsedTrail, sessionUid: string): string | undefined {
+  const groupIndex = trail.groups.findIndex(
+    (group) => group.header.record.session_uid === sessionUid,
+  );
+  if (groupIndex < 0) return undefined;
+  return computeContentHashes(trail).sessionHashes[groupIndex]?.hash;
+}
+
+async function readStoreObjectFile(path: string): Promise<string> {
+  const info = await lstat(path);
+  if (!info.isFile()) throw new Error(`store object is not a regular file: ${path}`);
+  return readFile(path, "utf8");
 }
 
 function trailsForSessionUid(trail: ParsedTrail, sessionUid: string): ParsedTrail[] {

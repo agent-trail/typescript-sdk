@@ -12,6 +12,11 @@ import type {
   RedactionPattern,
 } from "./types.js";
 
+/**
+ * Resolved redaction settings, loaded packs, and nonfatal load warnings.
+ *
+ * @public
+ */
 export type RedactionConfig = {
   packs: LoadedRedactionPack[];
   allowedSecrets: string[];
@@ -19,6 +24,11 @@ export type RedactionConfig = {
   warnings: string[];
 };
 
+/**
+ * Options controlling project and user-global redaction config discovery.
+ *
+ * @public
+ */
 export type ResolveRedactionConfigOptions = {
   env?: Record<string, string | undefined>;
   projectRoot?: string;
@@ -42,27 +52,35 @@ const MAX_PACK_FILES = 256;
 const PACK_EXTENSIONS = new Set([".yaml", ".yml", ".json"]);
 const RULE_ID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
 
+/**
+ * Load redaction settings and packs from the project and user config roots.
+ *
+ * @public
+ */
 export async function resolveRedactionConfig(
   options: ResolveRedactionConfigOptions = {},
 ): Promise<RedactionConfig> {
   const env = options.env ?? process.env;
   const projectRoot = await realpath(resolve(options.projectRoot ?? process.cwd()));
   const home = env.HOME ?? env.USERPROFILE;
-  const settingsPaths = [
-    join(projectRoot, ".trail", "settings.json"),
+  const projectSettingsPath = join(projectRoot, ".trail", "settings.json");
+  const globalSettingsPaths =
+    home === undefined || home.length === 0
+      ? []
+      : [join(home, ".config", "trail", "settings.json")];
+  const roots: Array<{ source: RedactionPackSource; path: string }> = [
     ...(home === undefined || home.length === 0
       ? []
-      : [join(home, ".config", "trail", "settings.json")]),
-  ];
-  const roots: Array<{ source: RedactionPackSource; path: string }> = [
+      : [{ source: "user_global" as const, path: join(home, ".config", "trail", "redactors") }]),
     { source: "project", path: join(projectRoot, ".trail", "redactors") },
   ];
-  if (home !== undefined && home.length > 0) {
-    roots.push({ source: "user_global", path: join(home, ".config", "trail", "redactors") });
-  }
 
   const warnings: string[] = [];
-  const settings = await readSettings(settingsPaths);
+  const projectSettings = hardenProjectSettings(
+    await readSettings([projectSettingsPath]),
+    warnings,
+  );
+  const settings = mergeSettings(projectSettings, await readSettings(globalSettingsPaths));
   const packs: LoadedRedactionPack[] = [];
   const patternIds = new Set(DEFAULT_PATTERNS.map((pattern) => pattern.id));
   const packNames = new Set<string>();
@@ -91,6 +109,8 @@ type RedactionSettings = {
   allowedSecrets?: string[];
   pii?: PiiConfig;
 };
+
+const PII_BOOLEAN_KEYS = ["email", "phone", "ssn", "creditCard", "name"] as const;
 
 async function readSettings(paths: string[]): Promise<RedactionSettings> {
   let settings: RedactionSettings = {};
@@ -132,6 +152,34 @@ function mergePiiSettings(
     ...next,
     ...mergeEmailAllowlist(base, next),
     ...mergeCustomLabels(base, next),
+  };
+}
+
+function hardenProjectSettings(settings: RedactionSettings, warnings: string[]): RedactionSettings {
+  const hardened: RedactionSettings = { ...settings };
+  if (hardened.allowedSecrets !== undefined && hardened.allowedSecrets.length > 0) {
+    delete hardened.allowedSecrets;
+    warnings.push("project redaction settings cannot add allowedSecrets; ignored");
+  }
+  if (hardened.pii === undefined) return hardened;
+  const pii: PiiConfig = { ...hardened.pii };
+  if (pii.emailAllowlist !== undefined && pii.emailAllowlist.length > 0) {
+    delete pii.emailAllowlist;
+    warnings.push("project redaction settings cannot add pii.emailAllowlist; ignored");
+  }
+  for (const key of PII_BOOLEAN_KEYS) {
+    if (pii[key] === false) {
+      delete pii[key];
+      warnings.push(`project redaction settings cannot disable pii.${key}; ignored`);
+    }
+  }
+  if (Object.keys(pii).length === 0) {
+    const { pii: _ignored, ...rest } = hardened;
+    return rest;
+  }
+  return {
+    ...hardened,
+    pii,
   };
 }
 
@@ -326,7 +374,7 @@ async function loadPackFile(
       warnings.push(`redaction pack duplicate name skipped: ${path}`);
       return null;
     }
-    const pack = compilePack(path, source, bytes, parsed, patternIds);
+    const pack = compilePack(path, source, bytes, parsed, patternIds, warnings);
     packNames.add(pack.name);
     return pack;
   } catch (error) {
@@ -347,6 +395,7 @@ function compilePack(
   bytes: Buffer,
   value: unknown,
   patternIds: Set<string>,
+  warnings: string[],
 ): LoadedRedactionPack {
   if (!isPlainObject(value)) throw new Error("pack must be an object");
   const name = packName(path, value);
@@ -371,6 +420,7 @@ function compilePack(
     patterns.push(pattern);
   }
   for (const pattern of patterns) patternIds.add(pattern.id);
+  const allowlist = packAllowlist(value, source, path, warnings);
   return {
     name,
     version,
@@ -378,8 +428,20 @@ function compilePack(
     source,
     contentHash: createHash("sha256").update(bytes).digest("hex"),
     patterns,
-    allowlist: optionalStringArrayField(value, "allowlist") ?? [],
+    allowlist,
   };
+}
+
+function packAllowlist(
+  value: Record<string, unknown>,
+  source: RedactionPackSource,
+  path: string,
+  warnings: string[],
+): string[] {
+  const allowlist = optionalStringArrayField(value, "allowlist") ?? [];
+  if (source !== "project" || allowlist.length === 0) return allowlist;
+  warnings.push(`project redaction pack cannot add allowlist entries; ignored: ${path}`);
+  return [];
 }
 
 function packName(path: string, value: unknown): string {

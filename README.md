@@ -1,6 +1,7 @@
 # Agent Trail TypeScript SDK
 
-TypeScript packages for working with Agent Trail readers, writers, adapters, redaction, store, and sessions.
+TypeScript packages for Agent Trail schema assets, generated types, core JSONL
+utilities, redaction, catalog metadata, and content-addressed local storage.
 
 ## Related Repositories
 

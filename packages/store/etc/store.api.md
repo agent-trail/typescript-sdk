@@ -9,30 +9,29 @@ export type CatalogDb = {
     exec(sql: string, params?: CatalogParams): void | Promise<void>;
     get<T = unknown>(sql: string, params?: CatalogParams): T | null | undefined | Promise<T | null | undefined>;
     all<T = unknown>(sql: string, params?: CatalogParams): T[] | Promise<T[]>;
-    transaction?<T>(fn: () => T): T;
 };
 
-// @public (undocumented)
+// @public
 export type CatalogParams = readonly CatalogValue[];
 
-// @public (undocumented)
+// @public
 export type CatalogValue = string | number | null | Uint8Array;
 
-// @public (undocumented)
+// @public
 export function indexExistingObjects(opts: IndexExistingObjectsOptions): Promise<IndexExistingObjectsResult>;
 
-// @public (undocumented)
+// @public
 export type IndexExistingObjectsOptions = {
     storeRoot?: string;
     catalogDb: CatalogDb;
 };
 
-// @public (undocumented)
+// @public
 export type IndexExistingObjectsResult = {
     entries: number;
 };
 
-// @public (undocumented)
+// @public
 export function objectPath(storeRoot: string, contentHash: string): string;
 
 // @public
@@ -50,14 +49,14 @@ export type ReconcileIncomingResult = {
 // @public
 export function reconcileIncomingSegment(storeRoot: string, incomingJsonl: string, catalogDb: CatalogDb): Promise<ReconcileIncomingResult>;
 
-// @public (undocumented)
+// @public
 export type RegisterOptions = {
     storeRoot?: string;
     catalogDb?: CatalogDb;
     sourcePath?: string | null;
 };
 
-// @public (undocumented)
+// @public
 export type RegisterResult = {
     status: RegisterStatus;
     contentHash: string | null;
@@ -65,13 +64,13 @@ export type RegisterResult = {
     diagnostics: TrailDiagnostic[];
 };
 
-// @public (undocumented)
+// @public
 export type RegisterStatus = "finalized" | "already_present" | "skipped_pending" | "invalid";
 
-// @public (undocumented)
+// @public
 export function registerTrail(filePath: string, opts?: RegisterOptions): Promise<RegisterResult>;
 
-// @public (undocumented)
+// @public
 export function resolveStoreRoot(override?: string): string;
 
 // @public
@@ -82,7 +81,5 @@ export type TrailDiagnostic = {
     code: string;
     message: string;
 };
-
-// (No @packageDocumentation comment for this package)
 
 ```

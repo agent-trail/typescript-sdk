@@ -5,13 +5,18 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { resolveRedactionConfig } from "../src/index.ts";
 
-test("resolveRedactionConfig loads project packs and settings", async () => {
+test("resolveRedactionConfig loads project packs and ignores project weakening settings", async () => {
   const root = mkdtempSync(join(tmpdir(), "trail-redact-"));
   try {
     await mkdir(join(root, ".trail", "redactors"), { recursive: true });
     await writeFile(
       join(root, ".trail", "settings.json"),
-      JSON.stringify({ redaction: { allowedSecrets: ["keep-me"] } }),
+      JSON.stringify({
+        redaction: {
+          allowedSecrets: ["keep-me"],
+          pii: { emailAllowlist: ["leak@example.com"] },
+        },
+      }),
       "utf8",
     );
     await writeFile(
@@ -33,12 +38,19 @@ test("resolveRedactionConfig loads project packs and settings", async () => {
       env: { HOME: "" },
     });
 
-    expect(config.allowedSecrets).toEqual(["keep-me"]);
+    expect(config.allowedSecrets).toEqual([]);
+    expect(config.pii?.emailAllowlist).toBeUndefined();
     expect(config.packs).toHaveLength(1);
     expect(config.packs[0]?.patterns[0]).toMatchObject({
       id: "custom_token",
       placeholder: "[CUSTOM_TOKEN]",
     });
+    expect(config.warnings).toEqual(
+      expect.arrayContaining([
+        "project redaction settings cannot add allowedSecrets; ignored",
+        "project redaction settings cannot add pii.emailAllowlist; ignored",
+      ]),
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -112,7 +124,7 @@ test("resolveRedactionConfig skips unsafe packs and symlinks with warnings", asy
   }
 });
 
-test("resolveRedactionConfig gives project packs precedence over global duplicate names", async () => {
+test("resolveRedactionConfig gives user-global packs precedence over project duplicate names", async () => {
   const root = mkdtempSync(join(tmpdir(), "trail-redact-project-"));
   const home = mkdtempSync(join(tmpdir(), "trail-redact-home-"));
   try {
@@ -152,11 +164,105 @@ test("resolveRedactionConfig gives project packs precedence over global duplicat
 
     const config = await resolveRedactionConfig({ projectRoot: root, env: { HOME: home } });
 
-    expect(config.allowedSecrets).toEqual(["project-allowed", "global-allowed"]);
+    expect(config.allowedSecrets).toEqual(["global-allowed"]);
     expect(config.packs).toHaveLength(1);
-    expect(config.packs[0]).toMatchObject({ name: "shared", source: "project" });
-    expect(config.packs[0]?.patterns[0]?.id).toBe("project_rule");
+    expect(config.packs[0]).toMatchObject({ name: "shared", source: "user_global" });
+    expect(config.packs[0]?.patterns[0]?.id).toBe("global_rule");
     expect(config.warnings).toContainEqual(expect.stringContaining("duplicate name skipped"));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("resolveRedactionConfig ignores project attempts to weaken PII detectors", async () => {
+  const root = mkdtempSync(join(tmpdir(), "trail-redact-project-"));
+  const home = mkdtempSync(join(tmpdir(), "trail-redact-home-"));
+  try {
+    await mkdir(join(root, ".trail"), { recursive: true });
+    await mkdir(join(home, ".config", "trail"), { recursive: true });
+    await writeFile(
+      join(root, ".trail", "settings.json"),
+      JSON.stringify({
+        redaction: {
+          allowedSecrets: ["project-secret"],
+          pii: {
+            email: false,
+            phone: false,
+            emailAllowlist: ["leak@example.com"],
+          },
+        },
+      }),
+      "utf8",
+    );
+    await writeFile(
+      join(home, ".config", "trail", "settings.json"),
+      JSON.stringify({ redaction: { pii: { name: false } } }),
+      "utf8",
+    );
+
+    const config = await resolveRedactionConfig({ projectRoot: root, env: { HOME: home } });
+
+    expect(config.pii).toEqual({ name: false });
+    expect(config.allowedSecrets).toEqual([]);
+    expect(config.warnings).toEqual(
+      expect.arrayContaining([
+        "project redaction settings cannot add allowedSecrets; ignored",
+        "project redaction settings cannot add pii.emailAllowlist; ignored",
+        "project redaction settings cannot disable pii.email; ignored",
+        "project redaction settings cannot disable pii.phone; ignored",
+      ]),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("resolveRedactionConfig ignores project pack allowlists", async () => {
+  const root = mkdtempSync(join(tmpdir(), "trail-redact-project-"));
+  const home = mkdtempSync(join(tmpdir(), "trail-redact-home-"));
+  try {
+    await mkdir(join(root, ".trail", "redactors"), { recursive: true });
+    await mkdir(join(home, ".config", "trail", "redactors"), { recursive: true });
+    await writeFile(
+      join(root, ".trail", "redactors", "project.yaml"),
+      [
+        "name: project",
+        "version: 1",
+        "allowlist:",
+        "  - project-secret",
+        "rules:",
+        "  - id: project_rule",
+        "    description: Project",
+        "    regex: project-[A-Za-z0-9]+",
+        "    placeholder: '[PROJECT]'",
+      ].join("\n"),
+      "utf8",
+    );
+    await writeFile(
+      join(home, ".config", "trail", "redactors", "global.yaml"),
+      [
+        "name: global",
+        "version: 1",
+        "allowlist:",
+        "  - global-secret",
+        "rules:",
+        "  - id: global_rule",
+        "    description: Global",
+        "    regex: global-[A-Za-z0-9]+",
+        "    placeholder: '[GLOBAL]'",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const config = await resolveRedactionConfig({ projectRoot: root, env: { HOME: home } });
+
+    expect(config.allowedSecrets).toEqual(["global-secret"]);
+    expect(config.packs.find((pack) => pack.source === "project")?.allowlist).toEqual([]);
+    expect(config.warnings).toContainEqual(
+      expect.stringContaining("project redaction pack cannot add allowlist entries"),
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
     rmSync(home, { recursive: true, force: true });

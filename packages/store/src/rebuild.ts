@@ -1,4 +1,4 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { lstat, readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { type CatalogDb, initializeCatalog, upsertTrailObject } from "@agent-trail/catalog";
 import { writerStrictObjectIndexPolicy } from "./object-index-policy.js";
@@ -7,6 +7,8 @@ import { objectsDir, resolveStoreRoot } from "./paths.js";
 const OBJECT_NAME = /^([0-9a-f]{64})\.trail\.jsonl$/;
 
 /**
+ * Options for indexing existing content-addressed objects into a catalog.
+ *
  * @public
  */
 export type IndexExistingObjectsOptions = {
@@ -15,6 +17,8 @@ export type IndexExistingObjectsOptions = {
 };
 
 /**
+ * Result of indexing existing object files into a catalog.
+ *
  * @public
  */
 export type IndexExistingObjectsResult = {
@@ -22,6 +26,8 @@ export type IndexExistingObjectsResult = {
 };
 
 /**
+ * Scan on-disk object files and upsert matching object rows into the catalog.
+ *
  * @public
  */
 export async function indexExistingObjects(
@@ -71,7 +77,7 @@ async function indexObjectEntry(
       : undefined;
   if (row === undefined) return undefined;
 
-  const info = await stat(path);
+  const info = await lstat(path);
   return {
     content_hash: filenameHash,
     kind: row.kind,
@@ -84,6 +90,8 @@ async function indexObjectEntry(
 
 async function readObjectFile(path: string): Promise<string | undefined> {
   try {
+    const info = await lstat(path);
+    if (!info.isFile()) return undefined;
     return await readFile(path, "utf8");
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;

@@ -353,7 +353,7 @@ function redactAnswerKeys(
   for (const [before, answer] of Object.entries(answers)) {
     const redacted = redactString(
       before,
-      `records[${index}].payload.answers.${before}`,
+      `records[${index}].payload.answers.<key>`,
       userPatterns,
       patterns,
       allowedSecrets,

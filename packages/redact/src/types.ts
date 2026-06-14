@@ -3,6 +3,11 @@ import type { RedactionPattern } from "./secret-patterns.js";
 
 export type { RedactionPattern };
 
+/**
+ * One sample mutation captured during redaction.
+ *
+ * @public
+ */
 export type RedactionSample = {
   patternId: string;
   location: string;
@@ -10,6 +15,11 @@ export type RedactionSample = {
   after: string;
 };
 
+/**
+ * Aggregate mutation counts, samples, pack metadata, and warnings.
+ *
+ * @public
+ */
 export type RedactionSummary = {
   counts: Record<string, number>;
   samples: RedactionSample[];
@@ -17,8 +27,18 @@ export type RedactionSummary = {
   warnings?: string[];
 };
 
+/**
+ * Origin of a loaded redaction pack.
+ *
+ * @public
+ */
 export type RedactionPackSource = "project" | "user_global";
 
+/**
+ * Public metadata for a loaded redaction pack.
+ *
+ * @public
+ */
 export type RedactionPackSummary = {
   name: string;
   version: number;
@@ -26,12 +46,22 @@ export type RedactionPackSummary = {
   source: RedactionPackSource;
 };
 
+/**
+ * Loaded redaction pack with compiled patterns and allowlisted literals.
+ *
+ * @public
+ */
 export type LoadedRedactionPack = RedactionPackSummary & {
   path: string;
   patterns: RedactionPattern[];
   allowlist: string[];
 };
 
+/**
+ * PII detector configuration for built-in and custom PII labels.
+ *
+ * @public
+ */
 export type PiiConfig = {
   email?: boolean;
   phone?: boolean;
@@ -42,22 +72,42 @@ export type PiiConfig = {
   customLabels?: Record<string, string>;
 };
 
+/**
+ * Redacted trail record with original JSONL line number.
+ *
+ * @public
+ */
 export type RedactedTrailRecord = {
   line: number;
   record: unknown;
 };
 
+/**
+ * Redacted session group containing a session header and events.
+ *
+ * @public
+ */
 export type RedactedSessionGroup = {
   header: RedactedTrailRecord;
   events: RedactedTrailRecord[];
 };
 
+/**
+ * Parsed redacted trail returned by `redactTrailJsonl`.
+ *
+ * @public
+ */
 export type RedactedTrail = {
   records: RedactedTrailRecord[];
   envelope?: RedactedTrailRecord;
   groups: RedactedSessionGroup[];
 };
 
+/**
+ * Options controlling built-in patterns, packs, PII, sharing rules, and limits.
+ *
+ * @public
+ */
 export type RedactTrailOptions = {
   patterns?: RedactionPattern[];
   extendPatterns?: RedactionPattern[];
@@ -76,10 +126,20 @@ export type RedactTrailOptions = {
   keepRemoteUrl?: boolean;
 };
 
+/**
+ * Result of redacting Agent Trail JSONL.
+ *
+ * @public
+ */
 export type RedactTrailResult = {
   jsonl: string;
   trail: RedactedTrail;
   summary: RedactionSummary;
 };
 
+/**
+ * Input accepted by `redactTrailJsonl`.
+ *
+ * @public
+ */
 export type RedactTrailJsonlInput = TrailJsonlInput;

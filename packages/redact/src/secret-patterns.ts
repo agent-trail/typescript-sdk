@@ -1,3 +1,8 @@
+/**
+ * Regex-based redaction rule with a stable summary id and replacement text.
+ *
+ * @public
+ */
 export type RedactionPattern = {
   id: string;
   description: string;
@@ -354,6 +359,11 @@ const CREDENTIAL_PATTERNS: RedactionPattern[] = [
   BEARER_TOKEN,
 ];
 
+/**
+ * Built-in secret redaction patterns used by default.
+ *
+ * @public
+ */
 export const DEFAULT_PATTERNS: RedactionPattern[] = [
   ...CREDENTIAL_PATTERNS,
   HOME_PATH,

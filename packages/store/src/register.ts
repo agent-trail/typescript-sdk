@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import { dirname, resolve as resolvePath } from "node:path";
 import { gunzipSync } from "node:zlib";
 import { type CatalogDb, initializeCatalog, upsertTrailObject } from "@agent-trail/catalog";
@@ -16,11 +16,15 @@ import {
 import { objectPath as computeObjectPath, resolveStoreRoot } from "./paths.js";
 
 /**
+ * Result status for registering a trail file into the local store.
+ *
  * @public
  */
 export type RegisterStatus = "finalized" | "already_present" | "skipped_pending" | "invalid";
 
 /**
+ * Result of validating and registering one trail file.
+ *
  * @public
  */
 export type RegisterResult = {
@@ -31,6 +35,8 @@ export type RegisterResult = {
 };
 
 /**
+ * Options for registering a trail file into the local store.
+ *
  * @public
  */
 export type RegisterOptions = {
@@ -51,6 +57,8 @@ export type RegisterOptions = {
 };
 
 /**
+ * Validate, canonicalize, and write finalized trail object bytes.
+ *
  * @public
  */
 export async function registerTrail(
@@ -127,7 +135,7 @@ export async function registerTrail(
     const existing = await readFileIfExists(target);
     if (existing !== bytes) {
       await atomicWriteFile(target, bytes);
-      if (target === primaryTarget) status = "finalized";
+      status = "finalized";
     }
     if (opts.catalogDb !== undefined) {
       await upsertTrailObject(opts.catalogDb, {
@@ -241,6 +249,8 @@ function decodeGzippedTrailBytes(bytes: Uint8Array, path: string): string {
 
 async function readFileIfExists(path: string): Promise<string | null> {
   try {
+    const info = await lstat(path);
+    if (!info.isFile()) return null;
     return await readFile(path, "utf8");
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {

@@ -4,17 +4,17 @@
 
 ```ts
 
-// @public (undocumented)
+// @public
 export const DEFAULT_PATTERNS: RedactionPattern[];
 
-// @public (undocumented)
+// @public
 export type LoadedRedactionPack = RedactionPackSummary & {
     path: string;
     patterns: RedactionPattern[];
     allowlist: string[];
 };
 
-// @public (undocumented)
+// @public
 export type PiiConfig = {
     email?: boolean;
     phone?: boolean;
@@ -25,26 +25,26 @@ export type PiiConfig = {
     customLabels?: Record<string, string>;
 };
 
-// @public (undocumented)
+// @public
 export type RedactedSessionGroup = {
     header: RedactedTrailRecord;
     events: RedactedTrailRecord[];
 };
 
-// @public (undocumented)
+// @public
 export type RedactedTrail = {
     records: RedactedTrailRecord[];
     envelope?: RedactedTrailRecord;
     groups: RedactedSessionGroup[];
 };
 
-// @public (undocumented)
+// @public
 export type RedactedTrailRecord = {
     line: number;
     record: unknown;
 };
 
-// @public (undocumented)
+// @public
 export type RedactionConfig = {
     packs: LoadedRedactionPack[];
     allowedSecrets: string[];
@@ -52,10 +52,10 @@ export type RedactionConfig = {
     warnings: string[];
 };
 
-// @public (undocumented)
+// @public
 export type RedactionPackSource = "project" | "user_global";
 
-// @public (undocumented)
+// @public
 export type RedactionPackSummary = {
     name: string;
     version: number;
@@ -63,7 +63,7 @@ export type RedactionPackSummary = {
     source: RedactionPackSource;
 };
 
-// @public (undocumented)
+// @public
 export type RedactionPattern = {
     id: string;
     description: string;
@@ -71,7 +71,7 @@ export type RedactionPattern = {
     placeholder: string;
 };
 
-// @public (undocumented)
+// @public
 export type RedactionSample = {
     patternId: string;
     location: string;
@@ -79,7 +79,7 @@ export type RedactionSample = {
     after: string;
 };
 
-// @public (undocumented)
+// @public
 export type RedactionSummary = {
     counts: Record<string, number>;
     samples: RedactionSample[];
@@ -87,13 +87,13 @@ export type RedactionSummary = {
     warnings?: string[];
 };
 
-// @public (undocumented)
+// @public
 export function redactTrailJsonl(input: TrailJsonlInput, options?: RedactTrailOptions): Promise<RedactTrailResult>;
 
-// @public (undocumented)
+// @public
 export type RedactTrailJsonlInput = TrailJsonlInput;
 
-// @public (undocumented)
+// @public
 export type RedactTrailOptions = {
     patterns?: RedactionPattern[];
     extendPatterns?: RedactionPattern[];
@@ -109,17 +109,17 @@ export type RedactTrailOptions = {
     keepRemoteUrl?: boolean;
 };
 
-// @public (undocumented)
+// @public
 export type RedactTrailResult = {
     jsonl: string;
     trail: RedactedTrail;
     summary: RedactionSummary;
 };
 
-// @public (undocumented)
+// @public
 export function resolveRedactionConfig(options?: ResolveRedactionConfigOptions): Promise<RedactionConfig>;
 
-// @public (undocumented)
+// @public
 export type ResolveRedactionConfigOptions = {
     env?: Record<string, string | undefined>;
     projectRoot?: string;
@@ -127,7 +127,5 @@ export type ResolveRedactionConfigOptions = {
 
 // @public
 export type TrailJsonlInput = string | AsyncIterable<string | Uint8Array>;
-
-// (No @packageDocumentation comment for this package)
 
 ```

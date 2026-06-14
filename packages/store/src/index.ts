@@ -15,6 +15,8 @@
  *   objects after manual edits.
  * - `resolveStoreRoot` — resolve the effective store root for the
  *   current call site.
+ *
+ * @packageDocumentation
  */
 
 export type { CatalogDb, CatalogParams, CatalogValue } from "@agent-trail/catalog";

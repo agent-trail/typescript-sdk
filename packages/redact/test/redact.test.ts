@@ -61,6 +61,112 @@ test("redactTrailJsonl strips unresolved secret user query answers", async () =>
   expect(result.summary.counts.user_query_response_unresolved_answers_stripped).toBe(1);
 });
 
+test("redactTrailJsonl strips malformed unresolved user query answers", async () => {
+  const result = await redactTrailJsonl(
+    jsonl([
+      header,
+      {
+        type: "user_query_response",
+        id: "01HEVTA0000000000000000021",
+        ts: "2026-05-17T14:00:21.000Z",
+        source: { raw: "swordfish raw" },
+        payload: { answers: "swordfish" },
+      },
+      {
+        type: "user_query_response",
+        id: "01HEVTA0000000000000000020",
+        ts: "2026-05-17T14:00:20.000Z",
+        source: { raw: "payload raw" },
+        payload: "payload-secret",
+      },
+      {
+        type: "user_query_response",
+        id: "01HEVTA0000000000000000022",
+        ts: "2026-05-17T14:00:22.000Z",
+        payload: { for_id: "missing", answers: "swordfish" },
+      },
+      {
+        type: "user_query_response",
+        id: "01HEVTA0000000000000000023",
+        ts: "2026-05-17T14:00:23.000Z",
+        payload: { for_id: "missing", answers: ["hunter2"] },
+      },
+    ]),
+  );
+
+  expect(result.jsonl).not.toContain("swordfish");
+  expect(result.jsonl).not.toContain("swordfish raw");
+  expect(result.jsonl).not.toContain("payload-secret");
+  expect(result.jsonl).not.toContain("payload raw");
+  expect(result.jsonl).not.toContain("hunter2");
+  expect(result.summary.counts.user_query_response_unresolved_answers_stripped).toBe(4);
+  expect(result.summary.counts.user_query_response_unresolved_source_raw_stripped).toBe(2);
+});
+
+test("redactTrailJsonl strips malformed resolved user query answers", async () => {
+  const result = await redactTrailJsonl(
+    jsonl([
+      header,
+      {
+        type: "user_query",
+        id: "01HEVTA0000000000000000030",
+        ts: "2026-05-17T14:00:30.000Z",
+        payload: { questions: [{ id: "choice", question: "Pick?" }] },
+      },
+      {
+        type: "user_query_response",
+        id: "01HEVTA0000000000000000031",
+        ts: "2026-05-17T14:00:31.000Z",
+        source: { raw: "topsecret raw" },
+        payload: { for_id: "01HEVTA0000000000000000030", answers: "topsecret" },
+      },
+      {
+        type: "user_query_response",
+        id: "01HEVTA0000000000000000032",
+        ts: "2026-05-17T14:00:32.000Z",
+        source: { raw: "array raw" },
+        payload: { for_id: "01HEVTA0000000000000000030", answers: ["array-secret"] },
+      },
+    ]),
+  );
+
+  expect(result.jsonl).not.toContain("topsecret");
+  expect(result.jsonl).not.toContain("topsecret raw");
+  expect(result.jsonl).not.toContain("array-secret");
+  expect(result.jsonl).not.toContain("array raw");
+  expect(result.summary.counts.user_query_response_unknown_answers_stripped).toBe(2);
+  expect(result.summary.counts.user_query_response_unknown_source_raw_stripped).toBe(2);
+});
+
+test("redactTrailJsonl strips malformed resolved answers for invalid secret question metadata", async () => {
+  const result = await redactTrailJsonl(
+    jsonl([
+      header,
+      {
+        type: "user_query",
+        id: "01HEVTA0000000000000000033",
+        ts: "2026-05-17T14:00:33.000Z",
+        payload: { questions: [{ question: "Token?", is_secret: true }] },
+      },
+      {
+        type: "user_query_response",
+        id: "01HEVTA0000000000000000034",
+        ts: "2026-05-17T14:00:34.000Z",
+        source: { raw: "raw NO_PATTERN_SECRET_XYZ" },
+        payload: {
+          for_id: "01HEVTA0000000000000000033",
+          answers: "NO_PATTERN_SECRET_XYZ",
+        },
+      },
+    ]),
+  );
+
+  expect(result.jsonl).not.toContain("NO_PATTERN_SECRET_XYZ");
+  expect(result.jsonl).not.toContain("raw NO_PATTERN_SECRET_XYZ");
+  expect(result.summary.counts.user_query_response_unknown_answers_stripped).toBe(1);
+  expect(result.summary.counts.user_query_response_unknown_source_raw_stripped).toBe(1);
+});
+
 test("redactTrailJsonl counts user query id and answer key mutations", async () => {
   const key = openAiApiKeyFixture();
   const result = await redactTrailJsonl(
@@ -93,6 +199,7 @@ test("redactTrailJsonl counts user query id and answer key mutations", async () 
   expect(result.trail.groups[0]?.events[1]?.record).toHaveProperty("meta", {
     redaction_count: 1,
   });
+  expect(result.summary.samples.map((sample) => sample.location).join("\n")).not.toContain(key);
 });
 
 test("redactTrailJsonl redacts extra payload fields on known event types", async () => {
@@ -222,6 +329,7 @@ test("redactTrailJsonl rewrites file attachment URIs and removes unresolved file
           attachments: [
             { uri: "file:///tmp/keep.txt", name: "keep.txt" },
             { uri: "file:///tmp/drop.txt", name: "drop.txt" },
+            { uri: { raw: "file:///Users/alice/secrets/prod.env" }, name: "bad.txt" },
             { uri: "https://example.com/remote.txt", name: "remote.txt" },
           ],
         },
@@ -233,9 +341,10 @@ test("redactTrailJsonl rewrites file attachment URIs and removes unresolved file
   expect(result.jsonl).toContain(safeRef);
   expect(result.jsonl).not.toContain("file:///tmp/keep.txt");
   expect(result.jsonl).not.toContain("file:///tmp/drop.txt");
+  expect(result.jsonl).not.toContain("/Users/alice/secrets/prod.env");
   expect(result.jsonl).toContain("https://example.com/remote.txt");
   expect(result.summary.counts.attachment_file_uri_rewritten).toBe(1);
-  expect(result.summary.counts.attachment_file_uri_removed).toBe(1);
+  expect(result.summary.counts.attachment_file_uri_removed).toBe(2);
 });
 
 test("redactTrailJsonl strips unsafe overflow refs and preserves sha256 refs", async () => {
@@ -263,12 +372,23 @@ test("redactTrailJsonl strips unsafe overflow refs and preserves sha256 refs", a
           overflow_ref: safeRef,
         },
       },
+      {
+        type: "tool_result",
+        id: "01HEVTA0000000000000000019",
+        ts: "2026-05-17T14:00:19.000Z",
+        payload: {
+          call_id: "call-3",
+          output: "third",
+          overflow_ref: { raw: "file:///Users/alice/secrets/prod.env" },
+        },
+      },
     ]),
   );
 
   expect(result.jsonl).not.toContain("/tmp/raw-output.txt");
+  expect(result.jsonl).not.toContain("/Users/alice/secrets/prod.env");
   expect(result.jsonl).toContain(safeRef);
-  expect(result.summary.counts.overflow_ref_stripped).toBe(1);
+  expect(result.summary.counts.overflow_ref_stripped).toBe(2);
 });
 
 test("redactTrailJsonl strips VCS repository identity by default", async () => {
@@ -291,6 +411,9 @@ test("redactTrailJsonl strips VCS repository identity by default", async () => {
   expect(result.jsonl).not.toContain("/private/repo");
   expect(result.jsonl).toContain('"branch":"main"');
   expect(result.summary.counts.vcs_remote_url).toBe(2);
+  expect(result.trail.groups[0]?.events[0]?.record).toHaveProperty("meta", {
+    redaction_count: 1,
+  });
 });
 
 test("redactTrailJsonl can preserve VCS remote_url when explicitly requested", async () => {
@@ -390,6 +513,37 @@ test("redactTrailJsonl resets content hashes and rewrites segment lineage after 
   expect(secondHeader.content_hash).toBe("<pending>");
   expect(segment.prev_content_hash).not.toBe(stalePrevHash);
   expect(segment.prev_content_hash).toMatch(/^[0-9a-f]{64}$/);
+});
+
+test("redactTrailJsonl counts dependency PII tokens and resets stale hashes", async () => {
+  const result = await redactTrailJsonl(
+    jsonl([
+      {
+        ...header,
+        content_hash: "a".repeat(64),
+      },
+      {
+        type: "user_message",
+        id: "01HEVTA0000000000000000110",
+        ts: "2026-05-17T14:00:01.000Z",
+        payload: { text: "SSN 123-45-6789 and email john.smith@example.com." },
+      },
+    ]),
+    { pii: { ssn: true, email: true } },
+  );
+
+  const outputHeader = result.trail.groups[0]?.header.record as Record<string, unknown>;
+
+  expect(result.jsonl).toContain("[SSN]");
+  expect(result.jsonl).toContain("[EMAIL]");
+  expect(result.jsonl).not.toContain("123-45-6789");
+  expect(result.jsonl).not.toContain("john.smith@example.com");
+  expect(result.summary.counts.ssn_pii).toBeGreaterThan(0);
+  expect(result.summary.counts.email_pii).toBeGreaterThan(0);
+  expect(outputHeader.content_hash).toBe("<pending>");
+  expect(result.trail.groups[0]?.events[0]?.record).toHaveProperty("meta", {
+    redaction_count: expect.any(Number),
+  });
 });
 
 test("redactTrailJsonl strips malformed secret user query answers", async () => {

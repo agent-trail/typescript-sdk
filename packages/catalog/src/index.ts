@@ -1,13 +1,25 @@
+/**
+ * SQLite-backed catalog APIs for Agent Trail source sessions, stored trail
+ * objects, generated trail links, and latest Gist share state.
+ *
+ * @packageDocumentation
+ */
+
 import { join } from "node:path";
 
 const CATALOG_SCHEMA_VERSION = 1;
+const SHA256_HEX_PATTERN = /^[0-9a-f]{64}$/;
 
 /**
+ * SQLite parameter value accepted by the catalog driver.
+ *
  * @public
  */
 export type CatalogValue = string | number | null | Uint8Array;
 
 /**
+ * Positional parameter list accepted by the catalog driver.
+ *
  * @public
  */
 export type CatalogParams = readonly CatalogValue[];
@@ -25,10 +37,11 @@ export type CatalogDb = {
     params?: CatalogParams,
   ): T | null | undefined | Promise<T | null | undefined>;
   all<T = unknown>(sql: string, params?: CatalogParams): T[] | Promise<T[]>;
-  transaction?<T>(fn: () => T): T;
 };
 
 /**
+ * Source-session identity scoped by adapter or agent name.
+ *
  * @public
  */
 export type SourceSessionKey = {
@@ -37,6 +50,8 @@ export type SourceSessionKey = {
 };
 
 /**
+ * Normalized source session discovered by an adapter.
+ *
  * @public
  */
 export type DiscoveredCatalogSession = SourceSessionKey & {
@@ -46,6 +61,8 @@ export type DiscoveredCatalogSession = SourceSessionKey & {
 };
 
 /**
+ * Options for discovered-session upserts.
+ *
  * @public
  */
 export type UpsertDiscoveredSessionsOptions = {
@@ -53,6 +70,8 @@ export type UpsertDiscoveredSessionsOptions = {
 };
 
 /**
+ * Options for marking previously seen source sessions missing.
+ *
  * @public
  */
 export type MarkMissingSourcesOptions = {
@@ -61,11 +80,15 @@ export type MarkMissingSourcesOptions = {
 };
 
 /**
+ * Kind of stored trail object represented in the catalog.
+ *
  * @public
  */
 export type TrailObjectKind = "session" | "trail";
 
 /**
+ * Catalog metadata for a content-addressed stored trail object.
+ *
  * @public
  */
 export type CatalogTrailObject = {
@@ -78,6 +101,8 @@ export type CatalogTrailObject = {
 };
 
 /**
+ * Input for linking a source session to its current generated trail object.
+ *
  * @public
  */
 export type MarkTrailGeneratedInput = SourceSessionKey & {
@@ -86,6 +111,8 @@ export type MarkTrailGeneratedInput = SourceSessionKey & {
 };
 
 /**
+ * Input for recording the latest Gist share for a generated trail.
+ *
  * @public
  */
 export type MarkGistSharedInput = SourceSessionKey & {
@@ -94,6 +121,8 @@ export type MarkGistSharedInput = SourceSessionKey & {
 };
 
 /**
+ * Options for listing source sessions from the catalog.
+ *
  * @public
  */
 export type ListCatalogSessionsOptions = {
@@ -103,6 +132,8 @@ export type ListCatalogSessionsOptions = {
 };
 
 /**
+ * Flat catalog row for source-session list views.
+ *
  * @public
  */
 export type CatalogSessionRow = {
@@ -119,6 +150,8 @@ export type CatalogSessionRow = {
 };
 
 /**
+ * Error thrown when a catalog operation references a missing source or object.
+ *
  * @public
  */
 export class CatalogNotFoundError extends Error {
@@ -129,6 +162,8 @@ export class CatalogNotFoundError extends Error {
 }
 
 /**
+ * Return the default SQLite catalog file path under a store root.
+ *
  * @public
  */
 export function catalogPath(storeRoot: string): string {
@@ -136,6 +171,8 @@ export function catalogPath(storeRoot: string): string {
 }
 
 /**
+ * Create or migrate the catalog schema for the provided SQLite driver.
+ *
  * @public
  */
 export async function initializeCatalog(db: CatalogDb): Promise<void> {
@@ -148,6 +185,13 @@ export async function initializeCatalog(db: CatalogDb): Promise<void> {
     );
   }
   if (version === 0) {
+    await createCatalogSchemaV1(db);
+  }
+}
+
+async function createCatalogSchemaV1(db: CatalogDb): Promise<void> {
+  await db.exec("BEGIN IMMEDIATE");
+  try {
     await db.exec(`
       CREATE TABLE source_sessions (
         agent_name TEXT NOT NULL,
@@ -193,10 +237,16 @@ export async function initializeCatalog(db: CatalogDb): Promise<void> {
         ON source_sessions(session_date);
     `);
     await db.exec(`PRAGMA user_version = ${CATALOG_SCHEMA_VERSION}`);
+    await db.exec("COMMIT");
+  } catch (error) {
+    await db.exec("ROLLBACK");
+    throw error;
   }
 }
 
 /**
+ * Insert or update discovered source sessions and mark them present.
+ *
  * @public
  */
 export async function upsertDiscoveredSessions(
@@ -231,6 +281,8 @@ export async function upsertDiscoveredSessions(
 }
 
 /**
+ * Mark catalog source sessions missing when absent from the latest discovery set.
+ *
  * @public
  */
 export async function markMissingSources(
@@ -258,9 +310,12 @@ export async function markMissingSources(
 }
 
 /**
+ * Insert or update metadata for a stored trail object.
+ *
  * @public
  */
 export async function upsertTrailObject(db: CatalogDb, row: CatalogTrailObject): Promise<void> {
+  assertContentHash(row.content_hash);
   await db.exec(
     `INSERT INTO trail_objects (
       content_hash,
@@ -288,12 +343,15 @@ export async function upsertTrailObject(db: CatalogDb, row: CatalogTrailObject):
 }
 
 /**
+ * Link a source session to its current generated trail object.
+ *
  * @public
  */
 export async function markTrailGenerated(
   db: CatalogDb,
   input: MarkTrailGeneratedInput,
 ): Promise<void> {
+  assertContentHash(input.content_hash);
   await assertSourceExists(db, input);
   await assertTrailObjectExists(db, input.content_hash);
   const generatedAt = input.trail_generated_at ?? new Date().toISOString();
@@ -316,6 +374,8 @@ export async function markTrailGenerated(
 }
 
 /**
+ * Record the latest Gist share for a source session's generated trail.
+ *
  * @public
  */
 export async function markGistShared(db: CatalogDb, input: MarkGistSharedInput): Promise<void> {
@@ -344,6 +404,8 @@ export async function markGistShared(db: CatalogDb, input: MarkGistSharedInput):
 }
 
 /**
+ * List source sessions with derived trail and share state.
+ *
  * @public
  */
 export async function listCatalogSessions(
@@ -400,6 +462,8 @@ export async function listCatalogSessions(
 }
 
 /**
+ * Find stored trail objects associated with a session UID.
+ *
  * @public
  */
 export async function findTrailObjectsBySessionUid(
@@ -434,12 +498,19 @@ async function assertSourceExists(db: CatalogDb, key: SourceSessionKey): Promise
 }
 
 async function assertTrailObjectExists(db: CatalogDb, contentHash: string): Promise<void> {
+  assertContentHash(contentHash);
   const object = await db.get<{ content_hash: string }>(
     "SELECT content_hash FROM trail_objects WHERE content_hash = ?",
     [contentHash],
   );
   if (object == null) {
     throw new CatalogNotFoundError(`unknown trail object ${contentHash}`);
+  }
+}
+
+function assertContentHash(contentHash: string): void {
+  if (!SHA256_HEX_PATTERN.test(contentHash)) {
+    throw new Error(`invalid trail object content_hash: ${contentHash}`);
   }
 }
 

@@ -28,6 +28,7 @@ export function stripVcsRemoteUrl(
   records: RedactionRecord[],
   summary: RedactionSummary,
   maxSamples: number,
+  redactionCounts: Map<number, number>,
 ): void {
   for (const [index, record] of records.entries()) {
     const value = record.value as Record<string, unknown>;
@@ -36,6 +37,7 @@ export function stripVcsRemoteUrl(
     if (vcs === undefined || typeof vcs.remote_url !== "string") continue;
     const before = vcs.remote_url;
     delete vcs.remote_url;
+    addMutationCount(redactionCounts, index, 1);
     recordStrippedRemoteUrl(summary, maxSamples, before, `records[${index}].vcs.remote_url`);
   }
 }

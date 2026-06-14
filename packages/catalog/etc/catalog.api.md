@@ -9,21 +9,20 @@ export type CatalogDb = {
     exec(sql: string, params?: CatalogParams): void | Promise<void>;
     get<T = unknown>(sql: string, params?: CatalogParams): T | null | undefined | Promise<T | null | undefined>;
     all<T = unknown>(sql: string, params?: CatalogParams): T[] | Promise<T[]>;
-    transaction?<T>(fn: () => T): T;
 };
 
-// @public (undocumented)
+// @public
 export class CatalogNotFoundError extends Error {
     constructor(message: string);
 }
 
-// @public (undocumented)
+// @public
 export type CatalogParams = readonly CatalogValue[];
 
-// @public (undocumented)
+// @public
 export function catalogPath(storeRoot: string): string;
 
-// @public (undocumented)
+// @public
 export type CatalogSessionRow = {
     source_id: string;
     name: string | null;
@@ -37,7 +36,7 @@ export type CatalogSessionRow = {
     gist_shared_at: string | null;
 };
 
-// @public (undocumented)
+// @public
 export type CatalogTrailObject = {
     content_hash: string;
     kind: TrailObjectKind;
@@ -47,79 +46,77 @@ export type CatalogTrailObject = {
     registered_at: string;
 };
 
-// @public (undocumented)
+// @public
 export type CatalogValue = string | number | null | Uint8Array;
 
-// @public (undocumented)
+// @public
 export type DiscoveredCatalogSession = SourceSessionKey & {
     name?: string | null;
     path: string;
     session_date: string;
 };
 
-// @public (undocumented)
+// @public
 export function findTrailObjectsBySessionUid(db: CatalogDb, session_uid: string): Promise<CatalogTrailObject[]>;
 
-// @public (undocumented)
+// @public
 export function initializeCatalog(db: CatalogDb): Promise<void>;
 
-// @public (undocumented)
+// @public
 export function listCatalogSessions(db: CatalogDb, opts?: ListCatalogSessionsOptions): Promise<CatalogSessionRow[]>;
 
-// @public (undocumented)
+// @public
 export type ListCatalogSessionsOptions = {
     include_missing?: boolean;
     agent_name?: string;
     limit?: number;
 };
 
-// @public (undocumented)
+// @public
 export function markGistShared(db: CatalogDb, input: MarkGistSharedInput): Promise<void>;
 
-// @public (undocumented)
+// @public
 export type MarkGistSharedInput = SourceSessionKey & {
     gist_id: string;
     gist_shared_at?: string;
 };
 
-// @public (undocumented)
+// @public
 export function markMissingSources(db: CatalogDb, seenKeys: readonly SourceSessionKey[], opts?: MarkMissingSourcesOptions): Promise<void>;
 
-// @public (undocumented)
+// @public
 export type MarkMissingSourcesOptions = {
     agent_name?: string;
     now?: string;
 };
 
-// @public (undocumented)
+// @public
 export function markTrailGenerated(db: CatalogDb, input: MarkTrailGeneratedInput): Promise<void>;
 
-// @public (undocumented)
+// @public
 export type MarkTrailGeneratedInput = SourceSessionKey & {
     content_hash: string;
     trail_generated_at?: string;
 };
 
-// @public (undocumented)
+// @public
 export type SourceSessionKey = {
     agent_name: string;
     source_id: string;
 };
 
-// @public (undocumented)
+// @public
 export type TrailObjectKind = "session" | "trail";
 
-// @public (undocumented)
+// @public
 export function upsertDiscoveredSessions(db: CatalogDb, rows: readonly DiscoveredCatalogSession[], opts?: UpsertDiscoveredSessionsOptions): Promise<void>;
 
-// @public (undocumented)
+// @public
 export type UpsertDiscoveredSessionsOptions = {
     now?: string;
 };
 
-// @public (undocumented)
+// @public
 export function upsertTrailObject(db: CatalogDb, row: CatalogTrailObject): Promise<void>;
-
-// (No @packageDocumentation comment for this package)
 
 ```

@@ -53,6 +53,11 @@ type RedactionRunConfig = {
   pii: PiiConfig;
 };
 
+/**
+ * Redact sensitive values from Agent Trail JSONL and return canonical JSONL.
+ *
+ * @public
+ */
 export async function redactTrailJsonl(
   input: TrailJsonlInput,
   options: RedactTrailOptions = {},
@@ -141,7 +146,9 @@ async function redactRecords(
   // the mismatch and so share tooling recomputes the hashes on the redacted
   // artifact before publishing. Skip the reset on a true no-op pass so a
   // finalized clean trail remains verifiable after this call.
-  const changed = Object.keys(rawSummary.counts).some((key) => key !== "allowlisted_skip");
+  const changed =
+    redactionCounts.size > 0 ||
+    Object.keys(rawSummary.counts).some((key) => key !== "allowlisted_skip");
   if (changed) {
     resetContentHashes(out);
     await normalizeLineageHashes(out);
@@ -206,6 +213,6 @@ function applyVcsPolicy(
   redactionCounts: Map<number, number>,
 ): void {
   if (config.keepRemoteUrl) return;
-  stripVcsRemoteUrl(records, summary, config.maxSamples);
+  stripVcsRemoteUrl(records, summary, config.maxSamples, redactionCounts);
   stripVcsCommitRepo(records, summary, config.maxSamples, redactionCounts);
 }

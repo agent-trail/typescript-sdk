@@ -1,3 +1,9 @@
+/**
+ * Redaction APIs for transforming Agent Trail JSONL before sharing or export.
+ *
+ * @packageDocumentation
+ */
+
 export type { TrailJsonlInput } from "@agent-trail/core";
 export type { RedactionConfig, ResolveRedactionConfigOptions } from "./packs.js";
 export { resolveRedactionConfig } from "./packs.js";

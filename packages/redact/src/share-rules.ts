@@ -10,6 +10,7 @@ const UNRESOLVED_USER_QUERY_RESPONSE_RAW_SENTINEL =
 type UserQueryIndex = {
   groupByRecordIndex: Map<number, number>;
   queriesByGroup: Map<number, Map<string, Set<string>>>;
+  secretQueriesByGroup: Map<number, Set<string>>;
 };
 
 export function applyAttachmentUriRules(
@@ -56,7 +57,21 @@ function rewriteAttachmentUri(
   if (attachment === null || typeof attachment !== "object") return;
   const object = attachment as Record<string, unknown>;
   const uri = object.uri;
-  if (typeof uri !== "string" || !uri.toLowerCase().startsWith("file:")) return;
+  if (uri === undefined) return;
+  if (typeof uri !== "string") {
+    delete object.uri;
+    recordSummaryMutation(
+      summary,
+      maxSamples,
+      "attachment_file_uri_removed",
+      `records[${recordIndex}].payload.attachments[${attachmentIndex}].uri`,
+      "[malformed file attachment uri]",
+      "[STRIPPED]",
+    );
+    addMutationCount(mutationCounts, recordIndex, 1);
+    return;
+  }
+  if (!uri.toLowerCase().startsWith("file:")) return;
 
   const rewrite = rewrites?.[uri];
   const location = `records[${recordIndex}].payload.attachments[${attachmentIndex}].uri`;
@@ -95,8 +110,9 @@ export function stripUnsafeOverflowRefs(
     if (value.type !== "tool_result") continue;
     const payload = value.payload as Record<string, unknown> | undefined;
     const overflowRef = payload?.overflow_ref;
-    if (typeof overflowRef !== "string" || SHA256_REF_RE.test(overflowRef)) continue;
     if (payload === undefined) continue;
+    if (overflowRef === undefined) continue;
+    if (typeof overflowRef === "string" && SHA256_REF_RE.test(overflowRef)) continue;
     delete payload.overflow_ref;
     recordSummaryMutation(
       summary,
@@ -125,26 +141,33 @@ export function stripUnresolvedUserQueryResponses(
 function indexUserQueries(records: RedactionRecord[]): UserQueryIndex {
   const groupByRecordIndex = new Map<number, number>();
   const queriesByGroup = new Map<number, Map<string, Set<string>>>();
+  const secretQueriesByGroup = new Map<number, Set<string>>();
   let group = -1;
   for (const [recordIndex, record] of records.entries()) {
     const value = record.value as Record<string, unknown>;
     if (value.type === "session") group += 1;
     groupByRecordIndex.set(recordIndex, group);
-    indexUserQuery(value, group, queriesByGroup);
+    indexUserQuery(value, group, queriesByGroup, secretQueriesByGroup);
   }
-  return { groupByRecordIndex, queriesByGroup };
+  return { groupByRecordIndex, queriesByGroup, secretQueriesByGroup };
 }
 
 function indexUserQuery(
   value: Record<string, unknown>,
   group: number,
   queriesByGroup: Map<number, Map<string, Set<string>>>,
+  secretQueriesByGroup: Map<number, Set<string>>,
 ): void {
   if (value.type !== "user_query" || typeof value.id !== "string") return;
   const payload = value.payload as { questions?: unknown } | undefined;
   const queries = queriesByGroup.get(group) ?? new Map<string, Set<string>>();
   queries.set(value.id, questionIdsFromPayload(payload));
   queriesByGroup.set(group, queries);
+  if (hasSecretQuestion(payload)) {
+    const secretQueries = secretQueriesByGroup.get(group) ?? new Set<string>();
+    secretQueries.add(value.id);
+    secretQueriesByGroup.set(group, secretQueries);
+  }
 }
 
 function questionIdsFromPayload(payload: { questions?: unknown } | undefined): Set<string> {
@@ -158,6 +181,17 @@ function questionIdsFromPayload(payload: { questions?: unknown } | undefined): S
   return questionIds;
 }
 
+function hasSecretQuestion(payload: { questions?: unknown } | undefined): boolean {
+  if (!Array.isArray(payload?.questions)) return false;
+  return payload.questions.some(
+    (question) =>
+      question !== null &&
+      typeof question === "object" &&
+      typeof (question as { id?: unknown }).id === "string" &&
+      (question as { is_secret?: unknown }).is_secret === true,
+  );
+}
+
 function stripOneUserQueryResponse(
   record: RedactionRecord,
   recordIndex: number,
@@ -168,14 +202,43 @@ function stripOneUserQueryResponse(
 ): void {
   const value = record.value as Record<string, unknown>;
   if (value.type !== "user_query_response") return;
-  const payload = value.payload as { for_id?: unknown; answers?: unknown } | undefined;
-  if (typeof payload?.for_id !== "string") return;
+  const source = value.source as Record<string, unknown> | undefined;
+  if (!isPlainObject(value.payload)) {
+    stripMalformedUserQueryResponsePayload(
+      value,
+      source,
+      recordIndex,
+      summary,
+      maxSamples,
+      mutationCounts,
+    );
+    return;
+  }
+  const payload = value.payload as { for_id?: unknown; answers?: unknown };
   const answers = objectAnswers(payload.answers);
   const recordGroup = queryIndex.groupByRecordIndex.get(recordIndex) ?? -1;
-  const questionIds = queryIndex.queriesByGroup.get(recordGroup)?.get(payload.for_id);
-  const source = value.source as Record<string, unknown> | undefined;
+  const questionIds =
+    typeof payload.for_id === "string"
+      ? queryIndex.queriesByGroup.get(recordGroup)?.get(payload.for_id)
+      : undefined;
+  const isSecretQuery =
+    typeof payload.for_id === "string" &&
+    queryIndex.secretQueriesByGroup.get(recordGroup)?.has(payload.for_id) === true;
 
   if (questionIds !== undefined) {
+    if (
+      stripMalformedResolvedAnswers(
+        payload,
+        answers,
+        isSecretQuery,
+        source,
+        recordIndex,
+        summary,
+        maxSamples,
+        mutationCounts,
+      )
+    )
+      return;
     stripUnknownAnswers(
       answers,
       questionIds,
@@ -188,7 +251,7 @@ function stripOneUserQueryResponse(
     return;
   }
 
-  if (answers !== undefined && Object.keys(answers).length > 0) {
+  if (hasPresentAnswers(payload.answers)) {
     payload.answers = {};
     recordSummaryMutation(
       summary,
@@ -210,6 +273,82 @@ function stripOneUserQueryResponse(
     "user_query_response_unresolved_source_raw_stripped",
     "[unresolved user_query_response source.raw]",
   );
+}
+
+function stripMalformedResolvedAnswers(
+  payload: { answers?: unknown },
+  answers: Record<string, unknown> | undefined,
+  isSecretQuery: boolean,
+  source: Record<string, unknown> | undefined,
+  recordIndex: number,
+  summary: RedactionSummary,
+  maxSamples: number,
+  mutationCounts: Map<number, number>,
+): boolean {
+  if (!hasPresentAnswers(payload.answers) || answers !== undefined) return false;
+  if (isSecretQuery) return true;
+  payload.answers = {};
+  recordSummaryMutation(
+    summary,
+    maxSamples,
+    "user_query_response_unknown_answers_stripped",
+    `records[${recordIndex}].payload.answers`,
+    "[malformed user_query_response answers]",
+    "{}",
+  );
+  addMutationCount(mutationCounts, recordIndex, 1);
+  stripUserQueryResponseSourceRaw(
+    source,
+    recordIndex,
+    summary,
+    maxSamples,
+    mutationCounts,
+    "user_query_response_unknown_source_raw_stripped",
+    "[unknown user_query_response source.raw]",
+  );
+  return true;
+}
+
+function stripMalformedUserQueryResponsePayload(
+  value: Record<string, unknown>,
+  source: Record<string, unknown> | undefined,
+  recordIndex: number,
+  summary: RedactionSummary,
+  maxSamples: number,
+  mutationCounts: Map<number, number>,
+): void {
+  if (value.payload !== undefined && value.payload !== null) {
+    value.payload = {};
+    recordSummaryMutation(
+      summary,
+      maxSamples,
+      "user_query_response_unresolved_answers_stripped",
+      `records[${recordIndex}].payload`,
+      "[malformed user_query_response payload]",
+      "{}",
+    );
+    addMutationCount(mutationCounts, recordIndex, 1);
+  }
+  stripUserQueryResponseSourceRaw(
+    source,
+    recordIndex,
+    summary,
+    maxSamples,
+    mutationCounts,
+    "user_query_response_unresolved_source_raw_stripped",
+    "[unresolved user_query_response source.raw]",
+  );
+}
+
+function hasPresentAnswers(value: unknown): boolean {
+  if (value === undefined || value === null) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "object") return Object.keys(value).length > 0;
+  return true;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function stripUnknownAnswers(

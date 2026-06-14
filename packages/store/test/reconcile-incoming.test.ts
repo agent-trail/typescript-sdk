@@ -2,14 +2,13 @@ import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
-import { unlink, writeFile } from "node:fs/promises";
+import { mkdir, symlink, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import type { CatalogDb } from "@agent-trail/catalog";
-import { initializeCatalog } from "@agent-trail/catalog";
+import { dirname, join } from "node:path";
+import { type CatalogDb, initializeCatalog, upsertTrailObject } from "@agent-trail/catalog";
 import { parseTrailJsonl, stampContentHashes } from "@agent-trail/core";
 import { BunCatalogDb } from "../../catalog/test/helpers.ts";
-import { reconcileIncomingSegment, registerTrail } from "../src/index.ts";
+import { objectPath, reconcileIncomingSegment, registerTrail } from "../src/index.ts";
 
 let storeRoot: string;
 let scratch: string;
@@ -191,6 +190,169 @@ reconcileTest(
     await unlink(registered.objectPath as string);
 
     const incoming = incomingSegmentJsonl(headerId, sessionUid, first.hash, "two");
+
+    await expect(reconcileIncomingSegment(storeRoot, incoming, catalogDb)).resolves.toEqual({
+      kind: "passthrough",
+      reason: "corrupt_prior",
+    });
+  },
+);
+
+reconcileTest(
+  "reconcileIncomingSegment ignores catalog object paths outside the store root",
+  async () => {
+    const outsideRoot = mkdtempSync(join(tmpdir(), "trail-store-outside-"));
+    try {
+      const sessionUid = randomUUID();
+      const headerId = randomUUID();
+      const outsidePrior = await stamped([
+        {
+          type: "session",
+          schema_version: "0.1.0",
+          id: headerId,
+          session_uid: sessionUid,
+          segment: { seq: 1 },
+          ts: "2026-05-17T14:00:00.000Z",
+          agent: { name: "codex-cli" },
+        },
+        {
+          type: "user_message",
+          id: randomUUID(),
+          ts: "2026-05-17T14:00:01.000Z",
+          payload: { text: "outside prior" },
+        },
+      ]);
+      const outsidePath = join(outsideRoot, "outside.trail.jsonl");
+      await writeFile(outsidePath, outsidePrior.text, "utf8");
+      await initializeCatalog(catalogDb);
+      await upsertTrailObject(catalogDb, {
+        content_hash: outsidePrior.hash,
+        kind: "session",
+        object_path: outsidePath,
+        source_path: null,
+        session_uid: sessionUid,
+        registered_at: "2026-05-17T14:01:00.000Z",
+      });
+
+      const incoming = incomingSegmentJsonl(headerId, sessionUid, outsidePrior.hash, "incoming");
+
+      await expect(reconcileIncomingSegment(storeRoot, incoming, catalogDb)).resolves.toEqual({
+        kind: "passthrough",
+        reason: "corrupt_prior",
+      });
+    } finally {
+      rmSync(outsideRoot, { recursive: true, force: true });
+    }
+  },
+);
+
+reconcileTest(
+  "reconcileIncomingSegment ignores the incoming segment as its own prior",
+  async () => {
+    const sessionUid = randomUUID();
+    const headerId = randomUUID();
+    const incoming = await stamped([
+      {
+        type: "session",
+        schema_version: "0.1.0",
+        id: headerId,
+        session_uid: sessionUid,
+        segment: { seq: 1 },
+        ts: "2026-05-17T14:05:00.000Z",
+        agent: { name: "codex-cli" },
+      },
+      {
+        type: "agent_message",
+        id: randomUUID(),
+        ts: "2026-05-17T14:05:01.000Z",
+        payload: { text: "incoming" },
+      },
+    ]);
+    const incomingPath = join(scratch, "incoming.trail.jsonl");
+    await writeFile(incomingPath, incoming.text, "utf8");
+    await registerTrail(incomingPath, { storeRoot, catalogDb });
+
+    await expect(reconcileIncomingSegment(storeRoot, incoming.text, catalogDb)).resolves.toEqual({
+      kind: "passthrough",
+    });
+  },
+);
+
+reconcileTest(
+  "reconcileIncomingSegment treats symlinked store objects as corrupt priors",
+  async () => {
+    const outsideRoot = mkdtempSync(join(tmpdir(), "trail-store-outside-"));
+    try {
+      const sessionUid = randomUUID();
+      const headerId = randomUUID();
+      const outsidePrior = await stamped([
+        {
+          type: "session",
+          schema_version: "0.1.0",
+          id: headerId,
+          session_uid: sessionUid,
+          segment: { seq: 1 },
+          ts: "2026-05-17T14:00:00.000Z",
+          agent: { name: "codex-cli" },
+        },
+        {
+          type: "user_message",
+          id: randomUUID(),
+          ts: "2026-05-17T14:00:01.000Z",
+          payload: { text: "outside prior" },
+        },
+      ]);
+      const outsidePath = join(outsideRoot, "outside.trail.jsonl");
+      const linkedObjectPath = objectPath(storeRoot, outsidePrior.hash);
+      await writeFile(outsidePath, outsidePrior.text, "utf8");
+      await mkdir(dirname(linkedObjectPath), { recursive: true });
+      await symlink(outsidePath, linkedObjectPath);
+      await initializeCatalog(catalogDb);
+      await upsertTrailObject(catalogDb, {
+        content_hash: outsidePrior.hash,
+        kind: "session",
+        object_path: linkedObjectPath,
+        source_path: null,
+        session_uid: sessionUid,
+        registered_at: "2026-05-17T14:01:00.000Z",
+      });
+
+      const incoming = incomingSegmentJsonl(headerId, sessionUid, outsidePrior.hash, "incoming");
+
+      await expect(reconcileIncomingSegment(storeRoot, incoming, catalogDb)).resolves.toEqual({
+        kind: "passthrough",
+        reason: "corrupt_prior",
+      });
+    } finally {
+      rmSync(outsideRoot, { recursive: true, force: true });
+    }
+  },
+);
+
+reconcileTest(
+  "reconcileIncomingSegment treats invalid catalog hashes as corrupt priors",
+  async () => {
+    const sessionUid = randomUUID();
+    const incoming = incomingSegmentJsonl(randomUUID(), sessionUid, undefined, "incoming");
+    await initializeCatalog(catalogDb);
+    await catalogDb.exec(
+      `INSERT INTO trail_objects (
+      content_hash,
+      kind,
+      object_path,
+      source_path,
+      session_uid,
+      registered_at
+    ) VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        "../escape",
+        "session",
+        "/tmp/escape.trail.jsonl",
+        null,
+        sessionUid,
+        "2026-05-17T14:01:00.000Z",
+      ],
+    );
 
     await expect(reconcileIncomingSegment(storeRoot, incoming, catalogDb)).resolves.toEqual({
       kind: "passthrough",

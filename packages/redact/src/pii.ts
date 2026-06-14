@@ -3,7 +3,7 @@ import { allowedMatches, recordAllowlistedSkips } from "./matches.js";
 import { assertSafeRegexSource } from "./regex-safety.js";
 import type { PiiConfig, RedactionSample, RedactionSummary } from "./types.js";
 
-const TOKEN_PATTERN = /\b(EMAIL|PHONE|SSN|CREDIT_CARD|NAME|PERSON)_(\d+)\b/g;
+const TOKEN_PATTERN = /\b(EMAIL|PHONE|SSN|CREDIT_CARD|NAME|PERSON)(?:_\d+)+\b/g;
 const PHONE_PATTERN =
   /(?<!\w)(?:\+1[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|(?:1[-\s])?\(\d{3}\)\s?\d{3}[-.\s]?\d{4}|(?:1[-\s])?\d{3}[-\s]\d{3}[-\s]\d{4})\b/g;
 const EMAIL_PATTERN = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;

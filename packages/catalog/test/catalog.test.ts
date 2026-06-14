@@ -409,6 +409,21 @@ catalogTest(
   },
 );
 
+catalogTest("upsertTrailObject rejects invalid content hashes", async () => {
+  await initializeCatalog(db);
+
+  await expect(
+    upsertTrailObject(db, {
+      content_hash: "../escape",
+      kind: "session",
+      object_path: "/tmp/escape.trail.jsonl",
+      source_path: null,
+      session_uid: "session-uid",
+      registered_at: "2026-05-17T14:00:00.000Z",
+    }),
+  ).rejects.toThrow("invalid trail object content_hash");
+});
+
 catalogTest("initializeCatalog surfaces driver errors", async () => {
   const failing: CatalogDb = {
     exec() {

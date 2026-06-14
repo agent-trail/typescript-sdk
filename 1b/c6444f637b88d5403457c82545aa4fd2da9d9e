@@ -1,0 +1,51 @@
+packages/catalog/test/catalog.test.ts
+  s_41a01eab7e41e9::t_7b109542c8815d 8,10,19,50-67,69-71,125-153,207-214,218-219,222-226,228-252,322,324-330,332-340,342-351,353-369,393-395
+  s_41a01eab7e41e9::t_50d2663a818adc 39,43,49,68,74,124,157,202,227,323,352,412
+  s_41a01eab7e41e9::t_bc307a1db84137 255-291,294,296-303,305-308,310-321,372-392,396-410
+  s_41a01eab7e41e9::t_d0595f2228f6b8 2,25-37
+packages/store/test/register.test.ts
+  s_41a01eab7e41e9::t_6e8e893c9a35f3 2,27-36,38
+  s_41a01eab7e41e9::t_6c0768df744ebf 4,6,75-89,91-107,119-131,133-135,140-141,143-144,270,272-286,288-339
+  s_41a01eab7e41e9::t_bc307a1db84137 15,145-153,156-208,210-220
+  s_41a01eab7e41e9::t_50d2663a818adc 49,74,90,108,118,132,222,234,256,271,287
+  s_41a01eab7e41e9::t_b9e2f4de23130f 137-138
+packages/store/test/reconcile-incoming.test.ts
+  s_41a01eab7e41e9::t_70f7bfccd41881 2,19-30,32
+  s_41a01eab7e41e9::t_bc307a1db84137 11,142-200,236-306
+  s_41a01eab7e41e9::t_d9429874cf98be 5,9
+  s_41a01eab7e41e9::t_50d2663a818adc 72,109,126,133,202
+  s_41a01eab7e41e9::t_811a518a589246 110-125,127-132,134-141,201,205-223,226,230-233,235
+packages/catalog/src/index.ts
+  s_41a01eab7e41e9::t_9864a8ebe3c6b6 328,431,441
+  s_41a01eab7e41e9::t_6e854643b57e73 23-26
+packages/redact/test/redact.test.ts
+  s_41a01eab7e41e9::t_48cd19e75e9520 333-338
+  s_41a01eab7e41e9::t_57123dcea76c8f 211-332,339-394
+packages/store/etc/store.api.md
+  s_41a01eab7e41e9::t_45b49b91c788a6 10
+packages/catalog/test/helpers.ts
+  s_41a01eab7e41e9::t_5fca8bbe5300fc 15-16
+  s_41a01eab7e41e9::t_bc307a1db84137 1
+  s_41a01eab7e41e9::t_c402fe7ed81bd9 2-14,17-22
+packages/redact/test/packs.test.ts
+  s_41a01eab7e41e9::t_cdd6ab048cc36e 3,46-150,152-175
+  s_41a01eab7e41e9::t_bc307a1db84137 151
+packages/catalog/etc/catalog.api.md
+  s_41a01eab7e41e9::t_45b49b91c788a6 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "1bc6444f637b88d5403457c82545aa4fd2da9d9e",
+  "prompts": {},
+  "sessions": {
+    "s_41a01eab7e41e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec547-b5c0-7200-b226-4f1ef52334a0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

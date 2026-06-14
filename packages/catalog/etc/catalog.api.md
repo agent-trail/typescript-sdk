@@ -12,6 +12,28 @@ export type CatalogDb = {
 };
 
 // @public
+export type CatalogEntryRow = {
+    state: CatalogEntryState;
+    source_id: string | null;
+    content_hash: string | null;
+    agent_name: string | null;
+    name: string | null;
+    path: string | null;
+    cwd: string | null;
+    branch: string | null;
+    session_date: string | null;
+    latest_at: string | null;
+    trail_path: string | null;
+    registered_at: string | null;
+    trail_generated_at: string | null;
+    gist_id: string | null;
+    gist_shared_at: string | null;
+};
+
+// @public
+export type CatalogEntryState = "source" | "source+registered" | "registered";
+
+// @public
 export class CatalogNotFoundError extends Error {
     constructor(message: string);
 }
@@ -23,20 +45,6 @@ export type CatalogParams = readonly CatalogValue[];
 export function catalogPath(storeRoot: string): string;
 
 // @public
-export type CatalogSessionRow = {
-    source_id: string;
-    name: string | null;
-    path: string;
-    agent_name: string;
-    has_generated_trail: boolean;
-    trail_path: string | null;
-    gist_id: string | null;
-    session_date: string;
-    trail_generated_at: string | null;
-    gist_shared_at: string | null;
-};
-
-// @public
 export type CatalogTrailObject = {
     content_hash: string;
     kind: TrailObjectKind;
@@ -44,6 +52,11 @@ export type CatalogTrailObject = {
     source_path: string | null;
     session_uid: string | null;
     registered_at: string;
+    agent_name?: string | null;
+    name?: string | null;
+    cwd?: string | null;
+    branch?: string | null;
+    session_date?: string | null;
 };
 
 // @public
@@ -53,6 +66,8 @@ export type CatalogValue = string | number | null | Uint8Array;
 export type DiscoveredCatalogSession = SourceSessionKey & {
     name?: string | null;
     path: string;
+    cwd?: string | null;
+    branch?: string | null;
     session_date: string;
 };
 
@@ -63,12 +78,19 @@ export function findTrailObjectsBySessionUid(db: CatalogDb, session_uid: string)
 export function initializeCatalog(db: CatalogDb): Promise<void>;
 
 // @public
-export function listCatalogSessions(db: CatalogDb, opts?: ListCatalogSessionsOptions): Promise<CatalogSessionRow[]>;
+export function listCatalogEntries(db: CatalogDb, opts?: ListCatalogEntriesOptions): Promise<CatalogEntryRow[]>;
 
 // @public
-export type ListCatalogSessionsOptions = {
+export type ListCatalogEntriesOptions = {
     include_missing?: boolean;
+    states?: readonly CatalogEntryState[];
     agent_name?: string;
+    cwd?: string;
+    branch?: string;
+    date_from?: string;
+    date_to?: string;
+    query?: string;
+    case_sensitive?: boolean;
     limit?: number;
 };
 

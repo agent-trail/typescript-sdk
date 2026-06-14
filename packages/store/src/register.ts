@@ -3,17 +3,13 @@ import { lstat, mkdir, readFile, rename, stat, writeFile } from "node:fs/promise
 import { dirname, resolve as resolvePath } from "node:path";
 import { gunzipSync } from "node:zlib";
 import { type CatalogDb, initializeCatalog, upsertTrailObject } from "@agent-trail/catalog";
-import {
-  computeContentHashes,
-  type ParsedTrail,
-  serializeTrailJsonl,
-  type TrailDiagnostic,
-} from "@agent-trail/core";
+import { type ParsedTrail, serializeTrailJsonl, type TrailDiagnostic } from "@agent-trail/core";
 import {
   type FinalizedObjectIndexRow,
   writerStrictObjectIndexPolicy,
 } from "./object-index-policy.js";
 import { objectPath as computeObjectPath, resolveStoreRoot } from "./paths.js";
+import { catalogMetadataForObjectRow, sessionGroupForObjectRow } from "./trail-metadata.js";
 
 /**
  * Result status for registering a trail file into the local store.
@@ -145,6 +141,7 @@ export async function registerTrail(
         source_path: sourcePath,
         session_uid: row.session_uid,
         registered_at: registeredAt,
+        ...catalogMetadataForObjectRow(trail, row, { includeEnvironment: sourcePath !== null }),
       });
     }
   }
@@ -163,9 +160,7 @@ function objectBytesForRow(
   canonical: string,
 ): string {
   if (row.kind === "trail") return canonical;
-  const hashes = computeContentHashes(trail).sessionHashes;
-  const groupIndex = hashes.findIndex((hash) => hash.hash === row.contentHash);
-  const group = trail.groups[groupIndex];
+  const group = sessionGroupForObjectRow(trail, row);
   if (group === undefined) {
     throw new Error(`Cannot locate finalized session for content hash ${row.contentHash}`);
   }

@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { type CatalogDb, initializeCatalog, upsertTrailObject } from "@agent-trail/catalog";
 import { writerStrictObjectIndexPolicy } from "./object-index-policy.js";
 import { objectsDir, resolveStoreRoot } from "./paths.js";
+import { catalogMetadataForObjectRow } from "./trail-metadata.js";
 
 const OBJECT_NAME = /^([0-9a-f]{64})\.trail\.jsonl$/;
 
@@ -71,10 +72,8 @@ async function indexObjectEntry(
   if (raw === undefined) return undefined;
 
   const eligible = await writerStrictObjectIndexPolicy(raw);
-  const row =
-    eligible.status === "valid"
-      ? eligible.policy.rows.find((candidate) => candidate.contentHash === filenameHash)
-      : undefined;
+  if (eligible.status !== "valid") return undefined;
+  const row = eligible.policy.rows.find((candidate) => candidate.contentHash === filenameHash);
   if (row === undefined) return undefined;
 
   const info = await lstat(path);
@@ -85,6 +84,7 @@ async function indexObjectEntry(
     source_path: null,
     session_uid: row.session_uid,
     registered_at: info.mtime.toISOString(),
+    ...catalogMetadataForObjectRow(eligible.trail, row, { includeEnvironment: false }),
   };
 }
 

@@ -10,6 +10,7 @@ import {
   type CatalogDb,
   findTrailObjectsBySessionUid,
   initializeCatalog,
+  listCatalogEntries,
 } from "@agent-trail/catalog";
 import { parseTrailJsonl, serializeTrailJsonl, stampContentHashes } from "@agent-trail/core";
 import { BunCatalogDb } from "../../catalog/test/helpers.ts";
@@ -69,6 +70,149 @@ storeTest("registerTrail writes canonical object bytes and a catalog object row"
     session_uid: "01HZZZZZZZZZZZZZZZZZZZZZ01",
     kind: "session",
   });
+});
+
+storeTest("registerTrail caches session metadata for catalog list entries", async () => {
+  const input = join(storeRoot, "metadata.trail.jsonl");
+  await writeFile(
+    input,
+    await stampedJsonl([
+      {
+        type: "session",
+        schema_version: "0.1.0",
+        id: "00000000-0000-4000-8000-000000010001",
+        session_uid: "00000000-0000-4000-8000-000000010101",
+        name: "Header title",
+        cwd: "/work/project",
+        vcs: { type: "git", revision: "a1b2c3d4", branch: "main" },
+        ts: "2026-05-17T14:00:00.000Z",
+        agent: { name: "codex-cli" },
+      },
+    ]),
+    "utf8",
+  );
+
+  const result = await registerTrail(input, { storeRoot, catalogDb });
+
+  expect(await listCatalogEntries(catalogDb, { states: ["registered"] })).toEqual([
+    expect.objectContaining({
+      state: "registered",
+      content_hash: result.contentHash,
+      agent_name: "codex-cli",
+      name: "Header title",
+      cwd: "/work/project",
+      branch: "main",
+      session_date: "2026-05-17T14:00:00.000Z",
+      trail_path: objectPath(storeRoot, result.contentHash as string),
+    }),
+  ]);
+});
+
+storeTest("registerTrail caches effective metadata updates for catalog list entries", async () => {
+  const input = join(storeRoot, "metadata-updates.trail.jsonl");
+  await writeFile(
+    input,
+    await stampedJsonl([
+      {
+        type: "session",
+        schema_version: "0.1.0",
+        id: "00000000-0000-4000-8000-000000020001",
+        session_uid: "00000000-0000-4000-8000-000000020101",
+        name: "Initial title",
+        cwd: "/work/project",
+        vcs: { type: "git", revision: "a1b2c3d4", branch: "main" },
+        ts: "2026-05-17T14:00:00.000Z",
+        agent: { name: "codex-cli" },
+      },
+      {
+        type: "session_metadata_update",
+        id: "00000000-0000-4000-8000-000000020002",
+        ts: "2026-05-17T14:01:00.000Z",
+        payload: { field: "name", value: "Updated title", reason: "ai_generated" },
+      },
+      {
+        type: "session_metadata_update",
+        id: "00000000-0000-4000-8000-000000020003",
+        ts: "2026-05-17T14:02:00.000Z",
+        payload: { field: "vcs.branch", value: "feature/catalog", reason: "runtime_inferred" },
+      },
+    ]),
+    "utf8",
+  );
+
+  await registerTrail(input, { storeRoot, catalogDb });
+
+  expect(await listCatalogEntries(catalogDb, { states: ["registered"] })).toEqual([
+    expect.objectContaining({
+      name: "Updated title",
+      branch: "feature/catalog",
+      session_date: "2026-05-17T14:00:00.000Z",
+    }),
+  ]);
+});
+
+storeTest("registerTrail suppresses environment metadata when source path is null", async () => {
+  const input = join(storeRoot, "metadata-private.trail.jsonl");
+  await writeFile(
+    input,
+    await stampedJsonl([
+      {
+        type: "session",
+        schema_version: "0.1.0",
+        id: "00000000-0000-4000-8000-000000020011",
+        session_uid: "00000000-0000-4000-8000-000000020111",
+        name: "Private source",
+        cwd: "/Users/example/private/project",
+        vcs: { type: "git", revision: "a1b2c3d4", branch: "private-branch" },
+        ts: "2026-05-17T14:00:00.000Z",
+        agent: { name: "codex-cli" },
+      },
+    ]),
+    "utf8",
+  );
+
+  await registerTrail(input, { storeRoot, catalogDb, sourcePath: null });
+
+  expect(await listCatalogEntries(catalogDb, { states: ["registered"] })).toEqual([
+    expect.objectContaining({
+      source_id: null,
+      path: null,
+      agent_name: "codex-cli",
+      name: "Private source",
+      cwd: null,
+      branch: null,
+      session_date: "2026-05-17T14:00:00.000Z",
+    }),
+  ]);
+});
+
+storeTest("registerTrail caps cached metadata strings", async () => {
+  const input = join(storeRoot, "metadata-oversized.trail.jsonl");
+  const oversized = "x".repeat(2100);
+  await writeFile(
+    input,
+    await stampedJsonl([
+      {
+        type: "session",
+        schema_version: "0.1.0",
+        id: "00000000-0000-4000-8000-000000020021",
+        session_uid: "00000000-0000-4000-8000-000000020121",
+        name: oversized,
+        cwd: oversized,
+        vcs: { type: "git", revision: "a1b2c3d4", branch: oversized },
+        ts: "2026-05-17T14:00:00.000Z",
+        agent: { name: "codex-cli" },
+      },
+    ]),
+    "utf8",
+  );
+
+  await registerTrail(input, { storeRoot, catalogDb });
+  const [row] = await listCatalogEntries(catalogDb, { states: ["registered"] });
+
+  expect(row?.name).toBe("x".repeat(2048));
+  expect(row?.cwd).toBe("x".repeat(2048));
+  expect(row?.branch).toBe("x".repeat(2048));
 });
 
 storeTest("registerTrail is idempotent for duplicate finalized files", async () => {
@@ -329,6 +473,41 @@ storeTest("indexExistingObjects indexes object rows from stored objects", async 
   });
 });
 
+storeTest("indexExistingObjects rebuilds catalog list metadata from object bytes", async () => {
+  const input = join(storeRoot, "rebuild-metadata.trail.jsonl");
+  await writeFile(
+    input,
+    await stampedJsonl([
+      {
+        type: "session",
+        schema_version: "0.1.0",
+        id: "00000000-0000-4000-8000-000000030001",
+        session_uid: "00000000-0000-4000-8000-000000030101",
+        name: "Rebuild title",
+        cwd: "/work/rebuild",
+        vcs: { type: "git", revision: "a1b2c3d4", branch: "rebuild" },
+        ts: "2026-05-17T14:00:00.000Z",
+        agent: { name: "codex-cli" },
+      },
+    ]),
+    "utf8",
+  );
+  const registered = await registerTrail(input, { storeRoot });
+
+  await indexExistingObjects({ storeRoot, catalogDb });
+
+  expect(await listCatalogEntries(catalogDb, { states: ["registered"] })).toEqual([
+    expect.objectContaining({
+      content_hash: registered.contentHash,
+      agent_name: "codex-cli",
+      name: "Rebuild title",
+      cwd: null,
+      branch: null,
+      session_date: "2026-05-17T14:00:00.000Z",
+    }),
+  ]);
+});
+
 storeTest("indexExistingObjects skips corrupt objects and stray files", async () => {
   await registerTrail(finalizedFixture, { storeRoot });
   const corruptPath = objectPath(storeRoot, "c".repeat(64));
@@ -400,3 +579,77 @@ storeTest("indexExistingObjects preserves rows for multi-session objects", async
     expect.objectContaining({ kind: "session" }),
   ]);
 });
+
+storeTest(
+  "registerTrail lists multi-session metadata without file-level trail duplicates",
+  async () => {
+    const firstSessionUid = "00000000-0000-4000-8000-000000040111";
+    const secondSessionUid = "00000000-0000-4000-8000-000000040222";
+    const text = await stampedJsonl([
+      {
+        type: "trail",
+        schema_version: "0.1.0",
+        id: "00000000-0000-4000-8000-000000040010",
+        ts: "2026-05-17T14:00:00.000Z",
+        producer: "agent-trail-test",
+      },
+      {
+        type: "session",
+        schema_version: "0.1.0",
+        id: "00000000-0000-4000-8000-000000040011",
+        session_uid: firstSessionUid,
+        name: "First session",
+        cwd: "/work/one",
+        vcs: { type: "git", revision: "a1b2c3d4", branch: "one" },
+        ts: "2026-05-17T14:01:00.000Z",
+        agent: { name: "codex-cli" },
+      },
+      {
+        type: "user_message",
+        id: "00000000-0000-4000-8000-000000040012",
+        ts: "2026-05-17T14:01:01.000Z",
+        payload: { text: "one" },
+      },
+      {
+        type: "session",
+        schema_version: "0.1.0",
+        id: "00000000-0000-4000-8000-000000040013",
+        session_uid: secondSessionUid,
+        name: "Second session",
+        cwd: "/work/two",
+        vcs: { type: "git", revision: "d4c3b2a1", branch: "two" },
+        ts: "2026-05-17T14:02:00.000Z",
+        agent: { name: "claude-code" },
+      },
+      {
+        type: "user_message",
+        id: "00000000-0000-4000-8000-000000040014",
+        ts: "2026-05-17T14:02:01.000Z",
+        payload: { text: "two" },
+      },
+    ]);
+    const input = join(storeRoot, "multi-metadata.trail.jsonl");
+    await writeFile(input, text, "utf8");
+
+    await registerTrail(input, { storeRoot, catalogDb });
+
+    const rows = await listCatalogEntries(catalogDb, { states: ["registered"] });
+    expect(rows).toHaveLength(2);
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          agent_name: "claude-code",
+          name: "Second session",
+          cwd: "/work/two",
+          branch: "two",
+        }),
+        expect.objectContaining({
+          agent_name: "codex-cli",
+          name: "First session",
+          cwd: "/work/one",
+          branch: "one",
+        }),
+      ]),
+    );
+  },
+);

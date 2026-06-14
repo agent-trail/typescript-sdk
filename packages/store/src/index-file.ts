@@ -100,26 +100,26 @@ export async function readIndex(storeRoot: string): Promise<IndexFile> {
     }
     throw error;
   }
-  let parsed: IndexFile;
+  let parsed: unknown;
   try {
-    parsed = JSON.parse(raw) as IndexFile;
+    parsed = JSON.parse(raw) as unknown;
   } catch (error) {
     throw new IndexCorruptError(path, error);
   }
-  if (parsed.version !== INDEX_VERSION) {
-    throw new IndexVersionError(parsed.version);
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new IndexCorruptError(path, new Error("index must be a plain object"));
   }
-  if (
-    typeof parsed.entries !== "object" ||
-    parsed.entries === null ||
-    Array.isArray(parsed.entries)
-  ) {
+  const index = parsed as Partial<IndexFile>;
+  if (index.version !== INDEX_VERSION) {
+    throw new IndexVersionError(index.version);
+  }
+  if (typeof index.entries !== "object" || index.entries === null || Array.isArray(index.entries)) {
     throw new IndexCorruptError(
       path,
       new Error("`entries` must be a plain object keyed by content_hash"),
     );
   }
-  for (const contentHash of Object.keys(parsed.entries)) {
+  for (const contentHash of Object.keys(index.entries)) {
     if (!CONTENT_HASH.test(contentHash)) {
       throw new IndexCorruptError(
         path,
@@ -127,7 +127,7 @@ export async function readIndex(storeRoot: string): Promise<IndexFile> {
       );
     }
   }
-  return parsed;
+  return index as IndexFile;
 }
 
 /**

@@ -174,6 +174,13 @@ test("readIndex rejects invalid content hash keys", async () => {
   await expect(readIndex(storeRoot)).rejects.toThrow("invalid content_hash index key");
 });
 
+test("readIndex rejects null index files as corrupt", async () => {
+  await mkdir(join(storeRoot, "index"), { recursive: true });
+  await writeFile(join(storeRoot, "index", "objects.json"), "null\n");
+
+  await expect(readIndex(storeRoot)).rejects.toThrow("index must be a plain object");
+});
+
 test("rebuildIndex regenerates index rows from stored objects", async () => {
   await registerTrail(finalizedFixture, { storeRoot });
   await writeFile(join(storeRoot, "index", "objects.json"), '{"version":1,"entries":{}}\n');

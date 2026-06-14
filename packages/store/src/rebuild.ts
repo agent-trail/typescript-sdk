@@ -9,7 +9,7 @@ const OBJECT_NAME = /^([0-9a-f]{64})\.trail\.jsonl$/;
 /**
  * @public
  */
-export type RebuildObjectCatalogOptions = {
+export type IndexExistingObjectsOptions = {
   storeRoot?: string;
   catalogDb: CatalogDb;
 };
@@ -17,16 +17,16 @@ export type RebuildObjectCatalogOptions = {
 /**
  * @public
  */
-export type RebuildObjectCatalogResult = {
+export type IndexExistingObjectsResult = {
   entries: number;
 };
 
 /**
  * @public
  */
-export async function rebuildObjectCatalog(
-  opts: RebuildObjectCatalogOptions,
-): Promise<RebuildObjectCatalogResult> {
+export async function indexExistingObjects(
+  opts: IndexExistingObjectsOptions,
+): Promise<IndexExistingObjectsResult> {
   const storeRoot = resolveStoreRoot(opts.storeRoot);
   const dir = objectsDir(storeRoot);
   await initializeCatalog(opts.catalogDb);
@@ -34,7 +34,7 @@ export async function rebuildObjectCatalog(
   let entries = 0;
 
   for (const name of names) {
-    const entry = await rebuildObjectEntry(dir, name);
+    const entry = await indexObjectEntry(dir, name);
     if (entry === undefined) continue;
     await upsertTrailObject(opts.catalogDb, entry);
     entries += 1;
@@ -52,7 +52,7 @@ async function objectNames(dir: string): Promise<string[]> {
   }
 }
 
-async function rebuildObjectEntry(
+async function indexObjectEntry(
   dir: string,
   name: string,
 ): Promise<Parameters<typeof upsertTrailObject>[1] | undefined> {

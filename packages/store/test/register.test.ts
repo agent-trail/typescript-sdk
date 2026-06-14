@@ -13,7 +13,7 @@ import {
 } from "@agent-trail/catalog";
 import { parseTrailJsonl, serializeTrailJsonl, stampContentHashes } from "@agent-trail/core";
 import { BunCatalogDb } from "../../catalog/test/helpers.ts";
-import { objectPath, rebuildObjectCatalog, registerTrail } from "../src/index.ts";
+import { indexExistingObjects, objectPath, registerTrail } from "../src/index.ts";
 
 const fixtures = new URL("../../schema/fixtures/validation/", import.meta.url);
 const fixturePath = (path: string): string => fileURLToPath(new URL(path, fixtures));
@@ -253,10 +253,10 @@ storeTest("registerTrail rejects pending and invalid trails without writing obje
   expect(await findTrailObjectsBySessionUid(catalogDb, "01HZZZZZZZZZZZZZZZZZZZZZ01")).toEqual([]);
 });
 
-storeTest("rebuildObjectCatalog regenerates object rows from stored objects", async () => {
+storeTest("indexExistingObjects indexes object rows from stored objects", async () => {
   await registerTrail(finalizedFixture, { storeRoot });
 
-  const result = await rebuildObjectCatalog({ storeRoot, catalogDb });
+  const result = await indexExistingObjects({ storeRoot, catalogDb });
 
   expect(result.entries).toBe(1);
   expect(
@@ -268,14 +268,14 @@ storeTest("rebuildObjectCatalog regenerates object rows from stored objects", as
   });
 });
 
-storeTest("rebuildObjectCatalog skips corrupt objects and stray files", async () => {
+storeTest("indexExistingObjects skips corrupt objects and stray files", async () => {
   await registerTrail(finalizedFixture, { storeRoot });
   const corruptPath = objectPath(storeRoot, "c".repeat(64));
   await mkdir(dirname(corruptPath), { recursive: true });
   await writeFile(corruptPath, "{bad\n", "utf8");
   await writeFile(join(dirname(corruptPath), "not-a-hash.trail.jsonl"), "ignored\n", "utf8");
 
-  const result = await rebuildObjectCatalog({ storeRoot, catalogDb });
+  const result = await indexExistingObjects({ storeRoot, catalogDb });
 
   expect(result.entries).toBe(1);
   expect(await findTrailObjectsBySessionUid(catalogDb, "01HZZZZZZZZZZZZZZZZZZZZZ01")).toHaveLength(
@@ -284,7 +284,7 @@ storeTest("rebuildObjectCatalog skips corrupt objects and stray files", async ()
   expect(await findTrailObjectsBySessionUid(catalogDb, "missing")).toEqual([]);
 });
 
-storeTest("rebuildObjectCatalog preserves rows for multi-session objects", async () => {
+storeTest("indexExistingObjects preserves rows for multi-session objects", async () => {
   const firstSessionUid = "00000000-0000-4000-8000-000000000111";
   const secondSessionUid = "00000000-0000-4000-8000-000000000222";
   const text = await stampedJsonl([
@@ -328,7 +328,7 @@ storeTest("rebuildObjectCatalog preserves rows for multi-session objects", async
   await writeFile(input, text, "utf8");
   await registerTrail(input, { storeRoot });
 
-  const result = await rebuildObjectCatalog({ storeRoot, catalogDb });
+  const result = await indexExistingObjects({ storeRoot, catalogDb });
 
   expect(result.entries).toBe(3);
   expect(await findTrailObjectsBySessionUid(catalogDb, firstSessionUid)).toEqual([

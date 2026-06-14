@@ -19,21 +19,21 @@ export type CatalogParams = readonly CatalogValue[];
 export type CatalogValue = string | number | null | Uint8Array;
 
 // @public (undocumented)
-export function objectPath(storeRoot: string, contentHash: string): string;
+export function indexExistingObjects(opts: IndexExistingObjectsOptions): Promise<IndexExistingObjectsResult>;
 
 // @public (undocumented)
-export function rebuildObjectCatalog(opts: RebuildObjectCatalogOptions): Promise<RebuildObjectCatalogResult>;
-
-// @public (undocumented)
-export type RebuildObjectCatalogOptions = {
+export type IndexExistingObjectsOptions = {
     storeRoot?: string;
     catalogDb: CatalogDb;
 };
 
 // @public (undocumented)
-export type RebuildObjectCatalogResult = {
+export type IndexExistingObjectsResult = {
     entries: number;
 };
+
+// @public (undocumented)
+export function objectPath(storeRoot: string, contentHash: string): string;
 
 // @public
 export type ReconcileIncomingResult = {

@@ -1,0 +1,29 @@
+packages/core/etc/core.api.md
+  s_1276b0959ffd41::t_7ea68d2c9a193e 12,15,22,28,31,38,44,47,50,56,62,65,72,81,84,87,93,96,101
+packages/core/src/hashing.ts
+  s_1276b0959ffd41::t_2209d9928ae4ad 7-9,32-34,58-60
+packages/core/src/index.ts
+  s_1276b0959ffd41::t_2209d9928ae4ad 1-5,15-19,21-26,29-33,39-43,46-50,56-60,66-70,77-81,90-94,99-103,110-114,121-125,131-135,142-146,152-156,161-165,173-177,182-186,191-195
+packages/core/src/parse.ts
+  s_1276b0959ffd41::t_2209d9928ae4ad 12-14,196-198
+packages/core/src/reconciliation/index.ts
+  s_1276b0959ffd41::t_2209d9928ae4ad 6-8
+packages/core/test/validation-rules.test.ts
+  s_1276b0959ffd41::t_fea61abab97480 137-158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "640082c0e87e1223c5ad6e65e1c9e6ff20d19685",
+  "prompts": {},
+  "sessions": {
+    "s_1276b0959ffd41": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec0f1-1d7c-7ba1-a721-447a182bf364",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

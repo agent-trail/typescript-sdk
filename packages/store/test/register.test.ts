@@ -151,6 +151,70 @@ storeTest("registerTrail caches effective metadata updates for catalog list entr
   ]);
 });
 
+storeTest("registerTrail suppresses environment metadata when source path is null", async () => {
+  const input = join(storeRoot, "metadata-private.trail.jsonl");
+  await writeFile(
+    input,
+    await stampedJsonl([
+      {
+        type: "session",
+        schema_version: "0.1.0",
+        id: "00000000-0000-4000-8000-000000020011",
+        session_uid: "00000000-0000-4000-8000-000000020111",
+        name: "Private source",
+        cwd: "/Users/example/private/project",
+        vcs: { type: "git", revision: "a1b2c3d4", branch: "private-branch" },
+        ts: "2026-05-17T14:00:00.000Z",
+        agent: { name: "codex-cli" },
+      },
+    ]),
+    "utf8",
+  );
+
+  await registerTrail(input, { storeRoot, catalogDb, sourcePath: null });
+
+  expect(await listCatalogEntries(catalogDb, { states: ["registered"] })).toEqual([
+    expect.objectContaining({
+      source_id: null,
+      path: null,
+      agent_name: "codex-cli",
+      name: "Private source",
+      cwd: null,
+      branch: null,
+      session_date: "2026-05-17T14:00:00.000Z",
+    }),
+  ]);
+});
+
+storeTest("registerTrail caps cached metadata strings", async () => {
+  const input = join(storeRoot, "metadata-oversized.trail.jsonl");
+  const oversized = "x".repeat(2100);
+  await writeFile(
+    input,
+    await stampedJsonl([
+      {
+        type: "session",
+        schema_version: "0.1.0",
+        id: "00000000-0000-4000-8000-000000020021",
+        session_uid: "00000000-0000-4000-8000-000000020121",
+        name: oversized,
+        cwd: oversized,
+        vcs: { type: "git", revision: "a1b2c3d4", branch: oversized },
+        ts: "2026-05-17T14:00:00.000Z",
+        agent: { name: "codex-cli" },
+      },
+    ]),
+    "utf8",
+  );
+
+  await registerTrail(input, { storeRoot, catalogDb });
+  const [row] = await listCatalogEntries(catalogDb, { states: ["registered"] });
+
+  expect(row?.name).toBe("x".repeat(2048));
+  expect(row?.cwd).toBe("x".repeat(2048));
+  expect(row?.branch).toBe("x".repeat(2048));
+});
+
 storeTest("registerTrail is idempotent for duplicate finalized files", async () => {
   const first = await registerTrail(finalizedFixture, { storeRoot, catalogDb });
   const second = await registerTrail(finalizedFixture, { storeRoot, catalogDb });
@@ -437,8 +501,8 @@ storeTest("indexExistingObjects rebuilds catalog list metadata from object bytes
       content_hash: registered.contentHash,
       agent_name: "codex-cli",
       name: "Rebuild title",
-      cwd: "/work/rebuild",
-      branch: "rebuild",
+      cwd: null,
+      branch: null,
       session_date: "2026-05-17T14:00:00.000Z",
     }),
   ]);

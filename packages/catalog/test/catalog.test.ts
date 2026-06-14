@@ -150,6 +150,34 @@ catalogTest("listCatalogEntries lists source rows newest first", async () => {
   ]);
 });
 
+catalogTest("listCatalogEntries uses stable tie-breakers", async () => {
+  await initializeCatalog(db);
+  await upsertDiscoveredSessions(db, [
+    {
+      agent_name: "claude-code",
+      source_id: "same-source",
+      path: "claude-db://same-source",
+      session_date: "2026-05-17T14:00:00.000Z",
+    },
+    {
+      agent_name: "codex",
+      source_id: "same-source",
+      path: "/sessions/same-source.jsonl",
+      session_date: "2026-05-17T14:00:00.000Z",
+    },
+  ]);
+
+  expect(
+    (await listCatalogEntries(db)).map((row) => ({
+      agent_name: row.agent_name,
+      source_id: row.source_id,
+    })),
+  ).toEqual([
+    { agent_name: "claude-code", source_id: "same-source" },
+    { agent_name: "codex", source_id: "same-source" },
+  ]);
+});
+
 catalogTest("upsertDiscoveredSessions updates existing rows and clears missing state", async () => {
   await initializeCatalog(db);
   await upsertDiscoveredSessions(db, [
@@ -545,6 +573,69 @@ catalogTest(
         content_hash: "a".repeat(64),
         kind: "trail",
         object_path: "/objects/a-new.trail.jsonl",
+      }),
+    ]);
+  },
+);
+
+catalogTest(
+  "upsertTrailObject preserves omitted metadata and returns stored metadata",
+  async () => {
+    await initializeCatalog(db);
+    await upsertTrailObject(db, {
+      content_hash: "a".repeat(64),
+      kind: "session",
+      object_path: "/objects/a.trail.jsonl",
+      source_path: "/source.jsonl",
+      session_uid: "uid",
+      registered_at: "2026-05-17T14:01:00.000Z",
+      agent_name: "codex",
+      name: "Original",
+      cwd: "/work/project",
+      branch: "main",
+      session_date: "2026-05-17T14:00:00.000Z",
+    });
+
+    await upsertTrailObject(db, {
+      content_hash: "a".repeat(64),
+      kind: "session",
+      object_path: "/objects/a-new.trail.jsonl",
+      source_path: "/source-new.jsonl",
+      session_uid: "uid",
+      registered_at: "2026-05-17T14:02:00.000Z",
+    });
+
+    expect(await findTrailObjectsBySessionUid(db, "uid")).toEqual([
+      expect.objectContaining({
+        content_hash: "a".repeat(64),
+        object_path: "/objects/a-new.trail.jsonl",
+        source_path: "/source-new.jsonl",
+        registered_at: "2026-05-17T14:02:00.000Z",
+        agent_name: "codex",
+        name: "Original",
+        cwd: "/work/project",
+        branch: "main",
+        session_date: "2026-05-17T14:00:00.000Z",
+      }),
+    ]);
+
+    await upsertTrailObject(db, {
+      content_hash: "a".repeat(64),
+      kind: "session",
+      object_path: "/objects/a-newer.trail.jsonl",
+      source_path: "/source-newer.jsonl",
+      session_uid: "uid",
+      registered_at: "2026-05-17T14:03:00.000Z",
+      name: null,
+    });
+
+    expect(await findTrailObjectsBySessionUid(db, "uid")).toEqual([
+      expect.objectContaining({
+        agent_name: "codex",
+        name: null,
+        cwd: "/work/project",
+        branch: "main",
+        session_date: "2026-05-17T14:00:00.000Z",
       }),
     ]);
   },

@@ -84,7 +84,7 @@ async function indexObjectEntry(
     source_path: null,
     session_uid: row.session_uid,
     registered_at: info.mtime.toISOString(),
-    ...catalogMetadataForObjectRow(eligible.trail, row),
+    ...catalogMetadataForObjectRow(eligible.trail, row, { includeEnvironment: false }),
   };
 }
 

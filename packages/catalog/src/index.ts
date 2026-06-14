@@ -219,7 +219,8 @@ export function catalogPath(storeRoot: string): string {
 }
 
 /**
- * Create or migrate the catalog schema for the provided SQLite driver.
+ * Create a catalog schema for a new database and validate that existing
+ * catalogs use a supported schema version.
  *
  * @public
  */
@@ -382,6 +383,11 @@ export async function markMissingSources(
  */
 export async function upsertTrailObject(db: CatalogDb, row: CatalogTrailObject): Promise<void> {
   assertContentHash(row.content_hash);
+  const hasAgentName = hasOwn(row, "agent_name");
+  const hasName = hasOwn(row, "name");
+  const hasCwd = hasOwn(row, "cwd");
+  const hasBranch = hasOwn(row, "branch");
+  const hasSessionDate = hasOwn(row, "session_date");
   await db.exec(
     `INSERT INTO trail_objects (
       content_hash,
@@ -402,11 +408,26 @@ export async function upsertTrailObject(db: CatalogDb, row: CatalogTrailObject):
       source_path = excluded.source_path,
       session_uid = excluded.session_uid,
       registered_at = excluded.registered_at,
-      agent_name = excluded.agent_name,
-      name = excluded.name,
-      cwd = excluded.cwd,
-      branch = excluded.branch,
-      session_date = excluded.session_date`,
+      agent_name = CASE
+        WHEN ? THEN excluded.agent_name
+        ELSE trail_objects.agent_name
+      END,
+      name = CASE
+        WHEN ? THEN excluded.name
+        ELSE trail_objects.name
+      END,
+      cwd = CASE
+        WHEN ? THEN excluded.cwd
+        ELSE trail_objects.cwd
+      END,
+      branch = CASE
+        WHEN ? THEN excluded.branch
+        ELSE trail_objects.branch
+      END,
+      session_date = CASE
+        WHEN ? THEN excluded.session_date
+        ELSE trail_objects.session_date
+      END`,
     [
       row.content_hash,
       row.kind,
@@ -419,6 +440,11 @@ export async function upsertTrailObject(db: CatalogDb, row: CatalogTrailObject):
       row.cwd ?? null,
       row.branch ?? null,
       row.session_date ?? null,
+      hasAgentName ? 1 : 0,
+      hasName ? 1 : 0,
+      hasCwd ? 1 : 0,
+      hasBranch ? 1 : 0,
+      hasSessionDate ? 1 : 0,
     ],
   );
 }
@@ -667,7 +693,12 @@ export async function findTrailObjectsBySessionUid(
       object_path,
       source_path,
       session_uid,
-      registered_at
+      registered_at,
+      agent_name,
+      name,
+      cwd,
+      branch,
+      session_date
     FROM trail_objects
     WHERE session_uid = ?
     ORDER BY registered_at ASC, content_hash ASC`,
@@ -757,7 +788,13 @@ function compareEntries(left: CatalogEntryRow, right: CatalogEntryRow): number {
 }
 
 function entryIdentity(row: CatalogEntryRow): string {
-  return row.source_id ?? row.content_hash ?? "";
+  return [
+    row.state,
+    row.agent_name ?? "",
+    row.source_id ?? "",
+    row.content_hash ?? "",
+    row.path ?? "",
+  ].join("\u0000");
 }
 
 function latestTimestamp(...values: (string | null)[]): string | null {
@@ -805,6 +842,10 @@ function assertContentHash(contentHash: string): void {
   if (!SHA256_HEX_PATTERN.test(contentHash)) {
     throw new Error(`invalid trail object content_hash: ${contentHash}`);
   }
+}
+
+function hasOwn(row: CatalogTrailObject, key: keyof CatalogTrailObject): boolean {
+  return Object.hasOwn(row, key);
 }
 
 function sourceKey(agentName: string, sourceId: string): string {

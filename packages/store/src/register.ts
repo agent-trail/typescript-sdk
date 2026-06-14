@@ -141,7 +141,7 @@ export async function registerTrail(
         source_path: sourcePath,
         session_uid: row.session_uid,
         registered_at: registeredAt,
-        ...catalogMetadataForObjectRow(trail, row),
+        ...catalogMetadataForObjectRow(trail, row, { includeEnvironment: sourcePath !== null }),
       });
     }
   }

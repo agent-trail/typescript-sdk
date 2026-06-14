@@ -9,8 +9,14 @@ const LOCK_ANCHOR = ".lockanchor";
 const INDEX_VERSION = 1;
 const CONTENT_HASH = /^[0-9a-f]{64}$/;
 
+/**
+ * @public
+ */
 export type IndexEntryKind = "session" | "trail";
 
+/**
+ * @public
+ */
 export type IndexEntry = {
   registered_at: string;
   /**
@@ -37,11 +43,17 @@ export type IndexEntry = {
   kind?: IndexEntryKind;
 };
 
+/**
+ * @public
+ */
 export type IndexFile = {
   version: 1;
   entries: Record<string, IndexEntry>;
 };
 
+/**
+ * @public
+ */
 export class IndexCorruptError extends Error {
   readonly path: string;
   constructor(path: string, cause: unknown) {
@@ -54,6 +66,9 @@ export class IndexCorruptError extends Error {
   }
 }
 
+/**
+ * @public
+ */
 export class IndexVersionError extends Error {
   readonly foundVersion: unknown;
   constructor(foundVersion: unknown) {
@@ -71,6 +86,8 @@ export class IndexVersionError extends Error {
  * from `INDEX_VERSION` — silently dropping a newer-version index would lose
  * data, so failure is loud. Callers can recover by deleting the file and
  * running `rebuildIndex`.
+ *
+ * @public
  */
 export async function readIndex(storeRoot: string): Promise<IndexFile> {
   const path = indexFilePath(storeRoot);
@@ -113,6 +130,9 @@ export async function readIndex(storeRoot: string): Promise<IndexFile> {
   return parsed;
 }
 
+/**
+ * @public
+ */
 export async function writeIndex(storeRoot: string, index: IndexFile): Promise<void> {
   const target = indexFilePath(storeRoot);
   await mkdir(indexDir(storeRoot), { recursive: true });
@@ -125,6 +145,9 @@ export async function writeIndex(storeRoot: string, index: IndexFile): Promise<v
   await rename(tmp, target);
 }
 
+/**
+ * @public
+ */
 export async function upsertIndexEntry(
   storeRoot: string,
   contentHash: string,
@@ -143,6 +166,8 @@ export async function upsertIndexEntry(
  * file being deleted or rewritten. Without serialization, two concurrent
  * `registerTrail` calls would both read the same old index and one would
  * overwrite the other's entry (last writer wins).
+ *
+ * @public
  */
 export async function withIndexLock<T>(storeRoot: string, fn: () => Promise<T>): Promise<T> {
   const dir = indexDir(storeRoot);
@@ -161,6 +186,9 @@ export async function withIndexLock<T>(storeRoot: string, fn: () => Promise<T>):
   }
 }
 
+/**
+ * @public
+ */
 export function emptyIndex(): IndexFile {
   return { version: INDEX_VERSION, entries: {} };
 }
@@ -169,6 +197,8 @@ export function emptyIndex(): IndexFile {
  * Return all index entries whose `session_uid` matches the given value.
  * Used by `trail load` to detect multi-segment continuations of a session
  * already in the store (spec §9.5 reconciliation).
+ *
+ * @public
  */
 export async function findEntriesBySessionUid(
   storeRoot: string,

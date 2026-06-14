@@ -13,8 +13,17 @@ function jsonl(records: unknown[]): string {
   return `${records.map((record) => JSON.stringify(record)).join("\n")}\n`;
 }
 
+function openAiApiKeyFixture(): string {
+  return [
+    "sk",
+    "proj",
+    "AbCdEfGhIjKlMnOpQrStUv0123456789",
+    "_AbCdEfGhIjKlMnOpQrStUv0123456789",
+  ].join("-");
+}
+
 test("redactTrailJsonl redacts secrets and reports mutation accounting", async () => {
-  const key = "sk-proj-AbCdEfGhIjKlMnOpQrStUv0123456789-_AbCdEfGhIjKlMnOpQrStUv0123456789";
+  const key = openAiApiKeyFixture();
   const result = await redactTrailJsonl(
     jsonl([
       header,
@@ -53,7 +62,7 @@ test("redactTrailJsonl strips unresolved secret user query answers", async () =>
 });
 
 test("redactTrailJsonl counts user query id and answer key mutations", async () => {
-  const key = "sk-proj-AbCdEfGhIjKlMnOpQrStUv0123456789-_AbCdEfGhIjKlMnOpQrStUv0123456789";
+  const key = openAiApiKeyFixture();
   const result = await redactTrailJsonl(
     jsonl([
       header,
@@ -87,7 +96,7 @@ test("redactTrailJsonl counts user query id and answer key mutations", async () 
 });
 
 test("redactTrailJsonl redacts extra payload fields on known event types", async () => {
-  const key = "sk-proj-AbCdEfGhIjKlMnOpQrStUv0123456789-_AbCdEfGhIjKlMnOpQrStUv0123456789";
+  const key = openAiApiKeyFixture();
   const result = await redactTrailJsonl(
     jsonl([
       header,
@@ -105,7 +114,7 @@ test("redactTrailJsonl redacts extra payload fields on known event types", async
 });
 
 test("redactTrailJsonl visits known payload fields once when allowlisted", async () => {
-  const key = "sk-proj-AbCdEfGhIjKlMnOpQrStUv0123456789-_AbCdEfGhIjKlMnOpQrStUv0123456789";
+  const key = openAiApiKeyFixture();
   const result = await redactTrailJsonl(
     jsonl([
       header,
@@ -144,7 +153,7 @@ test("redactTrailJsonl keeps literal allowlisted email tokens intact", async () 
 });
 
 test("redactTrailJsonl does not skip colliding payload paths", async () => {
-  const key = "sk-proj-AbCdEfGhIjKlMnOpQrStUv0123456789-_AbCdEfGhIjKlMnOpQrStUv0123456789";
+  const key = openAiApiKeyFixture();
   const result = await redactTrailJsonl(
     jsonl([
       header,
@@ -248,7 +257,7 @@ test("redactTrailJsonl strips secret user query answer objects with extra fields
 });
 
 test("redactTrailJsonl redacts parse error source text", async () => {
-  const key = "sk-proj-AbCdEfGhIjKlMnOpQrStUv0123456789-_AbCdEfGhIjKlMnOpQrStUv0123456789";
+  const key = openAiApiKeyFixture();
   const result = await redactTrailJsonl(`{bad ${key}\n`);
 
   expect(result.jsonl).not.toContain(key);
@@ -256,7 +265,7 @@ test("redactTrailJsonl redacts parse error source text", async () => {
 });
 
 test("redactTrailJsonl redacts non-object parse error values", async () => {
-  const key = "sk-proj-AbCdEfGhIjKlMnOpQrStUv0123456789-_AbCdEfGhIjKlMnOpQrStUv0123456789";
+  const key = openAiApiKeyFixture();
   const result = await redactTrailJsonl(`${JSON.stringify([key])}\n`);
 
   expect(result.jsonl).not.toContain(key);

@@ -4,6 +4,9 @@ import type { ContentHashes, ParsedTrail, ParsedTrailRecord, StampedTrail } from
 import { buildParsedTrail } from "./parse.js";
 import { cloneRecord, isEnvelope, isHeader } from "./shared.js";
 
+/**
+ * @internal
+ */
 export function computeContentHashes(trail: ParsedTrail): ContentHashes {
   const sessionHashes = trail.groups.flatMap((group) => {
     if (!isHeader(group.header.record)) return [];
@@ -26,6 +29,9 @@ export function computeContentHashes(trail: ParsedTrail): ContentHashes {
   };
 }
 
+/**
+ * @internal
+ */
 export function stampContentHashes(trail: ParsedTrail): StampedTrail {
   const clonedRecords = trail.records.map(({ line, record }) => ({
     line,
@@ -49,6 +55,9 @@ export function stampContentHashes(trail: ParsedTrail): StampedTrail {
   return { trail: clonedTrail, hashes, jsonl: serializeRecords(clonedTrail.records) };
 }
 
+/**
+ * @internal
+ */
 export function hashRecords(records: ParsedTrailRecord[], tier: "session" | "file"): string {
   const fileEnvelopeIndex =
     tier === "file" ? records.findIndex(({ record }) => record.type === "trail") : -1;

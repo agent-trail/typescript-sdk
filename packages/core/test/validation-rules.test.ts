@@ -134,6 +134,28 @@ test("reports tool pairing warnings and suppresses terminated open calls", async
   ).toBe(false);
 });
 
+test("pairs implicit tool results by top-level semantic call id before sequential fallback", async () => {
+  const result = await validateTrailJsonl(
+    jsonl([
+      baseHeader,
+      { ...toolCall("01HEVTA0000000000000000001", "file_read"), semantic: { call_id: "call_a" } },
+      toolCall("01HEVTA0000000000000000002", "shell"),
+      { ...toolResult("01HEVTA0000000000000000003", undefined), semantic: { call_id: "call_a" } },
+    ]),
+    { mode: "strict" },
+  );
+
+  expect(result.diagnostics).not.toContainEqual(
+    expect.objectContaining({ code: "ambiguous_sequential_pairing" }),
+  );
+  expect(result.diagnostics).not.toContainEqual(
+    expect.objectContaining({ line: 2, code: "unmatched_tool_call_at_eof" }),
+  );
+  expect(result.diagnostics).toContainEqual(
+    expect.objectContaining({ line: 3, code: "unmatched_tool_call_at_eof" }),
+  );
+});
+
 test("reports user query response and source raw diagnostics", async () => {
   const result = await validateTrailJsonl(
     jsonl([

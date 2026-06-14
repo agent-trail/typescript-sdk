@@ -9,6 +9,9 @@ import type {
 } from "./index.js";
 import { isJsonObject } from "./shared.js";
 
+/**
+ * @internal
+ */
 export async function parseTrailJsonl(input: TrailJsonlInput): Promise<ParsedTrail> {
   const records: ParsedTrailRecord[] = [];
   const pushLine = lineParser(records);
@@ -190,6 +193,9 @@ function stripTrailingCarriageReturn(line: string): string {
   return line.endsWith("\r") ? line.slice(0, -1) : line;
 }
 
+/**
+ * @internal
+ */
 export function buildParsedTrail(records: ParsedTrailRecord[]): ParsedTrail {
   const groups: SessionGroup[] = [];
   let envelope: ParsedTrailRecord<TrailEnvelope> | undefined;

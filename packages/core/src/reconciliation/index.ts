@@ -3,6 +3,9 @@ import type { ParsedTrail, ReconciliationResult } from "../index.js";
 import { mergeSegments } from "./merge.js";
 import { buildSegmentPlan } from "./segment-plan/index.js";
 
+/**
+ * @internal
+ */
 export function reconcileSegments(inputs: ParsedTrail[]): ReconciliationResult {
   const plan = buildSegmentPlan(inputs);
   const output = [...plan.passThrough];

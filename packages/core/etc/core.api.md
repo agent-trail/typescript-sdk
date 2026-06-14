@@ -9,67 +9,67 @@ import type { Entry } from '@agent-trail/types';
 import type { Header } from '@agent-trail/types';
 import type { TrailEnvelope } from '@agent-trail/types';
 
-// @public (undocumented)
+// @public
 export function computeContentHashes(trail: ParsedTrail): ContentHashes;
 
-// @public (undocumented)
+// @public
 export type ContentHashEntry = {
     line: number;
     header: Header;
     hash: string;
 };
 
-// @public (undocumented)
+// @public
 export type ContentHashes = {
     sessionHashes: ContentHashEntry[];
     fileHash?: string;
 };
 
-// @public (undocumented)
+// @public
 export type CoreValidationMode = "strict" | "tolerant";
 
-// @public (undocumented)
+// @public
 export type ParsedTrail = {
     records: ParsedTrailRecord[];
     envelope?: ParsedTrailRecord<TrailEnvelope>;
     groups: SessionGroup[];
 };
 
-// @public (undocumented)
+// @public
 export type ParsedTrailRecord<TRecord extends TrailRecordLike = TrailRecordLike> = {
     line: number;
     record: TRecord;
 };
 
-// @public (undocumented)
+// @public
 export function parseTrailJsonl(input: TrailJsonlInput): Promise<ParsedTrail>;
 
-// @public (undocumented)
+// @public
 export function reconcileSegments(inputs: ParsedTrail[]): ReconciliationResult;
 
-// @public (undocumented)
+// @public
 export type ReconciliationResult = {
     trails: ParsedTrail[];
     diagnostics: TrailDiagnostic[];
 };
 
-// @public (undocumented)
+// @public
 export type SessionGroup = {
     header: ParsedTrailRecord<Header | UnknownTrailRecord>;
     events: ParsedTrailRecord<Entry | UnknownTrailRecord>[];
 };
 
-// @public (undocumented)
+// @public
 export function stampContentHashes(trail: ParsedTrail): StampedTrail;
 
-// @public (undocumented)
+// @public
 export type StampedTrail = {
     trail: ParsedTrail;
     hashes: ContentHashes;
     jsonl: string;
 };
 
-// @public (undocumented)
+// @public
 export type TrailDiagnostic = {
     line: number;
     path: string;
@@ -78,33 +78,31 @@ export type TrailDiagnostic = {
     message: string;
 };
 
-// @public (undocumented)
+// @public
 export type TrailJsonlInput = string | AsyncIterable<string | Uint8Array>;
 
-// @public (undocumented)
+// @public
 export type TrailRecordLike = AgentTrailV010 | UnknownTrailRecord;
 
-// @public (undocumented)
+// @public
 export type UnknownTrailRecord = {
     type: string;
     [key: string]: unknown;
 };
 
-// @public (undocumented)
+// @public
 export function validateTrailJsonl(input: TrailJsonlInput, options?: ValidateTrailOptions): Promise<ValidationResult>;
 
-// @public (undocumented)
+// @public
 export type ValidateTrailOptions = {
     mode?: CoreValidationMode;
 };
 
-// @public (undocumented)
+// @public
 export type ValidationResult = {
     ok: boolean;
     trail: ParsedTrail;
     diagnostics: TrailDiagnostic[];
 };
-
-// (No @packageDocumentation comment for this package)
 
 ```

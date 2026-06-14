@@ -20,7 +20,10 @@ export type CatalogParams = readonly CatalogValue[];
  */
 export type CatalogDb = {
   exec(sql: string, params?: CatalogParams): void | Promise<void>;
-  get<T = unknown>(sql: string, params?: CatalogParams): T | undefined | Promise<T | undefined>;
+  get<T = unknown>(
+    sql: string,
+    params?: CatalogParams,
+  ): T | null | undefined | Promise<T | null | undefined>;
   all<T = unknown>(sql: string, params?: CatalogParams): T[] | Promise<T[]>;
   transaction?<T>(fn: () => T): T;
 };
@@ -322,7 +325,7 @@ export async function markGistShared(db: CatalogDb, input: MarkGistSharedInput):
       WHERE agent_name = ? AND source_id = ?`,
     [input.agent_name, input.source_id],
   );
-  if (link === undefined) {
+  if (link == null) {
     throw new CatalogNotFoundError(
       `source session ${input.agent_name}/${input.source_id} has no generated trail`,
     );
@@ -425,7 +428,7 @@ async function assertSourceExists(db: CatalogDb, key: SourceSessionKey): Promise
       WHERE agent_name = ? AND source_id = ?`,
     [key.agent_name, key.source_id],
   );
-  if (source === undefined) {
+  if (source == null) {
     throw new CatalogNotFoundError(`unknown source session ${key.agent_name}/${key.source_id}`);
   }
 }
@@ -435,7 +438,7 @@ async function assertTrailObjectExists(db: CatalogDb, contentHash: string): Prom
     "SELECT content_hash FROM trail_objects WHERE content_hash = ?",
     [contentHash],
   );
-  if (object === undefined) {
+  if (object == null) {
     throw new CatalogNotFoundError(`unknown trail object ${contentHash}`);
   }
 }

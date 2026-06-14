@@ -208,6 +208,190 @@ test("redactTrailJsonl does not skip colliding payload paths", async () => {
   expect(result.summary.counts.openai_api_key).toBe(1);
 });
 
+test("redactTrailJsonl rewrites file attachment URIs and removes unresolved file URIs", async () => {
+  const safeRef = `sha256:${"a".repeat(64)}` as const;
+  const result = await redactTrailJsonl(
+    jsonl([
+      header,
+      {
+        type: "user_message",
+        id: "01HEVTA0000000000000000012",
+        ts: "2026-05-17T14:00:12.000Z",
+        payload: {
+          text: "see files",
+          attachments: [
+            { uri: "file:///tmp/keep.txt", name: "keep.txt" },
+            { uri: "file:///tmp/drop.txt", name: "drop.txt" },
+            { uri: "https://example.com/remote.txt", name: "remote.txt" },
+          ],
+        },
+      },
+    ]),
+    { attachmentUriRewrites: { "file:///tmp/keep.txt": safeRef } },
+  );
+
+  expect(result.jsonl).toContain(safeRef);
+  expect(result.jsonl).not.toContain("file:///tmp/keep.txt");
+  expect(result.jsonl).not.toContain("file:///tmp/drop.txt");
+  expect(result.jsonl).toContain("https://example.com/remote.txt");
+  expect(result.summary.counts.attachment_file_uri_rewritten).toBe(1);
+  expect(result.summary.counts.attachment_file_uri_removed).toBe(1);
+});
+
+test("redactTrailJsonl strips unsafe overflow refs and preserves sha256 refs", async () => {
+  const safeRef = `sha256:${"b".repeat(64)}`;
+  const result = await redactTrailJsonl(
+    jsonl([
+      header,
+      {
+        type: "tool_result",
+        id: "01HEVTA0000000000000000013",
+        ts: "2026-05-17T14:00:13.000Z",
+        payload: {
+          call_id: "call-1",
+          output: "first",
+          overflow_ref: "/tmp/raw-output.txt",
+        },
+      },
+      {
+        type: "tool_result",
+        id: "01HEVTA0000000000000000014",
+        ts: "2026-05-17T14:00:14.000Z",
+        payload: {
+          call_id: "call-2",
+          output: "second",
+          overflow_ref: safeRef,
+        },
+      },
+    ]),
+  );
+
+  expect(result.jsonl).not.toContain("/tmp/raw-output.txt");
+  expect(result.jsonl).toContain(safeRef);
+  expect(result.summary.counts.overflow_ref_stripped).toBe(1);
+});
+
+test("redactTrailJsonl strips VCS repository identity by default", async () => {
+  const result = await redactTrailJsonl(
+    jsonl([
+      {
+        ...header,
+        vcs: { remote_url: "https://github.com/private/repo.git", branch: "main" },
+      },
+      {
+        type: "system_event",
+        id: "01HEVTA0000000000000000015",
+        ts: "2026-05-17T14:00:15.000Z",
+        payload: { kind: "vcs_commit", data: { repo: "/private/repo", sha: "abc123" } },
+      },
+    ]),
+  );
+
+  expect(result.jsonl).not.toContain("https://github.com/private/repo.git");
+  expect(result.jsonl).not.toContain("/private/repo");
+  expect(result.jsonl).toContain('"branch":"main"');
+  expect(result.summary.counts.vcs_remote_url).toBe(2);
+});
+
+test("redactTrailJsonl can preserve VCS remote_url when explicitly requested", async () => {
+  const result = await redactTrailJsonl(
+    jsonl([
+      {
+        ...header,
+        vcs: { remote_url: "https://github.com/public/repo.git", branch: "main" },
+      },
+    ]),
+    { keepRemoteUrl: true },
+  );
+
+  expect(result.jsonl).toContain("https://github.com/public/repo.git");
+  expect(result.summary.counts.vcs_remote_url).toBeUndefined();
+});
+
+test("redactTrailJsonl truncates tool output and user query answers", async () => {
+  const result = await redactTrailJsonl(
+    jsonl([
+      header,
+      {
+        type: "tool_result",
+        id: "01HEVTA0000000000000000016",
+        ts: "2026-05-17T14:00:16.000Z",
+        payload: { call_id: "call-1", output: "abcdefghijklmnopqrstuvwxyz" },
+      },
+      {
+        type: "user_query",
+        id: "01HEVTA0000000000000000017",
+        ts: "2026-05-17T14:00:17.000Z",
+        payload: { questions: [{ id: "choice", question: "Pick?" }] },
+      },
+      {
+        type: "user_query_response",
+        id: "01HEVTA0000000000000000018",
+        ts: "2026-05-17T14:00:18.000Z",
+        payload: {
+          for_id: "01HEVTA0000000000000000017",
+          answers: {
+            choice: {
+              selected: ["abcdefghijklmnopqrstuvwxyz"],
+              other: "zyxwvutsrqponmlkjihgfedcba",
+            },
+          },
+        },
+      },
+    ]),
+    { outputMaxBytes: 18 },
+  );
+
+  expect(result.jsonl).toContain("[truncated]");
+  expect(result.jsonl).not.toContain("abcdefghijklmnopqrstuvwxyz");
+  expect(result.summary.counts.output_truncated).toBe(1);
+  expect(result.summary.counts.user_query_answer_truncated).toBe(2);
+});
+
+test("redactTrailJsonl resets content hashes and rewrites segment lineage after changes", async () => {
+  const stalePrevHash = "a".repeat(64);
+  const key = openAiApiKeyFixture();
+  const result = await redactTrailJsonl(
+    jsonl([
+      {
+        ...header,
+        id: "01HSESS0000000000000000100",
+        session_uid: "session-uid",
+        content_hash: stalePrevHash,
+        segment: { seq: 1 },
+      },
+      {
+        type: "user_message",
+        id: "01HEVTA0000000000000000101",
+        ts: "2026-05-17T14:00:01.000Z",
+        payload: { text: key },
+      },
+      {
+        ...header,
+        id: "01HSESS0000000000000000102",
+        session_uid: "session-uid",
+        content_hash: "b".repeat(64),
+        segment: { seq: 2, prev_content_hash: stalePrevHash },
+      },
+      {
+        type: "agent_message",
+        id: "01HEVTA0000000000000000103",
+        ts: "2026-05-17T14:01:01.000Z",
+        payload: { text: "done" },
+      },
+    ]),
+  );
+
+  const firstHeader = result.trail.groups[0]?.header.record as Record<string, unknown>;
+  const secondHeader = result.trail.groups[1]?.header.record as Record<string, unknown>;
+  const segment = secondHeader.segment as Record<string, unknown>;
+
+  expect(firstHeader.content_hash).toBe("<pending>");
+  expect(secondHeader.content_hash).toBe("<pending>");
+  expect(segment.prev_content_hash).not.toBe(stalePrevHash);
+  expect(segment.prev_content_hash).toMatch(/^[0-9a-f]{64}$/);
+});
+
 test("redactTrailJsonl strips malformed secret user query answers", async () => {
   const result = await redactTrailJsonl(
     jsonl([

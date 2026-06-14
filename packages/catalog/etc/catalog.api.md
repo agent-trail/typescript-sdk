@@ -7,7 +7,7 @@
 // @public
 export type CatalogDb = {
     exec(sql: string, params?: CatalogParams): void | Promise<void>;
-    get<T = unknown>(sql: string, params?: CatalogParams): T | undefined | Promise<T | undefined>;
+    get<T = unknown>(sql: string, params?: CatalogParams): T | null | undefined | Promise<T | null | undefined>;
     all<T = unknown>(sql: string, params?: CatalogParams): T[] | Promise<T[]>;
     transaction?<T>(fn: () => T): T;
 };

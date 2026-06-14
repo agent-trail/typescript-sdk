@@ -9,13 +9,13 @@ const sessionTerminationReasons = new Set<string>([
   "user_abort",
 ]);
 
-export function parseFidelityForEvents(events: ParsedTrailRecord[]): ParseFidelity {
-  const out: ParseFidelity = {
+export function deriveParseFidelity(events: ParsedTrailRecord[]): ParseFidelity {
+  const fidelity: ParseFidelity = {
     quarantined_count: events.filter(isQuarantinedUnknownRecord).length,
   };
   const terminationReason = finalSessionTerminatedReason(events);
-  if (terminationReason !== undefined) out.termination_reason = terminationReason;
-  return out;
+  if (terminationReason !== undefined) fidelity.termination_reason = terminationReason;
+  return fidelity;
 }
 
 function isQuarantinedUnknownRecord(event: ParsedTrailRecord): boolean {
@@ -37,8 +37,7 @@ function finalSessionTerminatedReason(
     const record = event.record;
     if (!isJsonObject(record) || record.type !== "session_terminated") continue;
     if (!isJsonObject(record.payload)) continue;
-    const rawReason = record.payload.reason;
-    if (isSessionTerminationReason(rawReason)) reason = rawReason;
+    if (isSessionTerminationReason(record.payload.reason)) reason = record.payload.reason;
   }
   return reason;
 }

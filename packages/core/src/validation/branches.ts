@@ -1,14 +1,16 @@
 import type { SessionGroup, TrailDiagnostic } from "../index.js";
-import { diagnostic, payloadString, readString } from "../shared.js";
-import { headerSeenIds } from "./source-raw.js";
+import { diagnostic, payloadString } from "../shared.js";
+import type { SessionGraph } from "./session-graph/index.js";
 
-export function branchReferenceDiagnostics(group: SessionGroup): TrailDiagnostic[] {
+export function branchReferenceDiagnostics(
+  group: SessionGroup,
+  graph: SessionGraph,
+): TrailDiagnostic[] {
   const diagnostics: TrailDiagnostic[] = [];
-  const seen = headerSeenIds(group);
   for (const event of group.events) {
     if (event.record.type === "branch_point") {
       const fromId = payloadString(event.record, "from_id");
-      if (fromId !== undefined && !seen.has(fromId)) {
+      if (fromId !== undefined && !graph.hasPriorId(fromId, event)) {
         diagnostics.push(
           diagnostic(event.line, "/payload/from_id", "warning", "unknown_branch_point_from_id"),
         );
@@ -16,7 +18,7 @@ export function branchReferenceDiagnostics(group: SessionGroup): TrailDiagnostic
     }
     if (event.record.type === "branch_summary") {
       const branchId = payloadString(event.record, "abandoned_branch_id");
-      if (branchId !== undefined && !seen.has(branchId)) {
+      if (branchId !== undefined && !graph.hasPriorId(branchId, event)) {
         diagnostics.push(
           diagnostic(
             event.line,
@@ -27,8 +29,6 @@ export function branchReferenceDiagnostics(group: SessionGroup): TrailDiagnostic
         );
       }
     }
-    const id = readString(event.record, "id");
-    if (id !== undefined) seen.add(id);
   }
   return diagnostics;
 }

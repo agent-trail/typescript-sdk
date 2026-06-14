@@ -14,6 +14,7 @@ import { parentCycleDiagnostics } from "./parents.js";
 import { parseFidelityDiagnostics } from "./parse-fidelity.js";
 import { numberDiagnostics, wellFormedStringDiagnostics } from "./scalars.js";
 import { segmentDiagnostics } from "./segments.js";
+import { buildSessionGraph } from "./session-graph/index.js";
 import { sourceRawDiagnostics } from "./source-raw.js";
 import { streamDiagnostics } from "./stream.js";
 import { timestampDiagnostics, timestampSyntaxDiagnostics } from "./timestamps.js";
@@ -56,33 +57,27 @@ function groupDiagnostics(
   fileIds: Map<string, ParsedTrailRecord>,
 ): TrailDiagnostic[] {
   const diagnostics: TrailDiagnostic[] = [];
-  const groupIds = new Map<string, ParsedTrailRecord>();
-  groupIds.set(readString(group.header.record, "id") ?? "", group.header);
-
-  for (const event of group.events) {
-    const id = readString(event.record, "id");
-    if (id !== undefined) groupIds.set(id, event);
-  }
+  const graph = buildSessionGraph(group);
 
   for (const event of group.events) {
     const parentId = readString(event.record, "parent_id");
-    if (parentId !== undefined && !groupIds.has(parentId)) {
+    if (parentId !== undefined && graph.recordById(parentId) === undefined) {
       diagnostics.push(diagnostic(event.line, "/parent_id", "error", "unknown_parent_id"));
     }
   }
 
-  const parentCycleDiagnosticsForGroup = parentCycleDiagnostics(group, groupIds);
+  const parentCycleDiagnosticsForGroup = parentCycleDiagnostics(graph);
   diagnostics.push(...parentCycleDiagnosticsForGroup);
   diagnostics.push(
-    ...timestampDiagnostics(group, groupIds, parentCycleDiagnosticsForGroup.length > 0),
+    ...timestampDiagnostics(group, graph, parentCycleDiagnosticsForGroup.length > 0),
   );
   diagnostics.push(...parseFidelityDiagnostics(group));
   diagnostics.push(...vcsDiagnostics(group));
   diagnostics.push(...toolPairingDiagnostics(group));
-  diagnostics.push(...branchReferenceDiagnostics(group));
+  diagnostics.push(...branchReferenceDiagnostics(group, graph));
   diagnostics.push(...userQueryDiagnostics(group));
-  diagnostics.push(...sourceRawDiagnostics(group));
-  diagnostics.push(...streamDiagnostics(group));
+  diagnostics.push(...sourceRawDiagnostics(group, graph));
+  diagnostics.push(...streamDiagnostics(group, graph));
   diagnostics.push(...finalMessageDiagnostics(group, fileIds));
   return diagnostics;
 }

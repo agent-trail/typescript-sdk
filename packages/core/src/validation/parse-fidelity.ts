@@ -1,25 +1,13 @@
 import type { SessionGroup, TrailDiagnostic } from "../index.js";
-import { diagnostic, isHeader, isJsonObject, readString } from "../shared.js";
+import { deriveParseFidelity } from "../parse-fidelity/index.js";
+import { diagnostic, isHeader } from "../shared.js";
 
 export function parseFidelityDiagnostics(group: SessionGroup): TrailDiagnostic[] {
   if (!isHeader(group.header.record) || group.header.record.parse_fidelity === undefined) return [];
-  const quarantinedCount = group.events.filter(
-    (event) =>
-      event.record.type === "system_event" &&
-      isJsonObject(event.record.payload) &&
-      typeof event.record.payload.kind === "string" &&
-      /^x-[a-z0-9]+(?:-[a-z0-9]+)*\/unknown_record$/.test(event.record.payload.kind),
-  ).length;
-  const terminationReason = [...group.events]
-    .reverse()
-    .find((event) => event.record.type === "session_terminated")?.record;
-  const expectedReason =
-    terminationReason !== undefined && isJsonObject(terminationReason.payload)
-      ? readString(terminationReason.payload, "reason")
-      : undefined;
+  const expected = deriveParseFidelity(group.events);
   const fidelity = group.header.record.parse_fidelity;
   const diagnostics: TrailDiagnostic[] = [];
-  if (fidelity.quarantined_count !== quarantinedCount) {
+  if (fidelity.quarantined_count !== expected.quarantined_count) {
     diagnostics.push(
       diagnostic(
         group.header.line,
@@ -29,7 +17,7 @@ export function parseFidelityDiagnostics(group: SessionGroup): TrailDiagnostic[]
       ),
     );
   }
-  if (fidelity.termination_reason !== expectedReason) {
+  if (fidelity.termination_reason !== expected.termination_reason) {
     diagnostics.push(
       diagnostic(
         group.header.line,

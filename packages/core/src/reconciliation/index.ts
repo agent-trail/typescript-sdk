@@ -1,29 +1,16 @@
 import { stampContentHashes } from "../hashing.js";
-import type { ParsedTrail, ReconciliationResult, TrailDiagnostic } from "../index.js";
-import { firstHeader, isJsonObject } from "../shared.js";
-import { validateSegmentChain } from "./chain.js";
-import { groupReconciliationInputs, sortSegments } from "./grouping.js";
+import type { ParsedTrail, ReconciliationResult } from "../index.js";
 import { mergeSegments } from "./merge.js";
+import { buildSegmentPlan } from "./segment-plan/index.js";
 
 export function reconcileSegments(inputs: ParsedTrail[]): ReconciliationResult {
-  const diagnostics: TrailDiagnostic[] = [];
-  const output: ParsedTrail[] = [];
-  const grouped = groupReconciliationInputs(inputs, output);
+  const plan = buildSegmentPlan(inputs);
+  const output = [...plan.passThrough];
 
-  for (const trails of grouped.values()) {
-    const sorted = sortSegments(trails);
-    const chain = validateSegmentChain(sorted);
-    diagnostics.push(...chain.diagnostics);
-
-    const merged = mergeSegments(sorted);
-    output.push(
-      isOpenStream(firstHeader(merged)?.stream) ? merged : stampContentHashes(merged).trail,
-    );
+  for (const group of plan.mergeGroups) {
+    const merged = mergeSegments(group.trails);
+    output.push(group.shouldFinalize ? stampContentHashes(merged).trail : merged);
   }
 
-  return { trails: output, diagnostics };
-}
-
-function isOpenStream(stream: unknown): boolean {
-  return isJsonObject(stream) && stream.state === "open";
+  return { trails: output, diagnostics: plan.diagnostics };
 }

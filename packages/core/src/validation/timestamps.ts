@@ -1,15 +1,16 @@
 import type { ParsedTrailRecord, SessionGroup, TrailDiagnostic } from "../index.js";
 import { diagnostic, isJsonObject, readString } from "../shared.js";
+import type { SessionGraph } from "./session-graph/index.js";
 
 const isoMillisPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
 export function timestampDiagnostics(
   group: SessionGroup,
-  groupIds: Map<string, ParsedTrailRecord>,
+  graph: SessionGraph,
   skipParentComparisons: boolean,
 ): TrailDiagnostic[] {
   if (skipParentComparisons) return [];
-  return parentTimestampDiagnostics(group.events, groupIds);
+  return parentTimestampDiagnostics(group.events, graph);
 }
 
 export function timestampSyntaxDiagnostics(records: ParsedTrailRecord[]): TrailDiagnostic[] {
@@ -42,21 +43,17 @@ function streamStartedAt(record: unknown): string | undefined {
 
 function parentTimestampDiagnostics(
   events: ParsedTrailRecord[],
-  groupIds: Map<string, ParsedTrailRecord>,
+  graph: SessionGraph,
 ): TrailDiagnostic[] {
   return events.flatMap((event) =>
-    isBeforeParentTimestamp(event, groupIds)
+    isBeforeParentTimestamp(event, graph)
       ? [diagnostic(event.line, "/ts", "warning", "non_monotonic_event_ts")]
       : [],
   );
 }
 
-function isBeforeParentTimestamp(
-  event: ParsedTrailRecord,
-  groupIds: Map<string, ParsedTrailRecord>,
-): boolean {
-  const parentId = readString(event.record, "parent_id");
-  const parent = parentId === undefined ? undefined : groupIds.get(parentId);
+function isBeforeParentTimestamp(event: ParsedTrailRecord, graph: SessionGraph): boolean {
+  const parent = graph.parentRecord(event);
   const eventTs = readString(event.record, "ts");
   const parentTs = parent === undefined ? undefined : readString(parent.record, "ts");
   if (eventTs === undefined || parentTs === undefined) return false;

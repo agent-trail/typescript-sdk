@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { buildSessionGraph } from "../src/validation/session-graph/index.ts";
+import { buildSessionGraph } from "../src/validation/session-graph.ts";
 import { agentMessage, baseHeader, sessionTerminated, trail, userMessage } from "./helpers";
 
 test("session graph exposes ids, parents, prior ids, and terminal state", async () => {

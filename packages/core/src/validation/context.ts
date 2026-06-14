@@ -7,7 +7,7 @@ import type {
 } from "../index.js";
 import { diagnostic, readString } from "../shared.js";
 import { parentCycleDiagnostics } from "./parents.js";
-import { buildSessionGraph, type SessionGraph } from "./session-graph/index.js";
+import { buildSessionGraph, type SessionGraph } from "./session-graph.js";
 
 export type ValidationContext = {
   trail: ParsedTrail;

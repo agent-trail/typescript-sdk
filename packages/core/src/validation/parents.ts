@@ -1,6 +1,6 @@
 import type { TrailDiagnostic } from "../index.js";
 import { diagnostic } from "../shared.js";
-import type { SessionGraph } from "./session-graph/index.js";
+import type { SessionGraph } from "./session-graph.js";
 
 export function parentCycleDiagnostics(graph: SessionGraph): TrailDiagnostic[] {
   const diagnostics: TrailDiagnostic[] = [];

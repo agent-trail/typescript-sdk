@@ -1,7 +1,7 @@
 import type { ParsedTrailRecord, TrailDiagnostic } from "../index.js";
 import { diagnostic, isJsonObject, readString } from "../shared.js";
 import type { GroupValidationContext, ValidationContext } from "./context.js";
-import type { SessionGraph } from "./session-graph/index.js";
+import type { SessionGraph } from "./session-graph.js";
 
 const isoMillisPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 

@@ -1,5 +1,5 @@
-import type { ParsedTrailRecord, SessionGroup } from "../../index.js";
-import { readString } from "../../shared.js";
+import type { ParsedTrailRecord, SessionGroup } from "../index.js";
+import { readString } from "../shared.js";
 
 export type SessionGraph = {
   recordById(id: string): ParsedTrailRecord | undefined;

@@ -59,7 +59,9 @@ function isBeforeParentTimestamp(
   const parent = parentId === undefined ? undefined : groupIds.get(parentId);
   const eventTs = readString(event.record, "ts");
   const parentTs = parent === undefined ? undefined : readString(parent.record, "ts");
-  return eventTs !== undefined && parentTs !== undefined && eventTs < parentTs;
+  if (eventTs === undefined || parentTs === undefined) return false;
+  if (!isValidUtcIsoMillis(eventTs) || !isValidUtcIsoMillis(parentTs)) return false;
+  return eventTs < parentTs;
 }
 
 function isValidUtcIsoMillis(value: string): boolean {

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { parseTrailJsonl, validateTrailJsonl } from "../src/index.ts";
+import { type ParsedTrail, parseTrailJsonl, validateTrailJsonl } from "../src/index.ts";
 import { baseEnvelope, baseHeader, chunks, jsonl, userMessage } from "./helpers";
 
 test("parses envelope, session group, events, and source line numbers", async () => {
@@ -104,12 +104,22 @@ test("does not duplicate parse errors when invalid bytes are followed by string 
   ]);
   const parsed = await parseTrailJsonl(input);
 
-  expect(parsed.records.map((record) => [record.line, record.record.type])).toEqual([
-    [1, "session"],
-    [2, "x-parse-error"],
-    [3, "user_message"],
-  ]);
-  expect(parsed.records[1]?.record).toEqual({ type: "x-parse-error", code: "invalid_utf8" });
+  expectInvalidUtf8ThenUserMessage(parsed);
+});
+
+test("recovers when invalid byte discard is closed by a later byte newline", async () => {
+  const encoder = new TextEncoder();
+  const trailing = `\n${JSON.stringify(userMessage("01HEVTA0000000000000000001"))}\n`;
+  const parsed = await parseTrailJsonl(
+    chunks([
+      `${JSON.stringify(baseHeader)}\n`,
+      new Uint8Array([0x7b, 0x22, 0x62, 0x61, 0x64, 0xff]),
+      "still invalid",
+      encoder.encode(trailing),
+    ]),
+  );
+
+  expectInvalidUtf8ThenUserMessage(parsed);
 });
 
 test("tolerant validation keeps parser error diagnostics as errors", async () => {
@@ -158,4 +168,13 @@ test("parses CRLF input and byte chunks split across line boundaries", async () 
 async function* throwingChunks(error: Error): AsyncIterable<string | Uint8Array> {
   yield JSON.stringify(baseHeader);
   throw error;
+}
+
+function expectInvalidUtf8ThenUserMessage(parsed: ParsedTrail): void {
+  expect(parsed.records.map((record) => [record.line, record.record.type])).toEqual([
+    [1, "session"],
+    [2, "x-parse-error"],
+    [3, "user_message"],
+  ]);
+  expect(parsed.records[1]?.record).toEqual({ type: "x-parse-error", code: "invalid_utf8" });
 }

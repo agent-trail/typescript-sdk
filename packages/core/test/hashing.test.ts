@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { hashRecords } from "../src/hashing.ts";
 import { computeContentHashes, stampContentHashes } from "../src/index.ts";
 import { baseEnvelope, baseHeader, event, trail, userMessage } from "./helpers";
 
@@ -71,4 +72,20 @@ test("file hash ignores existing envelope content_hash and differs from session 
   expect(baseline.fileHash).toMatch(/^[0-9a-f]{64}$/);
   expect(withWrongEnvelope.fileHash).toBe(baseline.fileHash);
   expect(baseline.fileHash).not.toBe(baseline.sessionHashes[0]?.hash);
+});
+
+test("file hash neutralizes the located envelope record", async () => {
+  const parseErrorRecord = {
+    line: 1,
+    record: { type: "x-parse-error", code: "empty_line", raw: "" },
+  };
+  const headerRecord = { line: 3, record: baseHeader };
+  const records = [parseErrorRecord, { line: 2, record: baseEnvelope }, headerRecord];
+  const withWrongEnvelopeHash = [
+    parseErrorRecord,
+    { line: 2, record: { ...baseEnvelope, content_hash: "b".repeat(64) } },
+    headerRecord,
+  ];
+
+  expect(hashRecords(withWrongEnvelopeHash, "file")).toBe(hashRecords(records, "file"));
 });

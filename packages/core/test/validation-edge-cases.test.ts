@@ -167,6 +167,17 @@ test("reader tolerant patch schema versions keep unrelated header errors", async
   );
 });
 
+test("reader tolerant mode does not accept malformed patch schema versions", async () => {
+  const result = await diagnostics([{ ...baseHeader, schema_version: "0.1.bad" }], "tolerant");
+
+  expect(result).toContainEqual(
+    expect.objectContaining({ code: "schema", path: "/schema_version", severity: "error" }),
+  );
+  expect(result).not.toContainEqual(
+    expect.objectContaining({ code: "reader_tolerant_schema_version" }),
+  );
+});
+
 test("reader tolerant mode preserves unknown future records", async () => {
   const result = await validateTrailJsonl(
     jsonl([

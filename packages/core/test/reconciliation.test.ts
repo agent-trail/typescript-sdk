@@ -224,6 +224,7 @@ test("drops intermediate process termination markers and keeps terminal marker",
     { ...baseHeader, segment: { seq: 1 } },
     userMessage("01HEVTA0000000000000000001", "one"),
     sessionTerminated("01HEVTA0000000000000000099", "process_terminated"),
+    agentMessage("01HEVTA0000000000000000097", "must not survive"),
   ]);
   const second = await trail([
     {
@@ -246,6 +247,7 @@ test("drops intermediate process termination markers and keeps terminal marker",
     "agent_message",
     "session_terminated",
   ]);
+  expect(events.map((event) => event.record.id)).not.toContain("01HEVTA0000000000000000097");
   expect(events.at(-1)?.record.payload).toEqual({ reason: "complete" });
 });
 

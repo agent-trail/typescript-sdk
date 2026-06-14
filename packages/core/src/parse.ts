@@ -28,31 +28,74 @@ async function parseInput(
   pushLine: ReturnType<typeof lineParser>,
 ): Promise<void> {
   const pushBytes = byteLineParser(pushLine);
-  let discardInvalidLineRemainder = false;
+  const state = { discardInvalidLineRemainder: false };
   for await (const chunk of input) {
-    if (typeof chunk === "string") {
-      discardInvalidLineRemainder = pushBytes.finish() || discardInvalidLineRemainder;
-      const text: string | undefined = discardInvalidLineRemainder
-        ? textAfterDiscardedInvalidLine(chunk, pushLine)
-        : chunk;
-      discardInvalidLineRemainder = text === undefined;
-      if (text !== undefined) pushLine.pushText(text);
-      continue;
-    }
-    if (discardInvalidLineRemainder) continue;
-    pushBytes.push(chunk);
+    pushInputChunk(chunk, pushLine, pushBytes, state);
   }
   pushBytes.finish();
 }
 
-function textAfterDiscardedInvalidLine(
-  text: string,
-  pushLine: ReturnType<typeof lineParser>,
-): string | undefined {
+type InputParserState = { discardInvalidLineRemainder: boolean };
+type PushBytes = ReturnType<typeof byteLineParser>;
+type PushLine = ReturnType<typeof lineParser>;
+
+function pushInputChunk(
+  chunk: string | Uint8Array,
+  pushLine: PushLine,
+  pushBytes: PushBytes,
+  state: InputParserState,
+): void {
+  if (typeof chunk === "string") {
+    pushStringChunk(chunk, pushLine, pushBytes, state);
+  } else {
+    pushByteChunk(chunk, pushLine, pushBytes, state);
+  }
+}
+
+function pushStringChunk(
+  chunk: string,
+  pushLine: PushLine,
+  pushBytes: PushBytes,
+  state: InputParserState,
+): void {
+  state.discardInvalidLineRemainder = pushBytes.finish() || state.discardInvalidLineRemainder;
+  const text: string | undefined = state.discardInvalidLineRemainder
+    ? textAfterDiscardedInvalidLine(chunk, pushLine)
+    : chunk;
+  state.discardInvalidLineRemainder = text === undefined;
+  if (text !== undefined) pushLine.pushText(text);
+}
+
+function pushByteChunk(
+  chunk: Uint8Array,
+  pushLine: PushLine,
+  pushBytes: PushBytes,
+  state: InputParserState,
+): void {
+  if (!state.discardInvalidLineRemainder) {
+    pushBytes.push(chunk);
+    return;
+  }
+  const remainder = bytesAfterDiscardedInvalidLine(chunk, pushLine);
+  state.discardInvalidLineRemainder = remainder === undefined;
+  if (remainder !== undefined && remainder.length > 0) pushBytes.push(remainder);
+}
+
+function textAfterDiscardedInvalidLine(text: string, pushLine: PushLine): string | undefined {
   const newlineIndex = text.indexOf("\n");
   if (newlineIndex === -1) return undefined;
   pushLine.consumeLine();
   return text.slice(newlineIndex + 1);
+}
+
+function bytesAfterDiscardedInvalidLine(
+  bytes: Uint8Array,
+  pushLine: PushLine,
+): Uint8Array | undefined {
+  const newlineIndex = bytes.indexOf(0x0a);
+  if (newlineIndex === -1) return undefined;
+  pushLine.consumeLine();
+  return bytes.slice(newlineIndex + 1);
 }
 
 function byteLineParser(pushLine: ReturnType<typeof lineParser>) {

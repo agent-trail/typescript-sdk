@@ -27,7 +27,7 @@ function appendSegmentEvents(
   isFinal: boolean,
 ): void {
   for (const event of trail.groups[0]?.events ?? []) {
-    if (!isFinal && isProcessTerminated(event.record)) continue;
+    if (!isFinal && isProcessTerminated(event.record)) break;
     if (hasSeenEventId(event, seen)) continue;
     events.push({ line: events.length + 2, record: cloneRecord(event.record) });
   }

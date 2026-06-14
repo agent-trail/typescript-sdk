@@ -100,6 +100,30 @@ test("does not warn for child timestamps equal to or later than parent timestamp
   );
 });
 
+test("does not compare parent ordering when timestamps are invalid", async () => {
+  const result = await validateTrailJsonl(
+    jsonl([
+      baseHeader,
+      event("user_message", "01HEVTA0000000000000000001", "not-a-time", { text: "parent" }),
+      event(
+        "agent_message",
+        "01HEVTA0000000000000000002",
+        "2026-05-17T14:00:00.000Z",
+        { text: "child" },
+        "01HEVTA0000000000000000001",
+      ),
+    ]),
+    { mode: "strict" },
+  );
+
+  expect(result.diagnostics).toContainEqual(
+    expect.objectContaining({ code: "schema", path: "/ts" }),
+  );
+  expect(result.diagnostics.map((diagnostic) => diagnostic.code)).not.toContain(
+    "non_monotonic_event_ts",
+  );
+});
+
 test("reports all members of self and multi-node parent cycles", async () => {
   const self = await diagnosticCodes([
     baseHeader,
@@ -119,6 +143,23 @@ test("reports all members of self and multi-node parent cycles", async () => {
   expect(multi.diagnostics.filter((diagnostic) => diagnostic.code === "parent_cycle")).toHaveLength(
     3,
   );
+});
+
+test("reports disjoint parent cycles in the same group", async () => {
+  const result = await validateTrailJsonl(
+    jsonl([
+      baseHeader,
+      userMessage("01HEVTA0000000000000000001", "a", "01HEVTA0000000000000000002"),
+      userMessage("01HEVTA0000000000000000002", "b", "01HEVTA0000000000000000001"),
+      userMessage("01HEVTA0000000000000000003", "c", "01HEVTA0000000000000000004"),
+      userMessage("01HEVTA0000000000000000004", "d", "01HEVTA0000000000000000003"),
+    ]),
+    { mode: "strict" },
+  );
+
+  expect(
+    result.diagnostics.filter((diagnostic) => diagnostic.code === "parent_cycle"),
+  ).toHaveLength(4);
 });
 
 test("reports content hash mismatch by mode and invalid syntax as error", async () => {
@@ -231,11 +272,26 @@ test("validates parse_fidelity against quarantined records and terminal reason",
       data: { raw: "{}" },
     }),
   ]);
+  const reasonDrift = await validateTrailJsonl(
+    jsonl([
+      {
+        ...baseHeader,
+        parse_fidelity: { quarantined_count: 0, termination_reason: "process_terminated" },
+      },
+    ]),
+    { mode: "strict" },
+  );
 
   expect(valid.diagnostics.map((diagnostic) => diagnostic.code)).not.toContain(
     "parse_fidelity_drift",
   );
   expect(drift).toContain("parse_fidelity_drift");
+  expect(reasonDrift.diagnostics).toContainEqual(
+    expect.objectContaining({
+      code: "parse_fidelity_drift",
+      path: "/parse_fidelity/termination_reason",
+    }),
+  );
 });
 
 test("reports branch references that do not point to prior events", async () => {

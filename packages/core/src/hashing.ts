@@ -50,12 +50,14 @@ export function stampContentHashes(trail: ParsedTrail): StampedTrail {
 }
 
 export function hashRecords(records: ParsedTrailRecord[], tier: "session" | "file"): string {
+  const fileEnvelopeIndex =
+    tier === "file" ? records.findIndex(({ record }) => record.type === "trail") : -1;
   const bytes = records
-    .map(({ line, record }, index) => {
+    .map(({ record }, index) => {
       const cloned = cloneRecord(record);
       if (
         (tier === "session" && index === 0 && cloned.type === "session") ||
-        (tier === "file" && line === 1 && cloned.type === "trail")
+        (tier === "file" && index === fileEnvelopeIndex && cloned.type === "trail")
       ) {
         cloned.content_hash = "<pending>";
       }

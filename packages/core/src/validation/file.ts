@@ -30,7 +30,10 @@ export function wholeFileDiagnostics(
   for (const record of trail.records) {
     const id = readString(record.record, "id");
     if (id === undefined) continue;
-    if (ids.has(id)) diagnostics.push(diagnostic(record.line, "/id", "error", "duplicate_id"));
+    if (ids.has(id)) {
+      diagnostics.push(diagnostic(record.line, "/id", "error", "duplicate_id"));
+      continue;
+    }
     ids.set(id, record);
   }
 

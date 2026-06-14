@@ -91,10 +91,8 @@ function tolerantDiagnostics(
 }
 
 function isReaderCompatiblePatchRecord(record: TrailRecordLike): boolean {
-  return (
-    readString(record, "schema_version")?.startsWith("0.1.") === true &&
-    readString(record, "schema_version") !== "0.1.0"
-  );
+  const schemaVersion = readString(record, "schema_version");
+  return schemaVersion !== "0.1.0" && /^0\.1\.\d+$/.test(schemaVersion ?? "");
 }
 
 function readerTolerantUnknownPayloadWarnings(

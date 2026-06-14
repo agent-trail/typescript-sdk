@@ -24,6 +24,7 @@ export const segmentChainBreakWarning = {
 } as const;
 
 export function jsonl(records: unknown[]): string {
+  if (records.length === 0) return "";
   return `${records.map((record) => JSON.stringify(record)).join("\n")}\n`;
 }
 

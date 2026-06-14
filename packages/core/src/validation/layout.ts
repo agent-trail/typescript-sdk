@@ -6,6 +6,8 @@ import type {
 } from "../index.js";
 import { diagnostic, readString } from "../shared.js";
 
+const readerCompatiblePatchVersionPattern = /^0\.1\.\d+$/;
+
 export function layoutDiagnostics(trail: ParsedTrail, mode: CoreValidationMode): TrailDiagnostic[] {
   const first = trail.records[0];
   if (first === undefined) {
@@ -36,7 +38,8 @@ function firstRecordDiagnostics(
     first.record.type === "session" &&
     readString(first.record, "schema_version") !== undefined &&
     readString(first.record, "schema_version") !== "0.1.0" &&
-    (mode === "strict" || readString(first.record, "schema_version")?.startsWith("0.1.") !== true)
+    (mode === "strict" ||
+      !readerCompatiblePatchVersionPattern.test(readString(first.record, "schema_version") ?? ""))
   ) {
     diagnostics.push(diagnostic(first.line, "", "error", "missing_header"));
   }

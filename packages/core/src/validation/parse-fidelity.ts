@@ -18,18 +18,26 @@ export function parseFidelityDiagnostics(group: SessionGroup): TrailDiagnostic[]
       ? readString(terminationReason.payload, "reason")
       : undefined;
   const fidelity = group.header.record.parse_fidelity;
-  if (
-    fidelity.quarantined_count !== quarantinedCount ||
-    fidelity.termination_reason !== expectedReason
-  ) {
-    return [
+  const diagnostics: TrailDiagnostic[] = [];
+  if (fidelity.quarantined_count !== quarantinedCount) {
+    diagnostics.push(
       diagnostic(
         group.header.line,
         "/parse_fidelity/quarantined_count",
         "error",
         "parse_fidelity_drift",
       ),
-    ];
+    );
   }
-  return [];
+  if (fidelity.termination_reason !== expectedReason) {
+    diagnostics.push(
+      diagnostic(
+        group.header.line,
+        "/parse_fidelity/termination_reason",
+        "error",
+        "parse_fidelity_drift",
+      ),
+    );
+  }
+  return diagnostics;
 }

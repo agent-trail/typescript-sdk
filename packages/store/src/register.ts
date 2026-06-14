@@ -2,13 +2,13 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import { dirname, resolve as resolvePath } from "node:path";
 import { gunzipSync } from "node:zlib";
+import { type CatalogDb, initializeCatalog, upsertTrailObject } from "@agent-trail/catalog";
 import {
   computeContentHashes,
   type ParsedTrail,
   serializeTrailJsonl,
   type TrailDiagnostic,
 } from "@agent-trail/core";
-import { type IndexEntry, upsertIndexEntry } from "./index-file.js";
 import {
   type FinalizedObjectIndexRow,
   writerStrictObjectIndexPolicy,
@@ -36,10 +36,15 @@ export type RegisterResult = {
 export type RegisterOptions = {
   storeRoot?: string;
   /**
-   * Provenance recorded in the index `source_path` field. Default is the
+   * SQLite catalog driver. When provided, successful registrations upsert
+   * trail object metadata into the catalog. Omit it to write object bytes only.
+   */
+  catalogDb?: CatalogDb;
+  /**
+   * Provenance recorded in the catalog `source_path` field. Default is the
    * absolute path of `filePath`. Callers that hand `registerTrail` a
    * transient artifact (e.g. a downloaded payload staged in a tmp dir
-   * that will be deleted) should pass `null` so the index does not
+   * that will be deleted) should pass `null` so the catalog does not
    * point at a guaranteed-stale path.
    */
   sourcePath?: string | null;
@@ -92,6 +97,9 @@ export async function registerTrail(
   const canonical = serializeTrailJsonl(trail);
   const sourcePath = opts.sourcePath === undefined ? resolvePath(filePath) : opts.sourcePath;
   const registeredAt = new Date().toISOString();
+  if (opts.catalogDb !== undefined) {
+    await initializeCatalog(opts.catalogDb);
+  }
 
   // The "primary" content hash returned in RegisterResult is the file-level
   // identity. Envelope hash when present (spec §7.4 file-level hash); else
@@ -109,7 +117,7 @@ export async function registerTrail(
   const primaryTarget = computeObjectPath(storeRoot, indexPolicy.primaryHash);
   let status: RegisterStatus = "already_present";
 
-  // Per-session index rows for every finalized group. Pending groups are
+  // Per-session object rows for every finalized group. Pending groups are
   // skipped silently; a subsequent register call on the (now-finalized) file
   // picks them up.
   for (const row of indexPolicy.rows) {
@@ -121,13 +129,16 @@ export async function registerTrail(
       await atomicWriteFile(target, bytes);
       if (target === primaryTarget) status = "finalized";
     }
-    const entry: IndexEntry = {
-      registered_at: registeredAt,
-      source_path: sourcePath,
-      session_uid: row.session_uid,
-      kind: row.kind,
-    };
-    await upsertIndexEntry(storeRoot, row.contentHash, entry);
+    if (opts.catalogDb !== undefined) {
+      await upsertTrailObject(opts.catalogDb, {
+        content_hash: row.contentHash,
+        kind: row.kind,
+        object_path: target,
+        source_path: sourcePath,
+        session_uid: row.session_uid,
+        registered_at: registeredAt,
+      });
+    }
   }
 
   return {

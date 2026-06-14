@@ -1,21 +1,51 @@
+import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { CatalogDb } from "@agent-trail/catalog";
 import { parseTrailJsonl, stampContentHashes } from "@agent-trail/core";
 import { reconcileIncomingSegment, registerTrail } from "../src/index.ts";
 
 let storeRoot: string;
 let scratch: string;
+let rawDb: Database;
+let catalogDb: CatalogDb;
+
+class BunCatalogDb implements CatalogDb {
+  constructor(private readonly db: Database) {}
+
+  exec(sql: string, params: readonly (string | number | null | Uint8Array)[] = []): void {
+    if (params.length === 0) {
+      this.db.exec(sql);
+      return;
+    }
+    this.db.query(sql).run(...params);
+  }
+
+  get<T>(
+    sql: string,
+    params: readonly (string | number | null | Uint8Array)[] = [],
+  ): T | undefined {
+    return this.db.query(sql).get(...params) as T | undefined;
+  }
+
+  all<T>(sql: string, params: readonly (string | number | null | Uint8Array)[] = []): T[] {
+    return this.db.query(sql).all(...params) as T[];
+  }
+}
 
 beforeEach(() => {
   storeRoot = mkdtempSync(join(tmpdir(), "trail-store-reconcile-"));
   scratch = mkdtempSync(join(tmpdir(), "trail-store-input-"));
+  rawDb = new Database(":memory:");
+  catalogDb = new BunCatalogDb(rawDb);
 });
 
 afterEach(() => {
+  rawDb.close();
   rmSync(storeRoot, { recursive: true, force: true });
   rmSync(scratch, { recursive: true, force: true });
 });
@@ -79,11 +109,11 @@ test("reconcileIncomingSegment merges matching prior segments", async () => {
   ]);
   const firstPath = join(scratch, "first.trail.jsonl");
   await writeFile(firstPath, first.text, "utf8");
-  await registerTrail(firstPath, { storeRoot });
+  await registerTrail(firstPath, { storeRoot, catalogDb });
 
   const incoming = incomingSegmentJsonl(headerId, sessionUid, first.hash, "two");
 
-  const result = await reconcileIncomingSegment(storeRoot, incoming);
+  const result = await reconcileIncomingSegment(storeRoot, incoming, catalogDb);
 
   expect(result.kind).toBe("merged");
   if (result.kind === "merged") {
@@ -142,7 +172,7 @@ test("reconcileIncomingSegment merges a prior segment stored in a multi-session 
   );
   const firstPath = join(scratch, "multi.trail.jsonl");
   await writeFile(firstPath, first.jsonl, "utf8");
-  await registerTrail(firstPath, { storeRoot });
+  await registerTrail(firstPath, { storeRoot, catalogDb });
 
   const incoming = incomingSegmentJsonl(
     headerId,
@@ -151,7 +181,7 @@ test("reconcileIncomingSegment merges a prior segment stored in a multi-session 
     "target incoming",
   );
 
-  const result = await reconcileIncomingSegment(storeRoot, incoming);
+  const result = await reconcileIncomingSegment(storeRoot, incoming, catalogDb);
 
   expect(result.kind).toBe("merged");
   if (result.kind === "merged") {

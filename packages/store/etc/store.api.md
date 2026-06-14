@@ -5,58 +5,33 @@
 ```ts
 
 // @public
-export function findEntriesBySessionUid(storeRoot: string, sessionUid: string): Promise<Array<{
-    contentHash: string;
-    entry: IndexEntry;
-}>>;
-
-// @public (undocumented)
-export class IndexCorruptError extends Error {
-    constructor(path: string, cause: unknown);
-    // (undocumented)
-    readonly path: string;
-}
-
-// @public (undocumented)
-export type IndexEntry = {
-    registered_at: string;
-    source_path: string | null;
-    session_uid?: string | null;
-    kind?: IndexEntryKind;
+export type CatalogDb = {
+    exec(sql: string, params?: CatalogParams): void | Promise<void>;
+    get<T = unknown>(sql: string, params?: CatalogParams): T | undefined | Promise<T | undefined>;
+    all<T = unknown>(sql: string, params?: CatalogParams): T[] | Promise<T[]>;
+    transaction?<T>(fn: () => T): T;
 };
 
 // @public (undocumented)
-export type IndexEntryKind = "session" | "trail";
+export type CatalogParams = readonly CatalogValue[];
 
 // @public (undocumented)
-export type IndexFile = {
-    version: 1;
-    entries: Record<string, IndexEntry>;
-};
-
-// @public (undocumented)
-export class IndexVersionError extends Error {
-    constructor(foundVersion: unknown);
-    // (undocumented)
-    readonly foundVersion: unknown;
-}
+export type CatalogValue = string | number | null | Uint8Array;
 
 // @public (undocumented)
 export function objectPath(storeRoot: string, contentHash: string): string;
 
-// @public
-export function readIndex(storeRoot: string): Promise<IndexFile>;
+// @public (undocumented)
+export function rebuildObjectCatalog(opts: RebuildObjectCatalogOptions): Promise<RebuildObjectCatalogResult>;
 
 // @public (undocumented)
-export function rebuildIndex(opts?: RebuildIndexOptions): Promise<RebuildIndexResult>;
-
-// @public (undocumented)
-export type RebuildIndexOptions = {
+export type RebuildObjectCatalogOptions = {
     storeRoot?: string;
+    catalogDb: CatalogDb;
 };
 
 // @public (undocumented)
-export type RebuildIndexResult = {
+export type RebuildObjectCatalogResult = {
     entries: number;
 };
 
@@ -73,11 +48,12 @@ export type ReconcileIncomingResult = {
 };
 
 // @public
-export function reconcileIncomingSegment(storeRoot: string, incomingJsonl: string): Promise<ReconcileIncomingResult>;
+export function reconcileIncomingSegment(storeRoot: string, incomingJsonl: string, catalogDb: CatalogDb): Promise<ReconcileIncomingResult>;
 
 // @public (undocumented)
 export type RegisterOptions = {
     storeRoot?: string;
+    catalogDb?: CatalogDb;
     sourcePath?: string | null;
 };
 

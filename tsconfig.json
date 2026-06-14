@@ -17,6 +17,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "paths": {
+      "@agent-trail/catalog": ["./packages/catalog/src/index.ts"],
       "@agent-trail/core": ["./packages/core/src/index.ts"],
       "@agent-trail/redact": ["./packages/redact/src/index.ts"],
       "@agent-trail/schema": ["./packages/schema/schema/v0.1.0.json"],

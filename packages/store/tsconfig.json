@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "paths": {
+      "@agent-trail/catalog": ["../catalog/src/index.ts"],
       "@agent-trail/core": ["../core/src/index.ts"],
       "@agent-trail/types": ["../types/src/index.ts"]
     }

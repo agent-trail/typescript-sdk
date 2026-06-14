@@ -1,12 +1,15 @@
 import { readFile } from "node:fs/promises";
 import {
+  type CatalogDb,
+  findTrailObjectsBySessionUid,
+  initializeCatalog,
+} from "@agent-trail/catalog";
+import {
   type ParsedTrail,
   parseTrailJsonl,
   reconcileSegments,
   serializeTrailJsonl,
 } from "@agent-trail/core";
-import { findEntriesBySessionUid } from "./index-file.js";
-import { objectPath } from "./paths.js";
 
 /**
  * Outcome of attempting to reconcile an incoming segment trail against the
@@ -20,7 +23,7 @@ import { objectPath } from "./paths.js";
  *     be matched against priors. Intentional, not an error.
  *   - `"invalid_incoming"`: incoming bytes failed to parse. The store was
  *     never accessed.
- *   - `"store_error"`: the store index could not be queried.
+ *   - `"store_error"`: the catalog could not be queried.
  *     Reconciliation could not run.
  *   - `"corrupt_prior"`: a matching prior was found but no usable prior
  *     records could be loaded (all reads/parses failed).
@@ -58,7 +61,9 @@ export type ReconcileIncomingResult =
 export async function reconcileIncomingSegment(
   storeRoot: string,
   incomingJsonl: string,
+  catalogDb: CatalogDb,
 ): Promise<ReconcileIncomingResult> {
+  void storeRoot;
   const incomingTrail = await parseTrailJsonl(incomingJsonl);
   if (hasParseError(incomingTrail)) {
     return { kind: "passthrough", reason: "invalid_incoming" };
@@ -66,9 +71,10 @@ export async function reconcileIncomingSegment(
   const incomingUid = headerSessionUid(incomingTrail);
   if (incomingUid === null) return { kind: "passthrough", reason: "no_session_uid" };
 
-  let matches: Awaited<ReturnType<typeof findEntriesBySessionUid>>;
+  let matches: Awaited<ReturnType<typeof findTrailObjectsBySessionUid>>;
   try {
-    matches = await findEntriesBySessionUid(storeRoot, incomingUid);
+    await initializeCatalog(catalogDb);
+    matches = await findTrailObjectsBySessionUid(catalogDb, incomingUid);
   } catch {
     return { kind: "passthrough", reason: "store_error" };
   }
@@ -76,9 +82,8 @@ export async function reconcileIncomingSegment(
 
   const inputs = [incomingTrail];
   for (const match of matches) {
-    const objPath = objectPath(storeRoot, match.contentHash);
     try {
-      const raw = await readFile(objPath, "utf8");
+      const raw = await readFile(match.object_path, "utf8");
       const trail = await parseTrailJsonl(raw);
       if (!hasParseError(trail)) {
         inputs.push(...trailsForSessionUid(trail, incomingUid));

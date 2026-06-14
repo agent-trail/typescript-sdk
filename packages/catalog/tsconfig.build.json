@@ -5,11 +5,6 @@
     "declarationMap": false,
     "noEmit": false,
     "outDir": "dist",
-    "paths": {
-      "@agent-trail/catalog": ["../catalog/dist/index.d.ts"],
-      "@agent-trail/core": ["../core/dist/index.d.ts"],
-      "@agent-trail/types": ["../types/dist/index.d.ts"]
-    },
     "rootDir": "src"
   }
 }

@@ -1,12 +1,18 @@
+import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
+import {
+  type CatalogDb,
+  findTrailObjectsBySessionUid,
+  initializeCatalog,
+} from "@agent-trail/catalog";
 import { parseTrailJsonl, serializeTrailJsonl, stampContentHashes } from "@agent-trail/core";
-import { objectPath, readIndex, rebuildIndex, registerTrail } from "../src/index.ts";
+import { objectPath, rebuildObjectCatalog, registerTrail } from "../src/index.ts";
 
 const fixtures = new URL("../../schema/fixtures/validation/", import.meta.url);
 const fixturePath = (path: string): string => fileURLToPath(new URL(path, fixtures));
@@ -14,12 +20,40 @@ const finalizedFixture = fixturePath("valid/minimal-with-content-hash.trail.json
 const finalizedHash = "8dbf946e5d4ccd2a4ff2681d2c2fe2614f0769bdfeafe5e4f242db14872db5f7";
 
 let storeRoot: string;
+let rawDb: Database;
+let catalogDb: CatalogDb;
+
+class BunCatalogDb implements CatalogDb {
+  constructor(private readonly db: Database) {}
+
+  exec(sql: string, params: readonly (string | number | null | Uint8Array)[] = []): void {
+    if (params.length === 0) {
+      this.db.exec(sql);
+      return;
+    }
+    this.db.query(sql).run(...params);
+  }
+
+  get<T>(
+    sql: string,
+    params: readonly (string | number | null | Uint8Array)[] = [],
+  ): T | undefined {
+    return this.db.query(sql).get(...params) as T | undefined;
+  }
+
+  all<T>(sql: string, params: readonly (string | number | null | Uint8Array)[] = []): T[] {
+    return this.db.query(sql).all(...params) as T[];
+  }
+}
 
 beforeEach(() => {
   storeRoot = mkdtempSync(join(tmpdir(), "trail-store-"));
+  rawDb = new Database(":memory:");
+  catalogDb = new BunCatalogDb(rawDb);
 });
 
 afterEach(() => {
+  rawDb.close();
   rmSync(storeRoot, { recursive: true, force: true });
 });
 
@@ -31,8 +65,8 @@ async function stampedJsonl(records: unknown[]): Promise<string> {
   return stampContentHashes(await parseTrailJsonl(jsonl(records))).jsonl;
 }
 
-test("registerTrail writes canonical object bytes and an index row", async () => {
-  const result = await registerTrail(finalizedFixture, { storeRoot });
+test("registerTrail writes canonical object bytes and a catalog object row", async () => {
+  const result = await registerTrail(finalizedFixture, { storeRoot, catalogDb });
 
   expect(result).toMatchObject({
     status: "finalized",
@@ -46,8 +80,10 @@ test("registerTrail writes canonical object bytes and an index row", async () =>
   );
   expect(stored).toBe(expected);
 
-  const index = await readIndex(storeRoot);
-  expect(index.entries[finalizedHash]).toMatchObject({
+  const objects = await findTrailObjectsBySessionUid(catalogDb, "01HZZZZZZZZZZZZZZZZZZZZZ01");
+  expect(objects[0]).toMatchObject({
+    content_hash: finalizedHash,
+    object_path: objectPath(storeRoot, finalizedHash),
     source_path: finalizedFixture,
     session_uid: "01HZZZZZZZZZZZZZZZZZZZZZ01",
     kind: "session",
@@ -122,12 +158,11 @@ test("registerTrail keeps session-hash object bytes independent of sibling sessi
   await writeFile(firstPath, first, "utf8");
   await writeFile(secondPath, second, "utf8");
 
-  await registerTrail(firstPath, { storeRoot });
-  const commonHash = Object.entries((await readIndex(storeRoot)).entries).find(
-    ([, entry]) => entry.session_uid === commonSession.session_uid,
-  )?.[0] as string;
+  await registerTrail(firstPath, { storeRoot, catalogDb });
+  const commonHash = (await findTrailObjectsBySessionUid(catalogDb, commonSession.session_uid))[0]
+    ?.content_hash as string;
   const before = await readFile(objectPath(storeRoot, commonHash), "utf8");
-  await registerTrail(secondPath, { storeRoot });
+  await registerTrail(secondPath, { storeRoot, catalogDb });
 
   expect(await readFile(objectPath(storeRoot, commonHash), "utf8")).toBe(before);
   expect(before).toContain("same");
@@ -149,6 +184,7 @@ test("registerTrail rejects gzipped trails over the decompressed size cap", asyn
 test("registerTrail rejects pending and invalid trails without writing objects", async () => {
   const pending = await registerTrail(fixturePath("valid/streaming-open.trail.jsonl"), {
     storeRoot,
+    catalogDb,
   });
   expect(pending.status).toBe("skipped_pending");
 
@@ -156,39 +192,27 @@ test("registerTrail rejects pending and invalid trails without writing objects",
     fixturePath("hash-mismatch/content-hash-mismatch.trail.jsonl"),
     {
       storeRoot,
+      catalogDb,
     },
   );
   expect(invalid.status).toBe("invalid");
   expect(
     invalid.diagnostics.some((diagnostic) => diagnostic.code === "content_hash_mismatch"),
   ).toBe(true);
+  await initializeCatalog(catalogDb);
+  expect(await findTrailObjectsBySessionUid(catalogDb, "01HZZZZZZZZZZZZZZZZZZZZZ01")).toEqual([]);
 });
 
-test("readIndex rejects invalid content hash keys", async () => {
-  await mkdir(join(storeRoot, "index"), { recursive: true });
-  await writeFile(
-    join(storeRoot, "index", "objects.json"),
-    '{"version":1,"entries":{"../../../tmp/escape":{"registered_at":"2026-05-17T14:00:00.000Z","source_path":null}}}\n',
-  );
-
-  await expect(readIndex(storeRoot)).rejects.toThrow("invalid content_hash index key");
-});
-
-test("readIndex rejects null index files as corrupt", async () => {
-  await mkdir(join(storeRoot, "index"), { recursive: true });
-  await writeFile(join(storeRoot, "index", "objects.json"), "null\n");
-
-  await expect(readIndex(storeRoot)).rejects.toThrow("index must be a plain object");
-});
-
-test("rebuildIndex regenerates index rows from stored objects", async () => {
+test("rebuildObjectCatalog regenerates object rows from stored objects", async () => {
   await registerTrail(finalizedFixture, { storeRoot });
-  await writeFile(join(storeRoot, "index", "objects.json"), '{"version":1,"entries":{}}\n');
 
-  const result = await rebuildIndex({ storeRoot });
+  const result = await rebuildObjectCatalog({ storeRoot, catalogDb });
 
   expect(result.entries).toBe(1);
-  expect((await readIndex(storeRoot)).entries[finalizedHash]).toMatchObject({
+  expect(
+    (await findTrailObjectsBySessionUid(catalogDb, "01HZZZZZZZZZZZZZZZZZZZZZ01"))[0],
+  ).toMatchObject({
+    content_hash: finalizedHash,
     source_path: null,
     kind: "session",
   });

@@ -35,17 +35,3 @@ export function objectsDir(storeRoot: string): string {
 export function objectPath(storeRoot: string, contentHash: string): string {
   return join(objectsDir(storeRoot), `${contentHash}.trail.jsonl`);
 }
-
-/**
- * @internal
- */
-export function indexDir(storeRoot: string): string {
-  return join(storeRoot, "index");
-}
-
-/**
- * @internal
- */
-export function indexFilePath(storeRoot: string): string {
-  return join(indexDir(storeRoot), "objects.json");
-}

@@ -1,17 +1,17 @@
+import type { TrailObjectKind } from "@agent-trail/catalog";
 import {
   computeContentHashes,
   type ParsedTrail,
   type TrailDiagnostic,
   validateTrailJsonl,
 } from "@agent-trail/core";
-import type { IndexEntryKind } from "./index-file.js";
 
 /**
  * @internal
  */
 export type FinalizedObjectIndexRow = {
   contentHash: string;
-  kind: IndexEntryKind;
+  kind: TrailObjectKind;
   session_uid: string | null;
 };
 

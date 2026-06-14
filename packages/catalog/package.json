@@ -1,5 +1,5 @@
 {
-  "name": "@agent-trail/store",
+  "name": "@agent-trail/catalog",
   "version": "0.1.0",
   "license": "MIT",
   "type": "module",
@@ -17,9 +17,5 @@
       "default": "./dist/index.js"
     },
     "./package.json": "./package.json"
-  },
-  "dependencies": {
-    "@agent-trail/catalog": "workspace:*",
-    "@agent-trail/core": "workspace:*"
   }
 }

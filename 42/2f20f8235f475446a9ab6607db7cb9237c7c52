@@ -1,0 +1,61 @@
+packages/redact/src/user-query.ts
+  s_41a01eab7e41e9::t_4ae919be9e0db1 79-90,134,138-142,144-146,150-178
+  s_41a01eab7e41e9::t_725f7a230403eb 132-133,135-136
+  s_41a01eab7e41e9::t_80754e6a1e3cc3 74-78
+  s_41a01eab7e41e9::t_802a3eb1967a27 199,219,237,254,273,295-297,308,328,346,368-371
+packages/store/src/register.ts
+  s_41a01eab7e41e9::t_802a3eb1967a27 200-206
+  s_41a01eab7e41e9::t_f9722383dc96c8 5-10,12-15,75-79,98,105-110,129-144
+packages/redact/src/redactor.ts
+  s_41a01eab7e41e9::t_802a3eb1967a27 96,108
+packages/store/test/register.test.ts
+  s_41a01eab7e41e9::t_61afbf95a93ae8 3,137-148,167-174
+  s_41a01eab7e41e9::t_9b3bf053a3cf7e 8,26-33,67-134
+packages/store/src/reconcile-incoming.ts
+  s_41a01eab7e41e9::t_802a3eb1967a27 79-81,112-122
+packages/redact/test/redact.test.ts
+  s_41a01eab7e41e9::t_71b53ab3b12ed4 171-228
+  s_41a01eab7e41e9::t_78afecc97b59d5 125-142
+  s_41a01eab7e41e9::t_642b80ae05e1a7 107-124
+  s_41a01eab7e41e9::t_1cc898a64f6ceb 236-243
+  s_41a01eab7e41e9::t_725f7a230403eb 88-106,143-169
+  s_41a01eab7e41e9::t_61afbf95a93ae8 54-87
+  s_41a01eab7e41e9::t_e4cb981208805a 170,229-235
+packages/redact/src/index.ts
+  s_41a01eab7e41e9::t_6396402414a487 9,11
+packages/redact/src/visits.ts
+  s_41a01eab7e41e9::t_c135c05bc83dea 150-156,160,162-163,171-172
+  s_41a01eab7e41e9::t_9bcfa637175e21 173-184
+  s_41a01eab7e41e9::t_dfa0eefc94aef1 185
+  s_41a01eab7e41e9::t_725f7a230403eb 274
+  s_41a01eab7e41e9::t_38db2bf9e46226 22
+  s_41a01eab7e41e9::t_56e994e63d7e99 6,21,39,161,164-170
+packages/redact/src/types.ts
+  s_41a01eab7e41e9::t_1af80d3d008003 47
+  s_41a01eab7e41e9::t_6396402414a487 45-46,48-59
+packages/redact/etc/redact.api.md
+  s_41a01eab7e41e9::t_95fba7ea946aad 29-45
+packages/store/src/index-file.ts
+  s_41a01eab7e41e9::t_802a3eb1967a27 10,105-111
+packages/store/test/reconcile-incoming.test.ts
+  s_41a01eab7e41e9::t_5dacd80a8b39ce 35-59,84,147-152
+  s_41a01eab7e41e9::t_40714eda58a732 96-146,153-164
+packages/store/src/index.ts
+  s_41a01eab7e41e9::t_61afbf95a93ae8 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "422f20f8235f475446a9ab6607db7cb9237c7c52",
+  "prompts": {},
+  "sessions": {
+    "s_41a01eab7e41e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec547-b5c0-7200-b226-4f1ef52334a0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

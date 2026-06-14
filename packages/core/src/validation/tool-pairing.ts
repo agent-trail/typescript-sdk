@@ -12,6 +12,9 @@ import {
 type ToolPairingContext = {
   calls: ParsedTrailRecord[];
   results: ParsedTrailRecord[];
+  callsById: Map<string, ParsedTrailRecord[]>;
+  callsBySemanticId: Map<string, ParsedTrailRecord[]>;
+  callsByParentId: Map<string | undefined, ParsedTrailRecord[]>;
   matchedResultsByCall: Map<string, ParsedTrailRecord[]>;
   explicitResults: Set<ParsedTrailRecord>;
 };
@@ -26,23 +29,39 @@ export function toolPairingDiagnostics(group: SessionGroup): TrailDiagnostic[] {
 }
 
 function buildToolPairingContext(group: SessionGroup): ToolPairingContext {
+  const calls = group.events.filter((event) => event.record.type === "tool_call");
   const context = {
-    calls: group.events.filter((event) => event.record.type === "tool_call"),
+    calls,
     results: group.events.filter((event) => event.record.type === "tool_result"),
+    callsById: new Map<string, ParsedTrailRecord[]>(),
+    callsBySemanticId: new Map<string, ParsedTrailRecord[]>(),
+    callsByParentId: new Map<string | undefined, ParsedTrailRecord[]>(),
     matchedResultsByCall: new Map<string, ParsedTrailRecord[]>(),
     explicitResults: new Set<ParsedTrailRecord>(),
   };
+  for (const call of calls) indexCall(context, call);
   matchExplicitResults(context);
   return context;
+}
+
+function indexCall(context: ToolPairingContext, call: ParsedTrailRecord): void {
+  const id = readString(call.record, "id");
+  if (id !== undefined) addToIndex(context.callsById, id, call);
+  const semanticId = semanticCallId(call.record);
+  if (semanticId !== undefined) addToIndex(context.callsBySemanticId, semanticId, call);
+  addToIndex(context.callsByParentId, readString(call.record, "parent_id"), call);
+}
+
+function addToIndex<K>(index: Map<K, ParsedTrailRecord[]>, key: K, call: ParsedTrailRecord): void {
+  const calls = index.get(key) ?? [];
+  calls.push(call);
+  index.set(key, calls);
 }
 
 function matchExplicitResults(context: ToolPairingContext): void {
   for (const result of context.results) {
     const forId = payloadString(result.record, "for_id");
-    const call =
-      forId === undefined
-        ? undefined
-        : context.calls.find((item) => readString(item.record, "id") === forId);
+    const call = forId === undefined ? undefined : context.callsById.get(forId)?.[0];
     if (forId !== undefined && call !== undefined) {
       const matches = context.matchedResultsByCall.get(forId) ?? [];
       matches.push(result);
@@ -58,23 +77,30 @@ function semanticConflictDiagnostics(
 ): TrailDiagnostic[] {
   const diagnostics: TrailDiagnostic[] = [];
   for (const [callId, matches] of context.matchedResultsByCall) {
-    const call = context.calls.find((event) => readString(event.record, "id") === callId);
-    if (call !== undefined) {
-      const callTool = payloadString(call.record, "tool");
-      const resultTool = resultToolName(matches[0]?.record);
-      if (callTool !== undefined && resultTool !== undefined && callTool !== resultTool) {
-        diagnostics.push(
-          diagnostic(
-            matches[0]?.line ?? fallbackLine,
-            "/payload",
-            "warning",
-            "tool_result_semantic_conflict",
-          ),
-        );
-      }
-    }
+    const conflict = semanticConflictDiagnostic(context, callId, matches, fallbackLine);
+    if (conflict !== undefined) diagnostics.push(conflict);
   }
   return diagnostics;
+}
+
+function semanticConflictDiagnostic(
+  context: ToolPairingContext,
+  callId: string,
+  matches: ParsedTrailRecord[],
+  fallbackLine: number,
+): TrailDiagnostic | undefined {
+  const call = context.callsById.get(callId)?.[0];
+  const callTool = call === undefined ? undefined : payloadString(call.record, "tool");
+  const resultTool = resultToolName(matches[0]?.record);
+  if (callTool === undefined || resultTool === undefined || callTool === resultTool) {
+    return undefined;
+  }
+  return diagnostic(
+    matches[0]?.line ?? fallbackLine,
+    "/payload",
+    "warning",
+    "tool_result_semantic_conflict",
+  );
 }
 
 function matchImplicitResults(context: ToolPairingContext, diagnostics: TrailDiagnostic[]): void {
@@ -90,11 +116,7 @@ function matchSemanticResult(result: ParsedTrailRecord, context: ToolPairingCont
   const semanticCall =
     resultCallId === undefined
       ? undefined
-      : context.calls.find(
-          (call) =>
-            semanticCallId(call.record) === resultCallId &&
-            !isCallMatched(call, context.matchedResultsByCall),
-        );
+      : firstUnmatched(context.callsBySemanticId.get(resultCallId), context);
   return matchCall(result, semanticCall, context.matchedResultsByCall);
 }
 
@@ -103,12 +125,15 @@ function matchParentResult(result: ParsedTrailRecord, context: ToolPairingContex
   const parentCall =
     resultParentId === undefined
       ? undefined
-      : context.calls.find(
-          (call) =>
-            readString(call.record, "id") === resultParentId &&
-            !isCallMatched(call, context.matchedResultsByCall),
-        );
+      : firstUnmatched(context.callsById.get(resultParentId), context);
   return matchCall(result, parentCall, context.matchedResultsByCall);
+}
+
+function firstUnmatched(
+  calls: ParsedTrailRecord[] | undefined,
+  context: ToolPairingContext,
+): ParsedTrailRecord | undefined {
+  return calls?.find((call) => !isCallMatched(call, context.matchedResultsByCall));
 }
 
 function matchSequentialResult(
@@ -117,11 +142,8 @@ function matchSequentialResult(
   diagnostics: TrailDiagnostic[],
 ): void {
   const resultParentId = readString(result.record, "parent_id");
-  const priorCalls = context.calls.filter(
-    (call) =>
-      call.line < result.line &&
-      !isCallMatched(call, context.matchedResultsByCall) &&
-      readString(call.record, "parent_id") === resultParentId,
+  const priorCalls = (context.callsByParentId.get(resultParentId) ?? []).filter(
+    (call) => call.line < result.line && !isCallMatched(call, context.matchedResultsByCall),
   );
   if (priorCalls.length > 1) {
     diagnostics.push(

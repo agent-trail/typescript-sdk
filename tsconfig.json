@@ -29,6 +29,7 @@
       "@agent-trail/redact": ["./packages/redact/src/index.ts"],
       "@agent-trail/render-model": ["./packages/render-model/src/index.ts"],
       "@agent-trail/schema": ["./packages/schema/schema/v0.1.0.json"],
+      "@agent-trail/sessions": ["./packages/sessions/src/index.ts"],
       "@agent-trail/source-schemas/*": ["./packages/source-schemas/*"],
       "@agent-trail/store": ["./packages/store/src/index.ts"],
       "@agent-trail/types": ["./packages/types/src/index.ts"]

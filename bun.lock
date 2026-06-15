@@ -68,6 +68,17 @@
       "name": "@agent-trail/schema",
       "version": "0.1.0",
     },
+    "packages/sessions": {
+      "name": "@agent-trail/sessions",
+      "version": "0.1.0",
+      "dependencies": {
+        "@agent-trail/adapters": "workspace:*",
+        "@agent-trail/catalog": "workspace:*",
+        "@agent-trail/core": "workspace:*",
+        "@agent-trail/redact": "workspace:*",
+        "@agent-trail/store": "workspace:*",
+      },
+    },
     "packages/source-schemas": {
       "name": "@agent-trail/source-schemas",
       "version": "0.1.0",
@@ -99,6 +110,8 @@
     "@agent-trail/render-model": ["@agent-trail/render-model@workspace:packages/render-model"],
 
     "@agent-trail/schema": ["@agent-trail/schema@workspace:packages/schema"],
+
+    "@agent-trail/sessions": ["@agent-trail/sessions@workspace:packages/sessions"],
 
     "@agent-trail/source-schemas": ["@agent-trail/source-schemas@workspace:packages/source-schemas"],
 

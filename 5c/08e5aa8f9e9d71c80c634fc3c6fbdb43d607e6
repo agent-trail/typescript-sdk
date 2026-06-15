@@ -1,0 +1,19 @@
+packages/adapters/src/codex/index.test.ts
+  s_41a01eab7e41e9::t_e8791a3a39b705 365-414
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "5c08e5aa8f9e9d71c80c634fc3c6fbdb43d607e6",
+  "prompts": {},
+  "sessions": {
+    "s_41a01eab7e41e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec547-b5c0-7200-b226-4f1ef52334a0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

@@ -6,7 +6,7 @@ export const baseHeader = {
   id: "01HSESS0000000000000000001",
   session_uid: "01HZZZZZZZZZZZZZZZZZZZZZ01",
   ts: "2026-05-17T14:00:00.000Z",
-  agent: { name: "codex-cli" },
+  agent: { name: "codex" },
 } as const;
 
 export const baseEnvelope = {

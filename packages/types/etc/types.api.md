@@ -118,6 +118,9 @@ export type AgentMessageUsage2 = ((({
 };
 
 // @public (undocumented)
+export type AgentName = NonNullable<SourceMetadata["agent"]>;
+
+// @public (undocumented)
 export interface AgentThinking {
     // (undocumented)
     [k: string]: unknown | undefined;
@@ -330,7 +333,7 @@ type Header = {
         started_at?: string;
     };
     agent: {
-        name: ("claude-code" | "pi" | "openclaw" | "codex-cli" | "cursor" | "opencode" | "aider" | "amp" | "cline" | "crush" | "kimi-code" | "qwen-code" | "factory" | "vibe" | "copilot-cli" | "copilot-chat" | "chatgpt" | "clawdbot") | string;
+        name: ("claude-code" | "pi" | "openclaw" | "codex" | "cursor" | "opencode" | "aider" | "amp" | "cline" | "crush" | "kimi-code" | "qwen-code" | "factory" | "vibe" | "copilot-cli" | "copilot-chat" | "chatgpt" | "clawdbot") | string;
         version?: string;
         model_default?: string;
     };
@@ -346,7 +349,7 @@ type Header = {
     };
     parse_fidelity?: ParseFidelity;
     source?: {
-        agent?: ("claude-code" | "pi" | "openclaw" | "codex-cli" | "cursor" | "opencode" | "aider" | "amp" | "cline" | "crush" | "kimi-code" | "qwen-code" | "factory" | "vibe" | "copilot-cli" | "copilot-chat" | "chatgpt" | "clawdbot") | string;
+        agent?: ("claude-code" | "pi" | "openclaw" | "codex" | "cursor" | "opencode" | "aider" | "amp" | "cline" | "crush" | "kimi-code" | "qwen-code" | "factory" | "vibe" | "copilot-cli" | "copilot-chat" | "chatgpt" | "clawdbot") | string;
         path?: string;
         format_version?: string;
     };
@@ -508,7 +511,7 @@ export type Sha256Hex = string;
 
 // @public
 export interface SourceMetadata {
-    agent?: ("claude-code" | "pi" | "openclaw" | "codex-cli" | "cursor" | "opencode" | "aider" | "amp" | "cline" | "crush" | "kimi-code" | "qwen-code" | "factory" | "vibe" | "copilot-cli" | "copilot-chat" | "chatgpt" | "clawdbot") | string;
+    agent?: ("claude-code" | "pi" | "openclaw" | "codex" | "cursor" | "opencode" | "aider" | "amp" | "cline" | "crush" | "kimi-code" | "qwen-code" | "factory" | "vibe" | "copilot-cli" | "copilot-chat" | "chatgpt" | "clawdbot") | string;
     original_type?: string;
     raw?: {
         [k: string]: unknown | undefined;
@@ -565,6 +568,9 @@ export interface TaskPlanItem {
     id: string;
     status: "pending" | "in_progress" | "completed" | "cancelled" | "blocked";
 }
+
+// @public (undocumented)
+export type TaskPlanStatus = TaskPlanItem["status"];
 
 // @public (undocumented)
 export interface TaskPlanUpdate {
@@ -830,6 +836,9 @@ export interface ToolCallWebSearchArgs {
 }
 
 // @public (undocumented)
+export type ToolKind = NonNullable<SemanticMetadata["tool_kind"]>;
+
+// @public (undocumented)
 export interface ToolResult {
     // (undocumented)
     [k: string]: unknown | undefined;
@@ -897,7 +906,7 @@ export interface TrailEnvelope {
     schema_version: "0.1.0";
     sessions?: {
         id: string;
-        agent: ("claude-code" | "pi" | "openclaw" | "codex-cli" | "cursor" | "opencode" | "aider" | "amp" | "cline" | "crush" | "kimi-code" | "qwen-code" | "factory" | "vibe" | "copilot-cli" | "copilot-chat" | "chatgpt" | "clawdbot") | string;
+        agent: ("claude-code" | "pi" | "openclaw" | "codex" | "cursor" | "opencode" | "aider" | "amp" | "cline" | "crush" | "kimi-code" | "qwen-code" | "factory" | "vibe" | "copilot-cli" | "copilot-chat" | "chatgpt" | "clawdbot") | string;
     }[];
     tags?: string[];
     ts: string;

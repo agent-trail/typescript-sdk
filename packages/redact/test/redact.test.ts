@@ -6,7 +6,7 @@ const header = {
   schema_version: "0.1.0",
   id: "01HSESS0000000000000000001",
   ts: "2026-05-17T14:00:00.000Z",
-  agent: { name: "codex-cli" },
+  agent: { name: "codex" },
 };
 
 function jsonl(records: unknown[]): string {

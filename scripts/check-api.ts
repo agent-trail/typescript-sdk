@@ -15,7 +15,8 @@ const API_EXTRACTOR_CONFIG = "api-extractor.json";
 
 function findExportTypes(exportsField: unknown): string | undefined {
   const exportsMap = asRecord(exportsField);
-  const rootExport = exportsMap?.["."] ?? exportsMap;
+  const rootExport = exportsMap?.["."];
+  if (rootExport === undefined) return undefined;
   return findNestedTypes(rootExport);
 }
 

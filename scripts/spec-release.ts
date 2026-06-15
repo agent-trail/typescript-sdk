@@ -8,7 +8,7 @@ const RELEASE_DOWNLOAD_URL = `https://github.com/agent-trail/spec/releases/downl
 export const SCHEMA_ASSET: SchemaAsset = {
   name: `schema-${RELEASE_TAG}.json`,
   url: `${RELEASE_DOWNLOAD_URL}/schema-${RELEASE_TAG}.json`,
-  sha256: "5bff387f55f0c35d7cd947eba17a94a8b8a5e4f38a729dd6b71478473ed45c97",
+  sha256: "ee7a4549bb23f85ccb25d416bfb3a37607d571250c2cf63b5fe54e3dec2e075c",
   targetPath: "schema/v0.1.0.json",
 };
 

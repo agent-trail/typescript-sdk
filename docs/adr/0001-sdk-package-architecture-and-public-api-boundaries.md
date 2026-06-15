@@ -52,8 +52,13 @@ Runtime and dependency policy:
 
 - SDK default exports support Node 20+ and Bun.
 - SDK default exports must not import Bun globals or `bun:*` modules.
+- `@agent-trail/adapters` is factory-first. Consumers create adapters through
+  explicit factory functions rather than importing singleton adapter instances.
 - Runtime-specific capabilities use injected interfaces. SQLite-backed source
   readers use injected drivers and are optional storage surfaces by default.
+- `@agent-trail/adapter-kit/bun-sqlite` is the explicit Bun-only convenience
+  subpath for the Bun SQLite driver. The `@agent-trail/adapter-kit` root export
+  remains free of `bun:*` imports.
 - When an optional storage driver is missing, health reports a warning and
   discovery skips that storage surface rather than crashing unrelated workflows.
 - If a future package declares an injected driver as integral to its default
@@ -71,6 +76,8 @@ Build and packaging policy:
   unless a documented public subpath is required.
 - Asset packages such as `schema` and `source-schemas` may expose documented
   JSON and versioned subpaths.
+- `@agent-trail/source-schemas` exposes schema and metadata JSON assets plus
+  generated JSON import declarations. It has no root runtime TypeScript export.
 - `src/**` paths are private implementation details.
 
 Public API discipline:
@@ -97,6 +104,12 @@ License policy:
   future MCP consumers need different dependency surfaces.
 - Keep adapters Bun-only. Rejected because `@agent-trail/adapters` is now an SDK
   package, not CLI implementation code.
+- Preserve singleton adapter exports. Rejected because factories make runtime
+  capabilities, environment overrides, and optional SQLite driver injection
+  explicit.
+- Preserve `codex-cli` as the emitted Codex adapter name. Rejected because the
+  SDK canonicalizes this source family as `codex`; old oracle fixtures are
+  intentionally restamped where adapter output is asserted.
 - Add an umbrella package. Rejected because leaf packages keep package
   boundaries reviewable and avoid broad accidental public API.
 - Export source `.ts` files. Rejected because published packages should expose

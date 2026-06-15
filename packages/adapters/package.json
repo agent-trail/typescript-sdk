@@ -1,0 +1,40 @@
+{
+  "name": "@agent-trail/adapters",
+  "version": "0.1.0",
+  "description": "Agent Trail source-agent adapter interfaces and parsers.",
+  "type": "module",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "tests/fixtures",
+    "package.json"
+  ],
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agent-trail/agent-trail.git",
+    "directory": "packages/adapters"
+  },
+  "bugs": {
+    "url": "https://github.com/agent-trail/agent-trail/issues"
+  },
+  "homepage": "https://github.com/agent-trail/agent-trail#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@agent-trail/adapter-kit": "workspace:*",
+    "@agent-trail/core": "workspace:*",
+    "@agent-trail/types": "workspace:*"
+  }
+}

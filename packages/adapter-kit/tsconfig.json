@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@agent-trail/core": ["../core/src/index.ts"],
+      "@agent-trail/source-schemas/*": ["../source-schemas/*"],
+      "@agent-trail/types": ["../types/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"]
+}

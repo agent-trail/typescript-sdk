@@ -19,7 +19,7 @@ import { indexExistingObjects, objectPath, registerTrail } from "../src/index.ts
 const fixtures = new URL("../../schema/fixtures/validation/", import.meta.url);
 const fixturePath = (path: string): string => fileURLToPath(new URL(path, fixtures));
 const finalizedFixture = fixturePath("valid/minimal-with-content-hash.trail.jsonl");
-const finalizedHash = "8dbf946e5d4ccd2a4ff2681d2c2fe2614f0769bdfeafe5e4f242db14872db5f7";
+const finalizedHash = "14cbd25ec40deb46bf77591870f33ad31ba6261bf6bfd91292cf8814ba9c789d";
 
 let storeRoot: string;
 let rawDb: Database;
@@ -86,7 +86,7 @@ storeTest("registerTrail caches session metadata for catalog list entries", asyn
         cwd: "/work/project",
         vcs: { type: "git", revision: "a1b2c3d4", branch: "main" },
         ts: "2026-05-17T14:00:00.000Z",
-        agent: { name: "codex-cli" },
+        agent: { name: "codex" },
       },
     ]),
     "utf8",
@@ -98,7 +98,7 @@ storeTest("registerTrail caches session metadata for catalog list entries", asyn
     expect.objectContaining({
       state: "registered",
       content_hash: result.contentHash,
-      agent_name: "codex-cli",
+      agent_name: "codex",
       name: "Header title",
       cwd: "/work/project",
       branch: "main",
@@ -122,7 +122,7 @@ storeTest("registerTrail caches effective metadata updates for catalog list entr
         cwd: "/work/project",
         vcs: { type: "git", revision: "a1b2c3d4", branch: "main" },
         ts: "2026-05-17T14:00:00.000Z",
-        agent: { name: "codex-cli" },
+        agent: { name: "codex" },
       },
       {
         type: "session_metadata_update",
@@ -165,7 +165,7 @@ storeTest("registerTrail suppresses environment metadata when source path is nul
         cwd: "/Users/example/private/project",
         vcs: { type: "git", revision: "a1b2c3d4", branch: "private-branch" },
         ts: "2026-05-17T14:00:00.000Z",
-        agent: { name: "codex-cli" },
+        agent: { name: "codex" },
       },
     ]),
     "utf8",
@@ -177,7 +177,7 @@ storeTest("registerTrail suppresses environment metadata when source path is nul
     expect.objectContaining({
       source_id: null,
       path: null,
-      agent_name: "codex-cli",
+      agent_name: "codex",
       name: "Private source",
       cwd: null,
       branch: null,
@@ -201,7 +201,7 @@ storeTest("registerTrail caps cached metadata strings", async () => {
         cwd: oversized,
         vcs: { type: "git", revision: "a1b2c3d4", branch: oversized },
         ts: "2026-05-17T14:00:00.000Z",
-        agent: { name: "codex-cli" },
+        agent: { name: "codex" },
       },
     ]),
     "utf8",
@@ -300,7 +300,7 @@ storeTest(
       id: "00000000-0000-4000-8000-000000000001",
       session_uid: "00000000-0000-4000-8000-000000000101",
       ts: "2026-05-17T14:00:00.000Z",
-      agent: { name: "codex-cli" },
+      agent: { name: "codex" },
     };
     const commonEvent = {
       type: "user_message",
@@ -324,7 +324,7 @@ storeTest(
         id: "00000000-0000-4000-8000-000000000002",
         session_uid: "00000000-0000-4000-8000-000000000102",
         ts: "2026-05-17T14:02:00.000Z",
-        agent: { name: "codex-cli" },
+        agent: { name: "codex" },
       },
     ]);
     const second = await stampedJsonl([
@@ -370,7 +370,7 @@ storeTest("registerTrail reports finalized when a non-primary object is written"
     id: "00000000-0000-4000-8000-000000000401",
     session_uid: "00000000-0000-4000-8000-000000000501",
     ts: "2026-05-17T14:00:00.000Z",
-    agent: { name: "codex-cli" },
+    agent: { name: "codex" },
   };
   const commonEvent = {
     type: "user_message",
@@ -392,7 +392,7 @@ storeTest("registerTrail reports finalized when a non-primary object is written"
         id: "00000000-0000-4000-8000-000000000402",
         session_uid: "00000000-0000-4000-8000-000000000502",
         ts: "2026-05-17T14:02:00.000Z",
-        agent: { name: "codex-cli" },
+        agent: { name: "codex" },
       },
     ]),
     "utf8",
@@ -487,7 +487,7 @@ storeTest("indexExistingObjects rebuilds catalog list metadata from object bytes
         cwd: "/work/rebuild",
         vcs: { type: "git", revision: "a1b2c3d4", branch: "rebuild" },
         ts: "2026-05-17T14:00:00.000Z",
-        agent: { name: "codex-cli" },
+        agent: { name: "codex" },
       },
     ]),
     "utf8",
@@ -499,7 +499,7 @@ storeTest("indexExistingObjects rebuilds catalog list metadata from object bytes
   expect(await listCatalogEntries(catalogDb, { states: ["registered"] })).toEqual([
     expect.objectContaining({
       content_hash: registered.contentHash,
-      agent_name: "codex-cli",
+      agent_name: "codex",
       name: "Rebuild title",
       cwd: null,
       branch: null,
@@ -542,7 +542,7 @@ storeTest("indexExistingObjects preserves rows for multi-session objects", async
       id: "00000000-0000-4000-8000-000000000011",
       session_uid: firstSessionUid,
       ts: "2026-05-17T14:01:00.000Z",
-      agent: { name: "codex-cli" },
+      agent: { name: "codex" },
     },
     {
       type: "user_message",
@@ -556,7 +556,7 @@ storeTest("indexExistingObjects preserves rows for multi-session objects", async
       id: "00000000-0000-4000-8000-000000000013",
       session_uid: secondSessionUid,
       ts: "2026-05-17T14:02:00.000Z",
-      agent: { name: "codex-cli" },
+      agent: { name: "codex" },
     },
     {
       type: "user_message",
@@ -602,7 +602,7 @@ storeTest(
         cwd: "/work/one",
         vcs: { type: "git", revision: "a1b2c3d4", branch: "one" },
         ts: "2026-05-17T14:01:00.000Z",
-        agent: { name: "codex-cli" },
+        agent: { name: "codex" },
       },
       {
         type: "user_message",
@@ -644,7 +644,7 @@ storeTest(
           branch: "two",
         }),
         expect.objectContaining({
-          agent_name: "codex-cli",
+          agent_name: "codex",
           name: "First session",
           cwd: "/work/one",
           branch: "one",

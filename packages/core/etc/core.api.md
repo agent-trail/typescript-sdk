@@ -29,6 +29,18 @@ export type ContentHashes = {
 export type CoreValidationMode = "strict" | "tolerant";
 
 // @public
+export function createDiagnostic(diagnostic: Diagnostic): Diagnostic;
+
+// @public
+export type Diagnostic = TrailDiagnostic;
+
+// @public
+export function formatDiagnosticsText(diagnostics: Iterable<Diagnostic>): string;
+
+// @public
+export function formatDiagnosticText(diagnostic: Diagnostic): string;
+
+// @public
 export type ParsedTrail = {
     records: ParsedTrailRecord[];
     envelope?: ParsedTrailRecord<TrailEnvelope>;
@@ -102,10 +114,23 @@ export type ValidateTrailOptions = {
 };
 
 // @public
+export function validateWriterStrictRecord(input: WriterStrictRecordInput): Diagnostic[];
+
+// @public
+export type ValidationProfile = "writer-strict" | "reader-tolerant";
+
+// @public
 export type ValidationResult = {
     ok: boolean;
     trail: ParsedTrail;
     diagnostics: TrailDiagnostic[];
+};
+
+// @public
+export type WriterStrictRecordInput = ParsedTrailRecord | {
+    line: number;
+    value: unknown;
+    raw?: string;
 };
 
 ```

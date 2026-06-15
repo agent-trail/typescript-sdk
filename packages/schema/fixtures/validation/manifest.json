@@ -107,7 +107,7 @@
       },
       "expected": {
         "session_hashes": [
-          "b69b9cafe47e606415d4f23868297bbe8a3e3efca32363b676a9eff8cdc5819f"
+          "578677f507e12fb103743e74d7b32506f9ae5b95e32f4e5ab9bcc94fee3d400a"
         ]
       },
       "classes": [
@@ -128,9 +128,9 @@
       },
       "expected": {
         "session_hashes": [
-          "44b16ddea9fd914442eaf8f21c90b6f0eeb913ab499eb668a9c0c6e06b988522"
+          "1f0ecd7c4a69ede4d7c45120441e2db5c05a7df4c8cdcaace6fa97207add86f5"
         ],
-        "file_hash": "a55a96d3a19b624aa8f2e38337521046facf5a6f2a04c3f3c3f7a14880774443"
+        "file_hash": "5935bbf5ae1885343609e613e6722679a0f57c39807ea0c19926f542f3f21314"
       },
       "classes": [
         "W",
@@ -150,7 +150,7 @@
       },
       "expected": {
         "session_hashes": [
-          "24b3a1d99f3e725092cd0126c7d9fb84246e467ec5d2d1fd416f462ae8a58e14"
+          "90a356cd714b6ebc6dc26b38b574de5d55fda127ee58576c2eb77f5e0d7104e2"
         ]
       },
       "classes": [
@@ -171,7 +171,7 @@
       },
       "expected": {
         "session_hashes": [
-          "f215ed334d3928e1abde804f2c4a870431b18d4fa7d755ec94d94be2a6ddd06e"
+          "dec96cae34bf5e1e70f716566d07c91e1f9cd759d482e6f9cacdf6497531e250"
         ]
       },
       "classes": [
@@ -192,8 +192,8 @@
       },
       "expected": {
         "session_hashes": [
-          "0805ade157038a1cbb2895c55383b39b5a42aaa7d6ccc164174c0b3346d8fc14",
-          "f7fe8ccdeaeddf70b868838614730c0a613d937bafeac48a42bb585e6df3ead7"
+          "72aba32ba5f4cb4dd9505d7022b65ca3a19c3cff7f3c2eba216ecbb468cdf18b",
+          "dd11db7577b880de4de67f98cded3015645cf748b72b1987c3ae93e3966dbf2a"
         ]
       },
       "classes": [
@@ -214,7 +214,7 @@
       },
       "expected": {
         "session_hashes": [
-          "594a06fa452fc097bce145be95dd614ddb81b6adf8fe2baf80cbe6e13fcaf4f2"
+          "f75ee0f42005f622facd54f61f95b7e405b0e919f069825e89aa9546b42904fe"
         ]
       },
       "classes": [
@@ -235,7 +235,7 @@
       },
       "expected": {
         "session_hashes": [
-          "b12c68969624665898a4e3ec4dc5c0d06f7a7f305f8f7b16e347e18ccd2f6e67"
+          "a66e9d1514023f4571f9d3480f34950a5e8f5ba6f7cc963a96c2fe3d7f8ef75a"
         ]
       },
       "classes": [
@@ -256,7 +256,7 @@
       },
       "expected": {
         "session_hashes": [
-          "3a676114740d09c2620c1c5e106ea8066bfc3926e478faf5cabd0cedfff398ec"
+          "281ab89bc4d353ca8b88e406c020178b674dc91e4d06b18a299dad6140ce3755"
         ]
       },
       "classes": [

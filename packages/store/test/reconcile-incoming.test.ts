@@ -57,7 +57,7 @@ function incomingSegmentJsonl(
       session_uid: sessionUid,
       segment: { seq: 2, prev_content_hash: prevContentHash },
       ts: "2026-05-17T14:05:00.000Z",
-      agent: { name: "codex-cli" },
+      agent: { name: "codex" },
     },
     {
       type: "agent_message",
@@ -79,7 +79,7 @@ reconcileTest("reconcileIncomingSegment merges matching prior segments", async (
       session_uid: sessionUid,
       segment: { seq: 1 },
       ts: "2026-05-17T14:00:00.000Z",
-      agent: { name: "codex-cli" },
+      agent: { name: "codex" },
     },
     {
       type: "user_message",
@@ -112,7 +112,7 @@ reconcileTest("reconcileIncomingSegment passes through trails without session_ui
       schema_version: "0.1.0",
       id: randomUUID(),
       ts: "2026-05-17T14:05:00.000Z",
-      agent: { name: "codex-cli" },
+      agent: { name: "codex" },
     },
   ]);
 
@@ -175,7 +175,7 @@ reconcileTest(
         session_uid: sessionUid,
         segment: { seq: 1 },
         ts: "2026-05-17T14:00:00.000Z",
-        agent: { name: "codex-cli" },
+        agent: { name: "codex" },
       },
       {
         type: "user_message",
@@ -213,7 +213,7 @@ reconcileTest(
           session_uid: sessionUid,
           segment: { seq: 1 },
           ts: "2026-05-17T14:00:00.000Z",
-          agent: { name: "codex-cli" },
+          agent: { name: "codex" },
         },
         {
           type: "user_message",
@@ -259,7 +259,7 @@ reconcileTest(
         session_uid: sessionUid,
         segment: { seq: 1 },
         ts: "2026-05-17T14:05:00.000Z",
-        agent: { name: "codex-cli" },
+        agent: { name: "codex" },
       },
       {
         type: "agent_message",
@@ -293,7 +293,7 @@ reconcileTest(
           session_uid: sessionUid,
           segment: { seq: 1 },
           ts: "2026-05-17T14:00:00.000Z",
-          agent: { name: "codex-cli" },
+          agent: { name: "codex" },
         },
         {
           type: "user_message",
@@ -372,7 +372,7 @@ reconcileTest("reconcileIncomingSegment returns warnings from broken segment cha
       session_uid: sessionUid,
       segment: { seq: 1 },
       ts: "2026-05-17T14:00:00.000Z",
-      agent: { name: "codex-cli" },
+      agent: { name: "codex" },
     },
     {
       type: "user_message",
@@ -418,7 +418,7 @@ reconcileTest(
             session_uid: sessionUid,
             segment: { seq: 1 },
             ts: "2026-05-17T14:00:00.000Z",
-            agent: { name: "codex-cli" },
+            agent: { name: "codex" },
           },
           {
             type: "user_message",
@@ -432,7 +432,7 @@ reconcileTest(
             id: randomUUID(),
             session_uid: otherSessionUid,
             ts: "2026-05-17T14:02:00.000Z",
-            agent: { name: "codex-cli" },
+            agent: { name: "codex" },
           },
           {
             type: "user_message",

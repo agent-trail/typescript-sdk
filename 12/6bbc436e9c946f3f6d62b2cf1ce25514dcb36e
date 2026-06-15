@@ -1,0 +1,49 @@
+packages/adapters/src/opencode/index.test.ts
+  s_41a01eab7e41e9::t_709b745c97fb74 10-11
+packages/adapters/src/claude-code/index.test.ts
+  s_41a01eab7e41e9::t_709b745c97fb74 8
+  s_41a01eab7e41e9::t_4702336005e89b 11
+packages/adapters/src/index.ts
+  s_41a01eab7e41e9::t_55903293f05bfd 69
+packages/adapters/src/pi/index.test.ts
+  s_41a01eab7e41e9::t_4702336005e89b 9
+  s_41a01eab7e41e9::t_709b745c97fb74 7
+packages/adapters/src/index.test.ts
+  s_41a01eab7e41e9::t_4702336005e89b 6
+  s_41a01eab7e41e9::t_c78aab2d4bb195 5,7,157
+packages/adapters/README.md
+  s_41a01eab7e41e9::t_fa6fe89f32f7f5 10-19
+packages/adapters/etc/adapters.api.md
+  s_41a01eab7e41e9::t_9aae2e5d4f227c 130-132
+packages/adapters/src/contract-goldens.test.ts
+  s_41a01eab7e41e9::t_5202a3b484f2ae 13
+packages/adapter-kit/src/source-schemas/registry.ts
+  s_41a01eab7e41e9::t_1ddf8643788592 7
+packages/adapters/src/real-session-fixtures.test.ts
+  s_41a01eab7e41e9::t_b80fb2374b1103 17
+packages/adapters/src/codex/index.test.ts
+  s_41a01eab7e41e9::t_709b745c97fb74 8
+  s_41a01eab7e41e9::t_4702336005e89b 10
+packages/adapters/src/test-helpers.ts
+  s_41a01eab7e41e9::t_762067769a2007 6
+packages/adapters/src/import-smoke.test.ts
+  s_41a01eab7e41e9::t_ac1972c502e48d 11-17
+packages/adapters/src/trail-file.ts
+  s_41a01eab7e41e9::t_4a5c9d12a19a77 1-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "126bbc436e9c946f3f6d62b2cf1ce25514dcb36e",
+  "prompts": {},
+  "sessions": {
+    "s_41a01eab7e41e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec547-b5c0-7200-b226-4f1ef52334a0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

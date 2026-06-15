@@ -14,6 +14,7 @@ import opencodeMeta from "@agent-trail/source-schemas/opencode/meta";
 import opencodeSchema, { type OpenCodeV1Record } from "@agent-trail/source-schemas/opencode/v1";
 import piMeta from "@agent-trail/source-schemas/pi/meta";
 import piSchema, { type PiV1Record } from "@agent-trail/source-schemas/pi/v1";
+import packageJson from "./package.json" with { type: "json" };
 
 test("generated source types discriminate on the record type field", () => {
   const codex: CodexV0_128Record = { type: "session_meta", payload: { id: "x" } };
@@ -29,7 +30,7 @@ test("generated source types discriminate on the record type field", () => {
   expect(opencode.type).toBe("part");
 });
 
-test("schema and metadata subpaths import through the public export map", () => {
+test("schema and metadata subpaths import as generated JSON modules", () => {
   expect(claudeCodeSchema).toHaveProperty("title", "ClaudeCodeV1Record");
   expect(codexV0_128Schema).toHaveProperty("title", "CodexV0_128Record");
   expect(codexV0_135Schema).toHaveProperty("title", "CodexV0_135Record");
@@ -42,8 +43,40 @@ test("schema and metadata subpaths import through the public export map", () => 
   expect(piMeta).toHaveProperty("agent", "pi");
 });
 
-test("source-schemas has no root runtime export", async () => {
-  const rootSpecifier = "@agent-trail/source-schemas";
-
-  await expect(import(rootSpecifier)).rejects.toThrow();
+test("package export map exposes only schema assets, metadata, and package metadata", () => {
+  expect(packageJson.exports).toEqual({
+    "./codex/v0.128": {
+      types: "./codex/v0.128.d.ts",
+      default: "./codex/v0.128.json",
+    },
+    "./codex/v0.135": {
+      types: "./codex/v0.135.d.ts",
+      default: "./codex/v0.135.json",
+    },
+    "./codex/meta": {
+      default: "./codex/meta.json",
+    },
+    "./pi/v1": {
+      types: "./pi/v1.d.ts",
+      default: "./pi/v1.json",
+    },
+    "./pi/meta": {
+      default: "./pi/meta.json",
+    },
+    "./claude-code/v1": {
+      types: "./claude-code/v1.d.ts",
+      default: "./claude-code/v1.json",
+    },
+    "./claude-code/meta": {
+      default: "./claude-code/meta.json",
+    },
+    "./opencode/v1": {
+      types: "./opencode/v1.d.ts",
+      default: "./opencode/v1.json",
+    },
+    "./opencode/meta": {
+      default: "./opencode/meta.json",
+    },
+    "./package.json": "./package.json",
+  });
 });

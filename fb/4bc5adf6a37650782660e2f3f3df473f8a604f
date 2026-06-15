@@ -1,0 +1,19 @@
+docs/plans/atf-23-adapter-rebuild.md
+  s_41a01eab7e41e9::t_b2633723648cf7 1-616
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "fb4bc5adf6a37650782660e2f3f3df473f8a604f",
+  "prompts": {},
+  "sessions": {
+    "s_41a01eab7e41e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec547-b5c0-7200-b226-4f1ef52334a0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

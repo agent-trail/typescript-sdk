@@ -1,0 +1,60 @@
+packages/render-model/src/values.ts
+  s_72e46505fa7e07::t_3b25cee509be63 1-49
+tsconfig.json
+  s_72e46505fa7e07::t_1ae7854ddee7cf 30
+package.json
+  s_72e46505fa7e07::t_dc7f0c7c162452 15
+scripts/check-render-model-oracle.ts
+  s_72e46505fa7e07::t_03f4cd32fa9d39 4-9,30
+  s_72e46505fa7e07::t_dc7f0c7c162452 1-3,10-29,31-150
+packages/render-model/src/transcript.ts
+  s_72e46505fa7e07::t_430427cdf866fe 1-223,225-543
+packages/render-model/src/tests/index.test.ts
+  s_72e46505fa7e07::t_57f873450f71f3 377-386
+  s_72e46505fa7e07::t_99c123c2d6d94b 8,106-111,179-181,339-344
+  s_72e46505fa7e07::t_b6e65251277b25 13,402-418
+  s_72e46505fa7e07::t_80c86d5244ebd5 14
+  s_72e46505fa7e07::t_50c1c43e2fabf0 215,225-230,235-238,252-257
+  s_72e46505fa7e07::t_1ae7854ddee7cf 1-7,9-12,15-105,112-178,182-214,216-224,231-234,239-251,258-338,345-376,387-401,419-529
+packages/render-model/src/types.ts
+  s_72e46505fa7e07::t_c62b5c7a823a71 1,5-8,10,14-16,18,20-21,24-27,30-31,35-41
+  s_72e46505fa7e07::t_3b25cee509be63 2-4,9,11-13,17,19,22-23,28-29,32-34,42-158
+packages/render-model/tsconfig.json
+  s_72e46505fa7e07::t_1ae7854ddee7cf 1-6,9-12
+  s_72e46505fa7e07::t_fa7de38b670786 7-8
+packages/render-model/src/index.ts
+  s_72e46505fa7e07::t_1ae7854ddee7cf 1-5,40-44,46-57,60-62
+  s_72e46505fa7e07::t_945e6ea4c7ad6c 39
+  s_72e46505fa7e07::t_657a7a79658df1 15
+  s_72e46505fa7e07::t_dff501b5975846 6
+  s_72e46505fa7e07::t_99c123c2d6d94b 58-59
+  s_72e46505fa7e07::t_430427cdf866fe 7,9-14,16-38
+  s_72e46505fa7e07::t_ffd031c2415cb4 45
+  s_72e46505fa7e07::t_80c86d5244ebd5 8
+packages/render-model/src/events.ts
+  s_72e46505fa7e07::t_3b25cee509be63 1-104,106,108-114,117-121,131-243
+  s_72e46505fa7e07::t_50c1c43e2fabf0 105,107,115-116,122-130
+packages/render-model/api-extractor.json
+  s_72e46505fa7e07::t_1ae7854ddee7cf 1-42
+packages/render-model/etc/render-model.api.md
+  s_72e46505fa7e07::t_1ae7854ddee7cf 1-6,150
+  s_72e46505fa7e07::t_bb54f5d3176d63 7-149
+packages/render-model/package.json
+  s_72e46505fa7e07::t_1ae7854ddee7cf 1-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "176136c7a80895ccc6f6dd4f546f4e3ff8396236",
+  "prompts": {},
+  "sessions": {
+    "s_72e46505fa7e07": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ecc35-5a64-7770-bd6b-a0faadf41815",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

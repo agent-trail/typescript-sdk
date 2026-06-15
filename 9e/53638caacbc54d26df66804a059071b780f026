@@ -1,0 +1,25 @@
+packages/sessions/src/shared.ts
+  s_4bbd91c57aaaad::t_4a99c6c9148216 100-102,110-119
+packages/sessions/package.json
+  s_4bbd91c57aaaad::t_4a99c6c9148216 39-40
+packages/sessions/src/client.ts
+  s_4bbd91c57aaaad::t_4a99c6c9148216 15-19
+packages/sessions/src/tests/sessions.test.ts
+  s_4bbd91c57aaaad::t_4a99c6c9148216 10,12,228-259,261-275,426-446,448
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "9e53638caacbc54d26df66804a059071b780f026",
+  "prompts": {},
+  "sessions": {
+    "s_4bbd91c57aaaad": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ecca9-c454-7d10-ade3-fe5e2bc0bbd1",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

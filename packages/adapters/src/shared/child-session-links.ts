@@ -1,5 +1,8 @@
 import type { Entry } from "@agent-trail/types";
 
+/**
+ * @internal
+ */
 export function withLinkedSubagentSessionIds(
   entries: Entry[],
   linked: Map<string, string>,

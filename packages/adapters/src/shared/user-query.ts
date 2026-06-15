@@ -1,5 +1,8 @@
 type UserQueryOption = { id?: string; label: string; description?: string };
 
+/**
+ * @internal
+ */
 export type UserQueryPayloadOptions = {
   fallbackId: (question: string, fallbackIndex: number) => string;
   fallbackIndex?: (
@@ -12,6 +15,9 @@ export type UserQueryPayloadOptions = {
   isNonEmptyString: (value: unknown) => value is string;
 };
 
+/**
+ * @internal
+ */
 export function userQueryPayloadFromInput(
   input: unknown,
   options: UserQueryPayloadOptions,

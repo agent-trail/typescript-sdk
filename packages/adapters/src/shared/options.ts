@@ -1,3 +1,6 @@
+/**
+ * @internal
+ */
 export function uniqueOptionLabelToId(options: Record<string, unknown>[]): Map<string, string> {
   const labelCounts = new Map<string, number>();
   for (const option of options) {

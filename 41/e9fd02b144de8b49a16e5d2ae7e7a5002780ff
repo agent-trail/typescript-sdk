@@ -1,0 +1,29 @@
+packages/adapters/README.md
+  s_41a01eab7e41e9::t_1d44b2c435bc93 28-30,33,35-37
+packages/core/src/index.ts
+  s_41a01eab7e41e9::t_cd1c62b99a2bf5 23-38
+packages/core/src/credential-patterns.ts
+  s_41a01eab7e41e9::t_68ecf6cc048305 13-17,34-38,48-52,57-61,296-300,349-353
+packages/core/etc/core.api.md
+  s_41a01eab7e41e9::t_5b66c6d87dde10 13-17,40-54,64-72,98-103
+packages/adapters/src/shared/tool-normalizer.test.ts
+  s_41a01eab7e41e9::t_d7b90bac64e7af 30-35,37-41,62-66
+packages/adapters/src/shared/tool-normalizer.ts
+  s_41a01eab7e41e9::t_3823a188e6fbef 70-79,107-108,111,115-138,157-158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "41e9fd02b144de8b49a16e5d2ae7e7a5002780ff",
+  "prompts": {},
+  "sessions": {
+    "s_41a01eab7e41e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec547-b5c0-7200-b226-4f1ef52334a0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

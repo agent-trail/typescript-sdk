@@ -47,35 +47,56 @@ async function assertOpenCodeMessageTotalsCaptured(
   ref: { path?: string },
 ): Promise<void> {
   if (ref.path === undefined || ref.path.includes("#")) return;
-  const loaded = await loadFileSession(ref.path);
-  const totalsByMessageId = new Map<string, number>();
-  for (const message of loaded.messages) {
-    const total = numberValue(objectValue(message.tokens)?.total);
-    if (total !== undefined) totalsByMessageId.set(message.id, total);
-  }
+  const totalsByMessageId = await messageTotalsById(ref.path);
   if (totalsByMessageId.size === 0) return;
-
-  let checked = 0;
-  for (const group of trail.groups) {
-    for (const entry of group.entries) {
-      const payload = objectValue(entry.payload);
-      const usage = objectValue(payload?.usage);
-      if (usage === undefined) continue;
-      const raw = objectValue(entry.source?.raw);
-      const data = objectValue(raw?.data);
-      const messageId = stringValue(data?.messageID) ?? stringValue(data?.message_id);
-      if (messageId === undefined) continue;
-      const expectedTotal = totalsByMessageId.get(messageId);
-      if (expectedTotal === undefined) continue;
-      expect(usage.total_tokens).toBe(expectedTotal);
-      checked += 1;
-    }
-  }
+  const checked = assertEmittedUsageTotals(trail, totalsByMessageId);
   if (checked === 0) {
     throw new Error(
       `real OpenCode session had message totals but no emitted merged usage\n${summary}`,
     );
   }
+}
+
+async function messageTotalsById(path: string): Promise<Map<string, number>> {
+  const loaded = await loadFileSession(path);
+  const totals = new Map<string, number>();
+  for (const message of loaded.messages) {
+    const total = numberValue(objectValue(message.tokens)?.total);
+    if (total !== undefined) totals.set(message.id, total);
+  }
+  return totals;
+}
+
+function assertEmittedUsageTotals(
+  trail: Parameters<NonNullable<Parameters<typeof runRealSessionSmoke>[0]["assertTrail"]>>[0],
+  totalsByMessageId: Map<string, number>,
+): number {
+  let checked = 0;
+  for (const group of trail.groups) {
+    for (const entry of group.entries) {
+      checked += assertUsageTotal(entry, totalsByMessageId);
+    }
+  }
+  return checked;
+}
+
+function assertUsageTotal(entry: Entry, totalsByMessageId: Map<string, number>): number {
+  const usage = usagePayload(entry);
+  if (usage === undefined) return 0;
+  const messageId = sourceMessageId(entry);
+  const expectedTotal = messageId === undefined ? undefined : totalsByMessageId.get(messageId);
+  if (expectedTotal === undefined) return 0;
+  expect(usage.total_tokens).toBe(expectedTotal);
+  return 1;
+}
+
+function usagePayload(entry: Entry): Record<string, unknown> | undefined {
+  return objectValue(objectValue(entry.payload)?.usage);
+}
+
+function sourceMessageId(entry: Entry): string | undefined {
+  const data = objectValue(objectValue(entry.source?.raw)?.data);
+  return stringValue(data?.messageID) ?? stringValue(data?.message_id);
 }
 
 function firstOpenCodeSessionJson(root: string | undefined): string | undefined {
@@ -120,128 +141,177 @@ function firstOpenCodeDbSession(path: string | undefined): string | undefined {
 
 function assertOpenCodeEntry(entry: Entry, toolCallIds: Set<string>, summary: string): void {
   try {
-    const source = objectValue(entry.source);
-    expect(source?.agent).toBe("opencode");
-    if (source?.synthesized !== true) {
-      expect(entry.meta?.["dev.opencode.raw_type"]).toEqual(expect.any(String));
-      expect(String(entry.meta?.["dev.opencode.raw_type"]).length).toBeGreaterThan(0);
-      expect(source?.schema_version).toBe(OPENCODE_SOURCE_SCHEMA_VERSION);
-      if (source?.raw !== undefined) expect(objectValue(source.raw)).toBeDefined();
-    }
-
-    const payload = objectValue(entry.payload);
-    expect(payload).toBeDefined();
-
-    if (entry.semantic !== undefined) {
-      assertOptionalString(entry.semantic.call_id, "semantic.call_id", summary);
-      assertOptionalString(entry.semantic.tool_kind, "semantic.tool_kind", summary);
-    }
-
-    switch (entry.type) {
-      case "user_message":
-      case "agent_message":
-      case "agent_thinking":
-        expect(payload?.text).toEqual(expect.any(String));
-        assertOptionalString(payload?.model, `${entry.type}.payload.model`, summary);
-        break;
-      case "tool_call":
-        expect(payload?.tool).toEqual(expect.any(String));
-        expect(objectValue(payload?.args)).toBeDefined();
-        toolCallIds.add(entry.id);
-        if (payload?.tool === "file_read") {
-          assertOptionalString(objectValue(payload.args)?.path, "file_read.args.path", summary);
-        }
-        if (payload?.tool === "file_write") {
-          assertOptionalString(objectValue(payload.args)?.path, "file_write.args.path", summary);
-          assertOptionalString(
-            objectValue(payload.args)?.content,
-            "file_write.args.content",
-            summary,
-          );
-        }
-        if (payload?.tool === "file_edit") {
-          assertOptionalString(objectValue(payload.args)?.path, "file_edit.args.path", summary);
-          assertOptionalString(objectValue(payload.args)?.diff, "file_edit.args.diff", summary);
-        }
-        if (payload?.tool === "shell_command") {
-          assertOptionalString(
-            objectValue(payload.args)?.command,
-            "shell_command.args.command",
-            summary,
-          );
-        }
-        if (payload?.tool === "web_fetch") {
-          assertOptionalString(objectValue(payload.args)?.url, "web_fetch.args.url", summary);
-        }
-        if (payload?.tool === "subagent_invoke") {
-          assertOptionalString(
-            objectValue(payload.args)?.task,
-            "subagent_invoke.args.task",
-            summary,
-          );
-        }
-        if (payload?.tool === "other") {
-          assertOptionalString(objectValue(payload.args)?.name, "other.args.name", summary);
-        }
-        break;
-      case "tool_result":
-        expect(payload?.for_id).toMatch(ID_PATTERN);
-        expect(toolCallIds.has(String(payload?.for_id))).toBe(true);
-        expect(typeof payload?.ok).toBe("boolean");
-        assertOptionalString(payload?.output, "tool_result.payload.output", summary);
-        assertOptionalString(payload?.error, "tool_result.payload.error", summary);
-        break;
-      case "tool_call_aborted":
-        if (payload?.scope === "tool_call") {
-          expect(payload?.for_id).toMatch(ID_PATTERN);
-          expect(toolCallIds.has(String(payload?.for_id))).toBe(true);
-        }
-        assertOptionalString(payload?.reason, "tool_call_aborted.payload.reason", summary);
-        break;
-      case "context_compact":
-        expect(payload?.summary).toEqual(expect.any(String));
-        if (payload?.trigger !== undefined) {
-          expect(["auto", "manual"].includes(String(payload.trigger))).toBe(true);
-        }
-        break;
-      case "model_change":
-        expect(payload?.to_model).toEqual(expect.any(String));
-        assertOptionalString(payload?.from_model, "model_change.payload.from_model", summary);
-        assertOptionalString(payload?.to_provider, "model_change.payload.to_provider", summary);
-        break;
-      case "task_plan_update": {
-        expect(Array.isArray(payload?.items)).toBe(true);
-        for (const item of (payload?.items ?? []) as unknown[]) {
-          const obj = objectValue(item);
-          expect(obj?.id).toEqual(expect.any(String));
-          expect(obj?.content).toEqual(expect.any(String));
-          expect(
-            ["pending", "in_progress", "completed", "cancelled", "blocked"].includes(
-              String(obj?.status),
-            ),
-          ).toBe(true);
-        }
-        break;
-      }
-      case "session_terminated":
-        expect(payload?.reason).toEqual(expect.any(String));
-        if (Array.isArray(payload?.open_call_ids)) {
-          for (const id of payload.open_call_ids) expect(String(id)).toMatch(ID_PATTERN);
-        }
-        break;
-      case "system_event":
-        expect(payload?.kind).toEqual(expect.any(String));
-        if (payload?.kind === "x-opencode/unknown_record") {
-          expect(objectValue(objectValue(payload.data)?.raw)).toBeDefined();
-        }
-        break;
-    }
+    const payload = assertEntryBase(entry, summary);
+    const assertPayload = ENTRY_ASSERTIONS[entry.type];
+    assertPayload?.(entry, payload, toolCallIds, summary);
   } catch (error) {
     throw new Error(
       `OpenCode real-session optional-field invariant failed for ${entry.type}: ${
         error instanceof Error ? error.message : String(error)
       }\n${summary}`,
     );
+  }
+}
+
+function assertEntryBase(entry: Entry, summary: string): Record<string, unknown> {
+  const source = objectValue(entry.source);
+  expect(source?.agent).toBe("opencode");
+  if (source?.synthesized !== true) assertOpenCodeSource(entry, source);
+  const payload = objectValue(entry.payload);
+  expect(payload).toBeDefined();
+  if (entry.semantic !== undefined) {
+    assertOptionalString(entry.semantic.call_id, "semantic.call_id", summary);
+    assertOptionalString(entry.semantic.tool_kind, "semantic.tool_kind", summary);
+  }
+  return payload ?? {};
+}
+
+function assertOpenCodeSource(entry: Entry, source: Record<string, unknown> | undefined): void {
+  expect(entry.meta?.["dev.opencode.raw_type"]).toEqual(expect.any(String));
+  expect(String(entry.meta?.["dev.opencode.raw_type"]).length).toBeGreaterThan(0);
+  expect(source?.schema_version).toBe(OPENCODE_SOURCE_SCHEMA_VERSION);
+  if (source?.raw !== undefined) expect(objectValue(source.raw)).toBeDefined();
+}
+
+const ENTRY_ASSERTIONS: Record<
+  string,
+  (
+    entry: Entry,
+    payload: Record<string, unknown>,
+    toolCallIds: Set<string>,
+    summary: string,
+  ) => void
+> = {
+  user_message: assertTextEntry,
+  agent_message: assertTextEntry,
+  agent_thinking: assertTextEntry,
+  tool_call: assertToolCallEntry,
+  tool_result: assertToolResultEntry,
+  tool_call_aborted: assertToolAbortedEntry,
+  context_compact: assertContextCompactEntry,
+  model_change: assertModelChangeEntry,
+  task_plan_update: assertTaskPlanEntry,
+  session_terminated: assertSessionTerminatedEntry,
+  system_event: assertSystemEventEntry,
+};
+
+function assertTextEntry(
+  entry: Entry,
+  payload: Record<string, unknown>,
+  _toolCallIds: Set<string>,
+  summary: string,
+): void {
+  expect(payload.text).toEqual(expect.any(String));
+  assertOptionalString(payload.model, `${entry.type}.payload.model`, summary);
+}
+
+function assertToolCallEntry(
+  entry: Entry,
+  payload: Record<string, unknown>,
+  toolCallIds: Set<string>,
+  summary: string,
+): void {
+  expect(payload.tool).toEqual(expect.any(String));
+  const args = objectValue(payload.args);
+  expect(args).toBeDefined();
+  toolCallIds.add(entry.id);
+  TOOL_ARG_ASSERTIONS[String(payload.tool)]?.(args ?? {}, summary);
+}
+
+const TOOL_ARG_ASSERTIONS: Record<
+  string,
+  (args: Record<string, unknown>, summary: string) => void
+> = {
+  file_read: (args, summary) => assertOptionalString(args.path, "file_read.args.path", summary),
+  file_write: assertFileWriteArgs,
+  file_edit: assertFileEditArgs,
+  shell_command: (args, summary) =>
+    assertOptionalString(args.command, "shell_command.args.command", summary),
+  web_fetch: (args, summary) => assertOptionalString(args.url, "web_fetch.args.url", summary),
+  subagent_invoke: (args, summary) =>
+    assertOptionalString(args.task, "subagent_invoke.args.task", summary),
+  other: (args, summary) => assertOptionalString(args.name, "other.args.name", summary),
+};
+
+function assertFileWriteArgs(args: Record<string, unknown>, summary: string): void {
+  assertOptionalString(args.path, "file_write.args.path", summary);
+  assertOptionalString(args.content, "file_write.args.content", summary);
+}
+
+function assertFileEditArgs(args: Record<string, unknown>, summary: string): void {
+  assertOptionalString(args.path, "file_edit.args.path", summary);
+  assertOptionalString(args.diff, "file_edit.args.diff", summary);
+}
+
+function assertToolResultEntry(
+  _entry: Entry,
+  payload: Record<string, unknown>,
+  toolCallIds: Set<string>,
+  summary: string,
+): void {
+  expect(payload.for_id).toMatch(ID_PATTERN);
+  expect(toolCallIds.has(String(payload.for_id))).toBe(true);
+  expect(typeof payload.ok).toBe("boolean");
+  assertOptionalString(payload.output, "tool_result.payload.output", summary);
+  assertOptionalString(payload.error, "tool_result.payload.error", summary);
+}
+
+function assertToolAbortedEntry(
+  _entry: Entry,
+  payload: Record<string, unknown>,
+  toolCallIds: Set<string>,
+  summary: string,
+): void {
+  if (payload.scope === "tool_call") {
+    expect(payload.for_id).toMatch(ID_PATTERN);
+    expect(toolCallIds.has(String(payload.for_id))).toBe(true);
+  }
+  assertOptionalString(payload.reason, "tool_call_aborted.payload.reason", summary);
+}
+
+function assertContextCompactEntry(_entry: Entry, payload: Record<string, unknown>): void {
+  expect(payload.summary).toEqual(expect.any(String));
+  if (payload.trigger !== undefined) {
+    expect(["auto", "manual"].includes(String(payload.trigger))).toBe(true);
+  }
+}
+
+function assertModelChangeEntry(
+  _entry: Entry,
+  payload: Record<string, unknown>,
+  _toolCallIds: Set<string>,
+  summary: string,
+): void {
+  expect(payload.to_model).toEqual(expect.any(String));
+  assertOptionalString(payload.from_model, "model_change.payload.from_model", summary);
+  assertOptionalString(payload.to_provider, "model_change.payload.to_provider", summary);
+}
+
+function assertTaskPlanEntry(_entry: Entry, payload: Record<string, unknown>): void {
+  expect(Array.isArray(payload.items)).toBe(true);
+  for (const item of (payload.items ?? []) as unknown[]) assertTaskPlanItem(item);
+}
+
+function assertTaskPlanItem(item: unknown): void {
+  const obj = objectValue(item);
+  expect(obj?.id).toEqual(expect.any(String));
+  expect(obj?.content).toEqual(expect.any(String));
+  expect(
+    ["pending", "in_progress", "completed", "cancelled", "blocked"].includes(String(obj?.status)),
+  ).toBe(true);
+}
+
+function assertSessionTerminatedEntry(_entry: Entry, payload: Record<string, unknown>): void {
+  expect(payload.reason).toEqual(expect.any(String));
+  if (Array.isArray(payload.open_call_ids)) {
+    for (const id of payload.open_call_ids) expect(String(id)).toMatch(ID_PATTERN);
+  }
+}
+
+function assertSystemEventEntry(_entry: Entry, payload: Record<string, unknown>): void {
+  expect(payload.kind).toEqual(expect.any(String));
+  if (payload.kind === "x-opencode/unknown_record") {
+    expect(objectValue(objectValue(payload.data)?.raw)).toBeDefined();
   }
 }
 

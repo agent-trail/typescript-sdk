@@ -1,6 +1,8 @@
 import type { ReconcilerRule } from "@agent-trail/adapter-kit";
 import type { AgentMessageUsage, Attachment, Entry, ToolKind } from "@agent-trail/types";
 import { CODEX_ENTRY_ID_NAMESPACE } from "../session-uid.js";
+import { linkerCallId } from "../shared/linker-meta.js";
+import { uniqueOptionLabelToId } from "../shared/options.js";
 import { dropTaskPlanAckResults, withTaskPlanDeltas } from "../task-plan.js";
 import { synthesizeVcsCommitEvents } from "../vcs-commit.js";
 import { IMAGE_CARRIER, TOKEN_MODEL_CARRIER, USAGE_CARRIER } from "./mappings.js";
@@ -137,31 +139,60 @@ export const codexTokenRollup: ReconcilerRule = (entries) => {
   for (const entry of entries) {
     const usage = usageCarrier(entry);
     const tokenModel = tokenModelCarrier(entry);
-    if (usage !== undefined || tokenModel !== undefined) {
-      if (lastAgentMessageIndex !== undefined) {
-        const target = out[lastAgentMessageIndex];
-        if (target !== undefined) {
-          const payload = target.payload as Record<string, unknown>;
-          out[lastAgentMessageIndex] = {
-            ...target,
-            payload: {
-              ...payload,
-              ...(tokenModel !== undefined && payload.model === undefined
-                ? { model: tokenModel }
-                : {}),
-              ...(usage !== undefined ? { usage } : {}),
-            },
-          } as Entry;
-        }
-      }
+    if (hasTokenCarrier(usage, tokenModel)) {
+      applyTokenCarrier(out, lastAgentMessageIndex, usage, tokenModel);
       continue; // drop the carrier
     }
-    if (entry.type === "agent_message") lastAgentMessageIndex = out.length;
-    else if (entry.type === "user_message") lastAgentMessageIndex = undefined;
+    lastAgentMessageIndex = nextAgentMessageIndex(entry, out.length, lastAgentMessageIndex);
     out.push(entry);
   }
   return out;
 };
+
+function hasTokenCarrier(
+  usage: AgentMessageUsage | undefined,
+  tokenModel: string | undefined,
+): boolean {
+  return usage !== undefined || tokenModel !== undefined;
+}
+
+function applyTokenCarrier(
+  entries: Entry[],
+  targetIndex: number | undefined,
+  usage: AgentMessageUsage | undefined,
+  tokenModel: string | undefined,
+): void {
+  if (targetIndex === undefined) return;
+  const target = entries[targetIndex];
+  if (target === undefined) return;
+  entries[targetIndex] = withTokenCarrier(target, usage, tokenModel);
+}
+
+function withTokenCarrier(
+  target: Entry,
+  usage: AgentMessageUsage | undefined,
+  tokenModel: string | undefined,
+): Entry {
+  const payload = target.payload as Record<string, unknown>;
+  return {
+    ...target,
+    payload: {
+      ...payload,
+      ...(tokenModel !== undefined && payload.model === undefined ? { model: tokenModel } : {}),
+      ...(usage !== undefined ? { usage } : {}),
+    },
+  } as Entry;
+}
+
+function nextAgentMessageIndex(
+  entry: Entry,
+  nextOutIndex: number,
+  current: number | undefined,
+): number | undefined {
+  if (entry.type === "agent_message") return nextOutIndex;
+  if (entry.type === "user_message") return undefined;
+  return current;
+}
 
 export const codexModelReplay: ReconcilerRule = (entries) => {
   let currentModel: string | undefined;
@@ -198,13 +229,6 @@ export const codexDropTaskPlanResults: ReconcilerRule = (entries) =>
 
 export const codexVcsCommitEvents: ReconcilerRule = (entries) =>
   synthesizeVcsCommitEvents(entries, { idNamespace: CODEX_ENTRY_ID_NAMESPACE });
-
-function linkerCallId(entry: Entry): string | undefined {
-  const linker = entry.meta?.linker;
-  if (linker === null || typeof linker !== "object") return undefined;
-  const callId = (linker as Record<string, unknown>).call_id;
-  return typeof callId === "string" ? callId : undefined;
-}
 
 function parsedAnswers(output: unknown): Record<string, unknown> {
   if (typeof output !== "string") return {};
@@ -260,68 +284,74 @@ function optionIdentity(question: Record<string, unknown>): {
   const options = (Array.isArray(question.options) ? question.options : []).filter(
     (option): option is Record<string, unknown> => option !== null && typeof option === "object",
   );
-  const ids = new Set<string>();
-  const labels = new Set<string>();
   const knownValues = new Set<string>();
-  const labelCounts = new Map<string, number>();
-  const labelToId = new Map<string, string>();
   for (const option of options) {
-    const label = option.label;
-    const id = option.id;
-    if (typeof label === "string") {
-      labels.add(label);
-      labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1);
-    }
-    if (typeof id === "string") {
-      ids.add(id);
-      knownValues.add(id);
-    } else if (typeof label === "string") {
-      knownValues.add(label);
-    }
+    addKnownOptionValue(knownValues, option);
   }
-  for (const option of options) {
-    const label = option.label;
-    const id = option.id;
-    if (typeof label === "string" && typeof id === "string" && labelCounts.get(label) === 1) {
-      labelToId.set(label, id);
-    }
-  }
+  const labelToId = uniqueOptionLabelToId(options);
   return { knownValues, labelToId };
+}
+
+function addKnownOptionValue(knownValues: Set<string>, option: Record<string, unknown>): void {
+  const label = option.label;
+  const id = option.id;
+  if (typeof id === "string") knownValues.add(id);
+  else if (typeof label === "string") knownValues.add(label);
+}
+
+function questionsById(query: Entry): Map<string, Record<string, unknown>> {
+  const byId = new Map<string, Record<string, unknown>>();
+  for (const question of queryQuestions(query)) {
+    const id = question.id;
+    if (typeof id === "string") byId.set(id, question);
+  }
+  return byId;
+}
+
+function normalizedQuestionAnswer(
+  question: Record<string, unknown>,
+  rawAnswer: unknown,
+): Record<string, unknown> {
+  const selected = selectedValues(rawAnswer);
+  const options = optionIdentity(question);
+  const normalizedSelected = selected.map((value) => options.labelToId.get(value) ?? value);
+  const allowOther = question.allow_other === true;
+  const knownOptions = options.knownValues;
+  const known =
+    knownOptions.size > 0
+      ? normalizedSelected.filter((value) => knownOptions.has(value))
+      : normalizedSelected;
+  const unknown =
+    knownOptions.size > 0 ? normalizedSelected.filter((value) => !knownOptions.has(value)) : [];
+  const answer: Record<string, unknown> = {
+    selected: allowOther ? known : normalizedSelected,
+  };
+  addOtherAnswer(answer, rawAnswer, unknown, allowOther);
+  return answer;
+}
+
+function addOtherAnswer(
+  answer: Record<string, unknown>,
+  rawAnswer: unknown,
+  unknown: string[],
+  allowOther: boolean,
+): void {
+  if (!allowOther) return;
+  const other = otherValue(rawAnswer);
+  const otherParts = [...(other !== undefined && other.length > 0 ? [other] : []), ...unknown];
+  if (otherParts.length > 0) answer.other = otherParts.join(", ");
 }
 
 function normalizeAnswers(
   query: Entry,
   rawAnswers: Record<string, unknown>,
 ): Record<string, unknown> {
-  const byId = new Map<string, Record<string, unknown>>();
-  for (const question of queryQuestions(query)) {
-    const id = question.id;
-    if (typeof id === "string") byId.set(id, question);
-  }
+  const byId = questionsById(query);
   const out: Record<string, unknown> = {};
   for (const [questionId, rawAnswer] of Object.entries(rawAnswers)) {
     const question = byId.get(questionId);
     if (question === undefined) continue;
-    const selected = selectedValues(rawAnswer);
-    const options = optionIdentity(question);
-    const normalizedSelected = selected.map((value) => options.labelToId.get(value) ?? value);
-    const allowOther = question?.allow_other === true;
-    const knownOptions = options.knownValues;
-    const known =
-      knownOptions.size > 0
-        ? normalizedSelected.filter((value) => knownOptions.has(value))
-        : normalizedSelected;
-    const unknown =
-      knownOptions.size > 0 ? normalizedSelected.filter((value) => !knownOptions.has(value)) : [];
-    const answer: Record<string, unknown> = {
-      selected: allowOther ? known : normalizedSelected,
-    };
-    const other = otherValue(rawAnswer);
-    if (allowOther) {
-      const otherParts = [...(other !== undefined && other.length > 0 ? [other] : []), ...unknown];
-      if (otherParts.length > 0) answer.other = otherParts.join(", ");
-    }
-    out[questionId] = answer;
+    out[questionId] = normalizedQuestionAnswer(question, rawAnswer);
   }
   return out;
 }

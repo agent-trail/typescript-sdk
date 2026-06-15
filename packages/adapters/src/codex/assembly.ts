@@ -10,6 +10,7 @@ import {
   canonicalizeIdentityString,
   deriveSynthesizedEntryId,
 } from "../session-uid.js";
+import { withLinkedSubagentSessionIds } from "../shared/child-session-links.js";
 import { isRecord } from "../shared/type-guards.js";
 import { sanitizeTrailFile } from "../trail-sanitizer.js";
 import { readGitVcs } from "../vcs.js";
@@ -45,6 +46,20 @@ function parseObjectRecords(text: string): Record<string, unknown>[] {
 function firstTurnContextSnapshot(
   records: Record<string, unknown>[],
 ): Record<string, unknown> | undefined {
+  return firstTurnContextValue(records, (payload) => {
+    const snapshot = turnContextSnapshot(payload);
+    return Object.keys(snapshot).length > 0 ? snapshot : undefined;
+  });
+}
+
+function firstTurnContextModel(records: Record<string, unknown>[]): string | undefined {
+  return firstTurnContextValue(records, (payload) => stringValue(payload.model));
+}
+
+function firstTurnContextValue<T>(
+  records: Record<string, unknown>[],
+  valueFromPayload: (payload: Record<string, unknown>) => T | undefined,
+): T | undefined {
   for (const record of records) {
     if (record.type !== "turn_context") continue;
     // Match the overrides' contract: a turn_context with an unparseable
@@ -53,21 +68,8 @@ function firstTurnContextSnapshot(
     // the event stream.
     if (timestampToIso(record.timestamp) === undefined) continue;
     const payload = isObject(record.payload) ? record.payload : {};
-    const snapshot = turnContextSnapshot(payload);
-    // Skip a policy-less turn_context and keep scanning rather than bailing, so
-    // a later record that does carry policy fields still snapshots.
-    if (Object.keys(snapshot).length > 0) return snapshot;
-  }
-  return undefined;
-}
-
-function firstTurnContextModel(records: Record<string, unknown>[]): string | undefined {
-  for (const record of records) {
-    if (record.type !== "turn_context") continue;
-    if (timestampToIso(record.timestamp) === undefined) continue;
-    const payload = isObject(record.payload) ? record.payload : {};
-    const model = stringValue(payload.model);
-    if (model !== undefined) return model;
+    const value = valueFromPayload(payload);
+    if (value !== undefined) return value;
   }
   return undefined;
 }
@@ -78,29 +80,7 @@ async function parseSingleGroup(
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<TrailSessionGroup> {
   const records = parseObjectRecords(await readFile(path, "utf8"));
-  const firstRecord = records[0];
-  if (firstRecord === undefined) {
-    throw new Error("Codex session must contain a parseable JSON object header");
-  }
-  const header = buildHeader(firstRecord);
-  if (forkFrom !== undefined) header.fork_from = forkFrom;
-  // Recorded git (session_meta.git) wins; live readGitVcs is the fallback only
-  // when buildHeader found no recorded VCS block.
-  if (header.vcs === undefined && typeof header.cwd === "string") {
-    const vcs = await readGitVcs(header.cwd);
-    if (vcs !== undefined) header.vcs = vcs;
-  }
-  // Snapshot the initial turn_context policy tuple into header.meta so the
-  // starting policy is visible without scanning the event stream; mid-session
-  // changes surface as system_events (overrides.ts).
-  const snapshot = firstTurnContextSnapshot(records);
-  if (snapshot !== undefined) {
-    header.meta = { ...(header.meta ?? {}), "dev.codex.turn_context": snapshot };
-  }
-  const modelDefault = firstTurnContextModel(records);
-  if (modelDefault !== undefined && header.agent.model_default === undefined) {
-    header.agent = { ...header.agent, model_default: modelDefault };
-  }
+  const header = await buildHeaderForRecords(records, forkFrom);
   const sessionUid = header.session_uid ?? header.id;
   const entries = await parseCodexSnapshotEntries(records, sessionUid);
   const sessionIndexUpdate = sessionIndexNameUpdate(
@@ -113,51 +93,146 @@ async function parseSingleGroup(
   return { header, entries };
 }
 
+async function buildHeaderForRecords(
+  records: Record<string, unknown>[],
+  forkFrom?: ForkFrom,
+): Promise<Header> {
+  const firstRecord = records[0];
+  if (firstRecord === undefined) {
+    throw new Error("Codex session must contain a parseable JSON object header");
+  }
+  const header = buildHeader(firstRecord);
+  if (forkFrom !== undefined) header.fork_from = forkFrom;
+  await addLiveVcsFallback(header);
+  addInitialTurnContextMeta(header, records);
+  addModelDefault(header, records);
+  return header;
+}
+
+async function addLiveVcsFallback(header: Header): Promise<void> {
+  // Recorded git (session_meta.git) wins; live readGitVcs is the fallback only
+  // when buildHeader found no recorded VCS block.
+  if (header.vcs !== undefined || typeof header.cwd !== "string") return;
+  const vcs = await readGitVcs(header.cwd);
+  if (vcs !== undefined) header.vcs = vcs;
+}
+
+function addInitialTurnContextMeta(header: Header, records: Record<string, unknown>[]): void {
+  // Snapshot the initial turn_context policy tuple into header.meta so the
+  // starting policy is visible without scanning the event stream; mid-session
+  // changes surface as system_events (overrides.ts).
+  const snapshot = firstTurnContextSnapshot(records);
+  if (snapshot !== undefined) {
+    header.meta = { ...(header.meta ?? {}), "dev.codex.turn_context": snapshot };
+  }
+}
+
+function addModelDefault(header: Header, records: Record<string, unknown>[]): void {
+  const modelDefault = firstTurnContextModel(records);
+  if (modelDefault !== undefined && header.agent.model_default === undefined) {
+    header.agent = { ...header.agent, model_default: modelDefault };
+  }
+}
+
 function isSubagentInvoke(entry: Entry): boolean {
   return entry.type === "tool_call" && entry.payload.tool === "subagent_invoke";
 }
 
-function childIdFromToolResult(entry: Entry): string | undefined {
-  if (entry.type !== "tool_result") return undefined;
+function toolResultOutput(entry: Entry): string | undefined {
   const payload = entry.payload;
   if (typeof payload !== "object" || payload === null) return undefined;
   const output = (payload as Record<string, unknown>).output;
-  if (typeof output !== "string" || output.length === 0) return undefined;
+  return typeof output === "string" && output.length > 0 ? output : undefined;
+}
+
+function agentIdFromToolOutput(output: string): string | undefined {
   try {
     const parsed = JSON.parse(output) as unknown;
-    if (parsed !== null && typeof parsed === "object") {
-      const agentId = (parsed as Record<string, unknown>).agent_id;
-      if (typeof agentId === "string" && agentId.length > 0) {
-        return canonicalizeIdentityString(agentId);
-      }
-    }
+    if (!isObject(parsed)) return undefined;
+    const agentId = stringValue(parsed.agent_id);
+    return agentId === undefined || agentId.length === 0
+      ? undefined
+      : canonicalizeIdentityString(agentId);
   } catch {
     return undefined;
   }
-  return undefined;
+}
+
+function childIdFromToolResult(entry: Entry): string | undefined {
+  if (entry.type !== "tool_result") return undefined;
+  const output = toolResultOutput(entry);
+  return output === undefined ? undefined : agentIdFromToolOutput(output);
+}
+
+function subagentCallIds(entries: Entry[]): Set<string> {
+  return new Set(entries.filter(isSubagentInvoke).map((entry) => entry.id));
+}
+
+function spawnChildCandidate(
+  entry: Entry,
+  callIds: Set<string>,
+): { callEntryId: string; childId: string } | undefined {
+  if (entry.type !== "tool_result") return undefined;
+  const payload = entry.payload;
+  if (typeof payload !== "object" || payload === null) return undefined;
+  const forId = (payload as Record<string, unknown>).for_id;
+  if (typeof forId !== "string" || !callIds.has(forId)) return undefined;
+  const childId = childIdFromToolResult(entry);
+  return childId === undefined ? undefined : { callEntryId: forId, childId };
+}
+
+function uniqueSpawnChildCandidates(entries: Entry[]): { callEntryId: string; childId: string }[] {
+  const callIds = subagentCallIds(entries);
+  const candidates: { callEntryId: string; childId: string }[] = [];
+  const seenPairs = new Set<string>();
+  for (const entry of entries) {
+    const candidate = spawnChildCandidate(entry, callIds);
+    if (candidate === undefined) continue;
+    const key = `${candidate.callEntryId}\0${candidate.childId}`;
+    if (seenPairs.has(key)) continue;
+    seenPairs.add(key);
+    candidates.push(candidate);
+  }
+  return candidates;
 }
 
 function spawnChildCandidates(entries: Entry[]): { callEntryId: string; childId: string }[] {
-  const subagentCallIds = new Set<string>();
-  for (const entry of entries) {
-    if (isSubagentInvoke(entry)) subagentCallIds.add(entry.id);
+  return uniqueSpawnChildCandidates(entries);
+}
+
+function countBy<T>(values: T[], keyOf: (value: T) => string): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const value of values) {
+    const key = keyOf(value);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
   }
-  const out: { callEntryId: string; childId: string }[] = [];
-  const seenPairs = new Set<string>();
-  for (const entry of entries) {
-    if (entry.type !== "tool_result") continue;
-    const payload = entry.payload;
-    if (typeof payload !== "object" || payload === null) continue;
-    const forId = (payload as Record<string, unknown>).for_id;
-    if (typeof forId !== "string" || !subagentCallIds.has(forId)) continue;
-    const childId = childIdFromToolResult(entry);
-    if (childId === undefined) continue;
-    const key = `${forId}\0${childId}`;
-    if (seenPairs.has(key)) continue;
-    seenPairs.add(key);
-    out.push({ callEntryId: forId, childId });
-  }
-  return out;
+  return counts;
+}
+
+function isUnambiguousChildCandidate(
+  candidate: { callEntryId: string; childId: string },
+  callCounts: Map<string, number>,
+  childCounts: Map<string, number>,
+): boolean {
+  return callCounts.get(candidate.callEntryId) === 1 && childCounts.get(candidate.childId) === 1;
+}
+
+async function parseLinkedChildGroup(
+  candidate: { callEntryId: string; childId: string },
+  childSessionPathIndex: ChildSessionPathIndex,
+  parentGroup: TrailSessionGroup,
+  env: NodeJS.ProcessEnv,
+): Promise<TrailSessionGroup | undefined> {
+  const childPath = findUniqueSessionPathById(candidate.childId, childSessionPathIndex);
+  if (childPath === undefined) return undefined;
+  return parseSingleGroup(
+    childPath,
+    {
+      session_id: parentGroup.header.id,
+      entry_id: candidate.callEntryId,
+    },
+    env,
+  ).catch(() => undefined);
 }
 
 async function buildChildSessionPathIndex(
@@ -211,22 +286,6 @@ async function isInsideCodexSessionsDir(
   return rel.length > 0 && !rel.startsWith("..") && !isAbsolute(rel);
 }
 
-function withLinkedChildSessionIds(entries: Entry[], linked: Map<string, string>): Entry[] {
-  return entries.map((entry) => {
-    const childId = linked.get(entry.id);
-    if (childId === undefined || !isSubagentInvoke(entry)) return entry;
-    const payload = entry.payload as { args?: unknown };
-    const args = isRecord(payload.args) ? payload.args : {};
-    return {
-      ...entry,
-      payload: {
-        ...entry.payload,
-        args: { ...args, session_id: childId },
-      },
-    } as Entry;
-  });
-}
-
 async function directChildGroups(
   parentGroup: TrailSessionGroup,
   parentPath: string,
@@ -242,31 +301,17 @@ async function directChildGroups(
     env,
   );
   if (childSessionPathIndex === undefined) return [];
-  const callCounts = new Map<string, number>();
-  const childCounts = new Map<string, number>();
-  for (const candidate of candidates) {
-    callCounts.set(candidate.callEntryId, (callCounts.get(candidate.callEntryId) ?? 0) + 1);
-    childCounts.set(candidate.childId, (childCounts.get(candidate.childId) ?? 0) + 1);
-  }
+  const callCounts = countBy(candidates, (candidate) => candidate.callEntryId);
+  const childCounts = countBy(candidates, (candidate) => candidate.childId);
   for (const candidate of candidates) {
     // Only link 1:1 relationships: ambiguous repeated calls or child ids stay unlinked.
-    if (callCounts.get(candidate.callEntryId) !== 1) continue;
-    if (childCounts.get(candidate.childId) !== 1) continue;
-    const childPath = findUniqueSessionPathById(candidate.childId, childSessionPathIndex);
-    if (childPath === undefined) continue;
-    const child = await parseSingleGroup(
-      childPath,
-      {
-        session_id: parentGroup.header.id,
-        entry_id: candidate.callEntryId,
-      },
-      env,
-    ).catch(() => undefined);
+    if (!isUnambiguousChildCandidate(candidate, callCounts, childCounts)) continue;
+    const child = await parseLinkedChildGroup(candidate, childSessionPathIndex, parentGroup, env);
     if (child === undefined) continue;
     linked.set(candidate.callEntryId, child.header.id);
     children.push(child);
   }
-  parentGroup.entries = withLinkedChildSessionIds(parentGroup.entries, linked);
+  parentGroup.entries = withLinkedSubagentSessionIds(parentGroup.entries, linked);
   return children;
 }
 

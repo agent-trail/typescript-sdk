@@ -1,5 +1,5 @@
 import { Buffer } from "node:buffer";
-import type { MappingDef } from "@agent-trail/adapter-kit";
+import type { MappingDef, TrailEntryDraft } from "@agent-trail/adapter-kit";
 import { defineMapping } from "@agent-trail/adapter-kit";
 import type { Attachment } from "@agent-trail/types";
 import {
@@ -21,27 +21,43 @@ type ParsedDataUri = {
   oversized?: true;
 };
 
+type AttachmentRef = { mediaType?: string; uri?: string };
+type AttachmentCandidate = {
+  ref?: AttachmentRef;
+  mediaType?: string;
+};
+
+type DataUriParts = {
+  mediaType?: string | undefined;
+  parameters: string;
+  data: string;
+};
+
 function message(payloadType: "user_message" | "agent_message"): MappingDef<Raw> {
   const rawType = `event_msg.${payloadType}`;
+  const emit = messageEmitter(payloadType, rawType);
   return defineMapping<Raw>({
     match: { type: "event_msg", payload: { type: payloadType } },
-    emit: (record) => {
-      if (!emittable(record)) return [];
-      const p = payloadOf(record);
-      // Canonical surface is `payload.message` (User/AgentMessageEvent.message);
-      // no `text` fallback (drift-defense: audited single source).
-      const text = stringValue(p.message);
-      if (text === undefined || text.length === 0) return [];
-      return [
-        {
-          type: payloadType === "user_message" ? "user_message" : "agent_message",
-          payload: { text },
-          source: source(rawType),
-          meta: meta(rawType),
-        },
-      ];
-    },
+    emit,
   });
+}
+
+function messageEmitter(payloadType: "user_message" | "agent_message", rawType: string) {
+  return (record: Raw) => {
+    if (!emittable(record)) return [];
+    const p = payloadOf(record);
+    // Canonical surface is `payload.message` (User/AgentMessageEvent.message);
+    // no `text` fallback (drift-defense: audited single source).
+    const text = stringValue(p.message);
+    if (text === undefined || text.length === 0) return [];
+    const draft: TrailEntryDraft = {
+      type: payloadType === "user_message" ? "user_message" : "agent_message",
+      payload: { text },
+      source: source(rawType),
+      meta: meta(rawType),
+    };
+    return [draft];
+  };
 }
 
 function parseBase64Image(mediaType: string | undefined, data: string): ParsedDataUri {
@@ -55,37 +71,49 @@ function parseBase64Image(mediaType: string | undefined, data: string): ParsedDa
   };
 }
 
-// Pull bytes + media type out of a `data:<media-type>;base64,...` URI.
-function parseDataUri(uri: string): ParsedDataUri | undefined {
+function parsedDataUriParts(uri: string): DataUriParts | undefined {
   const match = /^data:([^;,]+)?((?:;[^,]*)*),(.*)$/s.exec(uri);
   if (match === null) return undefined;
-  const mediaType = match[1];
-  const parameters = match[2] as string;
-  const data = match[3] as string;
-  if (parameters.split(";").includes("base64")) {
-    return parseBase64Image(mediaType, data);
+  return {
+    mediaType: match[1],
+    parameters: match[2] as string,
+    data: match[3] as string,
+  };
+}
+
+function oversizedParsedData(mediaType: string | undefined): ParsedDataUri {
+  return { ...(mediaType !== undefined ? { mediaType } : {}), oversized: true };
+}
+
+function parsedTextData(mediaType: string | undefined, data: string): ParsedDataUri {
+  if (Buffer.byteLength(data, "utf8") > INLINE_IMAGE_MAX_DECODED_BYTES) {
+    return oversizedParsedData(mediaType);
   }
-  if (data.length > INLINE_IMAGE_MAX_DECODED_BYTES * 3) {
-    return { ...(mediaType !== undefined ? { mediaType } : {}), oversized: true };
+  return { ...(mediaType !== undefined ? { mediaType } : {}), bytes: Buffer.from(data, "utf8") };
+}
+
+// Pull bytes + media type out of a `data:<media-type>;base64,...` URI.
+function parseDataUri(uri: string): ParsedDataUri | undefined {
+  const parts = parsedDataUriParts(uri);
+  if (parts === undefined) return undefined;
+  if (parts.parameters.split(";").includes("base64")) {
+    return parseBase64Image(parts.mediaType, parts.data);
+  }
+  if (parts.data.length > INLINE_IMAGE_MAX_DECODED_BYTES * 3) {
+    return oversizedParsedData(parts.mediaType);
   }
   try {
-    const decoded = decodeURIComponent(data);
+    const decoded = decodeURIComponent(parts.data);
     if (Buffer.byteLength(decoded, "utf8") > INLINE_IMAGE_MAX_DECODED_BYTES) {
-      return { ...(mediaType !== undefined ? { mediaType } : {}), oversized: true };
+      return oversizedParsedData(parts.mediaType);
     }
-    return {
-      ...(mediaType !== undefined ? { mediaType } : {}),
-      bytes: Buffer.from(decoded, "utf8"),
-    };
+    return parsedTextData(parts.mediaType, decoded);
   } catch {
-    if (Buffer.byteLength(data, "utf8") > INLINE_IMAGE_MAX_DECODED_BYTES) {
-      return { ...(mediaType !== undefined ? { mediaType } : {}), oversized: true };
-    }
-    return { ...(mediaType !== undefined ? { mediaType } : {}), bytes: Buffer.from(data, "utf8") };
+    return parsedTextData(parts.mediaType, parts.data);
   }
 }
 
-function attachmentRef(uri: string): { mediaType?: string; uri?: string } | undefined {
+function attachmentRef(uri: string): AttachmentRef | undefined {
   if (/^(https:|file:|sha256:)/.test(uri)) return { uri };
   const parsed = parseDataUri(uri);
   if (parsed === undefined) return undefined;
@@ -93,6 +121,82 @@ function attachmentRef(uri: string): { mediaType?: string; uri?: string } | unde
     ...(parsed.mediaType !== undefined ? { mediaType: parsed.mediaType } : {}),
     ...(parsed.bytes !== undefined ? { uri: sha256Ref(parsed.bytes) } : {}),
   };
+}
+
+function sourceDataAttachmentRef(
+  sourceBlock: Record<string, unknown> | undefined,
+  mediaType: string | undefined,
+): AttachmentCandidate {
+  if (sourceBlock === undefined) {
+    return mediaType === undefined ? {} : { mediaType };
+  }
+  const data = stringValue(sourceBlock.data);
+  const parsed = data !== undefined ? parseBase64Image(mediaType, data) : undefined;
+  if (parsed === undefined) {
+    return mediaType === undefined ? {} : { mediaType };
+  }
+  const finalMediaType = parsed.mediaType ?? mediaType;
+  return {
+    ...(finalMediaType !== undefined ? { mediaType: finalMediaType } : {}),
+    ref: parsed.bytes !== undefined ? { uri: sha256Ref(parsed.bytes) } : {},
+  };
+}
+
+function imageSourceBlock(block: Record<string, unknown>): Record<string, unknown> | undefined {
+  return isObject(block.source) ? block.source : undefined;
+}
+
+function imageBlockUri(
+  block: Record<string, unknown>,
+  sourceBlock: Record<string, unknown> | undefined,
+): string | undefined {
+  const imageUrl = stringValue(block.image_url);
+  if (imageUrl !== undefined) return imageUrl;
+  return sourceBlock === undefined ? undefined : stringValue(sourceBlock.url);
+}
+
+function imageBlockMediaType(
+  ref: AttachmentRef,
+  sourceBlock: Record<string, unknown> | undefined,
+): string | undefined {
+  if (ref.mediaType !== undefined) return ref.mediaType;
+  return sourceBlock === undefined ? undefined : stringValue(sourceBlock.media_type);
+}
+
+function imageUriCandidate(
+  block: Record<string, unknown>,
+  sourceBlock: Record<string, unknown> | undefined,
+): AttachmentCandidate | undefined {
+  const uri = imageBlockUri(block, sourceBlock);
+  if (uri === undefined) return undefined;
+  const uriRef = attachmentRef(uri);
+  if (uriRef === undefined) return undefined;
+  const mediaType = imageBlockMediaType(uriRef, sourceBlock);
+  return {
+    ref: uriRef,
+    ...(mediaType !== undefined ? { mediaType } : {}),
+  };
+}
+
+function imageBlockCandidate(block: Record<string, unknown>): AttachmentCandidate {
+  const sourceBlock = imageSourceBlock(block);
+  const uriCandidate = imageUriCandidate(block, sourceBlock);
+  const mediaType = sourceBlock === undefined ? undefined : stringValue(sourceBlock.media_type);
+  return uriCandidate ?? sourceDataAttachmentRef(sourceBlock, mediaType);
+}
+
+function attachmentFromCandidate(candidate: AttachmentCandidate): Attachment | undefined {
+  const { ref, mediaType } = candidate;
+  if (ref?.uri === undefined) return undefined;
+  return {
+    kind: "image",
+    ...(mediaType !== undefined ? { media_type: mediaType } : {}),
+    uri: ref.uri,
+  };
+}
+
+function attachmentFromImageBlock(block: Record<string, unknown>): Attachment | undefined {
+  return attachmentFromCandidate(imageBlockCandidate(block));
 }
 
 // Build spec `attachments[]` from a response_item.message content array. Codex
@@ -105,26 +209,8 @@ function imageAttachments(content: unknown): Attachment[] {
     if (!isObject(block)) continue;
     const type = stringValue(block.type);
     if (type !== "input_image" && type !== "image") continue;
-    const src = isObject(block.source) ? block.source : undefined;
-    const uri = stringValue(block.image_url) ?? stringValue(src?.url);
-    let ref = uri !== undefined ? attachmentRef(uri) : undefined;
-    let mediaType = ref?.mediaType ?? stringValue(src?.media_type);
-    if (ref === undefined && src !== undefined) {
-      const mt = mediaType;
-      const data = stringValue(src.data);
-      const parsed = data !== undefined ? parseBase64Image(mt, data) : undefined;
-      if (parsed !== undefined) {
-        ref = parsed.bytes !== undefined ? { uri: sha256Ref(parsed.bytes) } : {};
-        if (parsed.mediaType !== undefined) mediaType = parsed.mediaType;
-      }
-    }
-    if (ref?.uri === undefined) continue;
-    const attachment: Attachment = {
-      kind: "image",
-      ...(mediaType !== undefined ? { media_type: mediaType } : {}),
-      uri: ref.uri,
-    };
-    out.push(attachment);
+    const attachment = attachmentFromImageBlock(block);
+    if (attachment !== undefined) out.push(attachment);
   }
   return out;
 }

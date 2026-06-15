@@ -14,17 +14,12 @@
     "ignore": [
       "packages/types/src/generated.ts",
       "**/*.test.ts",
-      "packages/adapters/src/codex/**",
       "packages/adapters/src/pi/**",
       "packages/adapters/src/opencode/**"
     ]
   },
   "health": {
-    "ignore": [
-      "packages/adapters/src/codex/**",
-      "packages/adapters/src/pi/**",
-      "packages/adapters/src/opencode/**"
-    ]
+    "ignore": ["packages/adapters/src/pi/**", "packages/adapters/src/opencode/**"]
   },
   "production": false
 }

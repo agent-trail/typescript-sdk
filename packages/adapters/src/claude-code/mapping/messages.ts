@@ -3,6 +3,7 @@ import type { TrailEntryDraft } from "@agent-trail/adapter-kit";
 import { defineMapping } from "@agent-trail/adapter-kit";
 import type { ToolKind } from "@agent-trail/types";
 import { mapAgentMessageUsage } from "../../legacy-kit-helpers.js";
+import { userQueryPayloadFromInput } from "../../shared/user-query.js";
 import {
   isNonEmptyString,
   isTaskPlanStatus,
@@ -24,85 +25,23 @@ import {
 import { toolKindAndArgs } from "../tools.js";
 import { attributionMeta, gate, imageAttachments, meta, type Raw, src } from "./shared.js";
 
-type UserQueryOption = { id?: string; label: string; description?: string };
-
 function questionId(question: string, occurrence: number): string {
   const base = `q_${createHash("sha256").update(question).digest("hex").slice(0, 12)}`;
   return occurrence === 0 ? base : `${base}_${occurrence + 1}`;
 }
 
-function booleanValue(value: unknown): boolean | undefined {
-  return typeof value === "boolean" ? value : undefined;
-}
-
-function optionObjects(value: unknown): UserQueryOption[] | undefined {
-  if (!Array.isArray(value)) return undefined;
-  const options = value
-    .map((option) => {
-      if (typeof option === "string") return { label: option };
-      if (option === null || typeof option !== "object") return undefined;
-      const label = stringValue((option as { label?: unknown }).label);
-      if (label === undefined) return undefined;
-      const id = stringValue((option as { id?: unknown }).id);
-      const description = stringValue((option as { description?: unknown }).description);
-      return {
-        ...(id !== undefined && isNonEmptyString(id) ? { id } : {}),
-        label,
-        ...(description !== undefined ? { description } : {}),
-      };
-    })
-    .filter((option): option is UserQueryOption => option !== undefined);
-  return options.length === value.length ? options : undefined;
-}
-
-function userQueryQuestion(
-  raw: Record<string, unknown>,
-  fallbackOccurrence: number,
-): Record<string, unknown> | undefined {
-  const question = stringValue(raw.question);
-  if (question === undefined) return undefined;
-  const out: Record<string, unknown> = {
-    id: stringValue(raw.id) ?? questionId(question, fallbackOccurrence),
-    question,
-  };
-  const header = stringValue(raw.header);
-  const multiSelect = firstBoolean(raw.multi_select, raw.multiSelect);
-  const isSecret = firstBoolean(raw.is_secret, raw.isSecret);
-  const allowOther = firstBoolean(raw.allow_other, raw.allowOther, raw.is_other);
-  const options = optionObjects(raw.options) ?? optionObjects(raw.choices);
-  if (header !== undefined) out.header = header;
-  if (multiSelect !== undefined) out.multi_select = multiSelect;
-  if (isSecret !== undefined) out.is_secret = isSecret;
-  if (allowOther !== undefined) out.allow_other = allowOther;
-  if (options !== undefined) out.options = options;
-  return out;
-}
-
-function firstBoolean(...values: unknown[]): boolean | undefined {
-  return values.map(booleanValue).find((value) => value !== undefined);
-}
-
 function userQueryPayload(input: unknown): { questions: Record<string, unknown>[] } | undefined {
-  const args =
-    input !== null && typeof input === "object" ? (input as Record<string, unknown>) : {};
-  if (Array.isArray(args.questions)) {
-    const occurrences = new Map<string, number>();
-    const questions = args.questions
-      .filter(
-        (question): question is Record<string, unknown> =>
-          question !== null && typeof question === "object",
-      )
-      .map((question) => {
-        const text = stringValue(question.question);
-        const occurrence = text === undefined ? 0 : (occurrences.get(text) ?? 0);
-        if (text !== undefined) occurrences.set(text, occurrence + 1);
-        return userQueryQuestion(question, occurrence);
-      })
-      .filter((question): question is Record<string, unknown> => question !== undefined);
-    if (questions.length > 0) return { questions };
-  }
-  const question = userQueryQuestion(args, 0);
-  return question !== undefined ? { questions: [question] } : undefined;
+  return userQueryPayloadFromInput(input, {
+    fallbackId: questionId,
+    fallbackIndex: (question, _index, occurrences) => {
+      const text = stringValue(question.question);
+      const occurrence = text === undefined ? 0 : (occurrences.get(text) ?? 0);
+      if (text !== undefined) occurrences.set(text, occurrence + 1);
+      return occurrence;
+    },
+    stringValue,
+    isNonEmptyString,
+  });
 }
 
 function taskPlanItemsFromTodoWrite(input: unknown): TaskPlanItem[] | undefined {

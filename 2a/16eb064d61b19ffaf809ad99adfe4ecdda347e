@@ -1,0 +1,24 @@
+packages/adapters/src/claude-code/mapping/capabilities.ts
+  s_41a01eab7e41e9::t_9832ec126341ee 41-44
+packages/adapters/src/claude-code/envelope-mappers.ts
+  s_41a01eab7e41e9::t_50f4b9d1025269 84
+packages/adapters/src/claude-code/index.test.ts
+  s_41a01eab7e41e9::t_d823f7c93b48b6 3668-3669
+  s_41a01eab7e41e9::t_91e864cf717f65 3639-3667,3670-3678
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "2a16eb064d61b19ffaf809ad99adfe4ecdda347e",
+  "prompts": {},
+  "sessions": {
+    "s_41a01eab7e41e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec547-b5c0-7200-b226-4f1ef52334a0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

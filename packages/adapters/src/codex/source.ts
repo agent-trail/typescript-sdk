@@ -10,7 +10,11 @@ import { enforceSourceRawSize, redactValue } from "../source-raw.js";
 
 // Strict numeric coercion is identical to the kit's coerceInt; re-export under
 // the adapter-local name. isObject/stringValue are shared verbatim.
-export { coerceInt as numericValue, isObject, stringValue } from "@agent-trail/adapter-kit";
+export {
+  coerceInt as numericValue,
+  legacyIsObject as isObject,
+  legacyStringValue as stringValue,
+} from "../legacy-kit-helpers.js";
 
 export function sanitizeSourceRaw(raw: Record<string, unknown>): Record<string, unknown> {
   return enforceSourceRawSize(redactValue(raw)).value as Record<string, unknown>;

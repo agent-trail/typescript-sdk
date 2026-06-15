@@ -18,10 +18,6 @@ import { createHash } from "node:crypto";
  * §4.3. Output is the hyphenated 36-char form accepted by the `session_uid`
  * schema (ULID/UUID union).
  */
-export function deriveSessionUid(namespace: string, upstreamId: string): string {
-  return deriveUuidV5(namespace, upstreamId);
-}
-
 /**
  * Derive a deterministic v5 UUID for an entry id synthesized by an adapter or
  * the mapping engine. Seed parts are joined with the ASCII unit separator
@@ -29,19 +25,6 @@ export function deriveSessionUid(namespace: string, upstreamId: string): string 
  */
 export function deriveSynthesizedEntryId(namespace: string, seedParts: readonly string[]): string {
   return deriveUuidV5(namespace, seedParts.join("\x1f"));
-}
-
-const UUID_HYPHENATED_PATTERN =
-  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-const UUID_UNHYPHENATED_PATTERN = /^[0-9a-fA-F]{32}$/;
-const ULID_PATTERN = /^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$/;
-
-export function canonicalizeIdentityString(value: string): string {
-  if (UUID_HYPHENATED_PATTERN.test(value) || UUID_UNHYPHENATED_PATTERN.test(value)) {
-    return value.toLowerCase();
-  }
-  if (ULID_PATTERN.test(value)) return value.toUpperCase();
-  return value;
 }
 
 function deriveUuidV5(namespace: string, name: string): string {

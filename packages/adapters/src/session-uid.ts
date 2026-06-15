@@ -1,17 +1,60 @@
+import { createHash } from "node:crypto";
+
 /**
  * Per-adapter namespace UUIDs for deterministic `session_uid`/entry-id
- * derivation (spec §9.5). The derivation helpers themselves live in
- * `@agent-trail/adapter-kit` (shared by the mapping engine); this module pins
- * the per-adapter namespaces and re-exports the helpers.
+ * derivation (spec §9.5). This module owns concrete-adapter identity policy;
+ * `@agent-trail/adapter-kit` no longer exposes these implementation helpers.
  *
  * Namespace UUIDs below are arbitrary, random v4 UUIDs — they only need to be
  * stable forever. Changing one is a corpus-wide migration.
  */
-export {
-  canonicalizeIdentityString,
-  deriveSessionUid,
-  deriveSynthesizedEntryId,
-} from "@agent-trail/adapter-kit";
+
+const UUID_HYPHENATED_PATTERN =
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+const UUID_UNHYPHENATED_PATTERN = /^[0-9a-fA-F]{32}$/;
+const ULID_PATTERN = /^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$/;
+
+export function canonicalizeIdentityString(value: string): string {
+  if (UUID_HYPHENATED_PATTERN.test(value) || UUID_UNHYPHENATED_PATTERN.test(value)) {
+    return value.toLowerCase();
+  }
+  if (ULID_PATTERN.test(value)) return value.toUpperCase();
+  return value;
+}
+
+export function deriveSessionUid(namespace: string, upstreamId: string): string {
+  return deriveUuidV5(namespace, upstreamId);
+}
+
+export function deriveSynthesizedEntryId(namespace: string, seedParts: readonly string[]): string {
+  return deriveUuidV5(namespace, seedParts.join("\x1f"));
+}
+
+function deriveUuidV5(namespace: string, name: string): string {
+  const namespaceBytes = uuidBytes(namespace);
+  const hash = createHash("sha1").update(namespaceBytes).update(name, "utf8").digest();
+  const bytes = Uint8Array.prototype.slice.call(hash, 0, 16);
+  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x50;
+  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
+  return formatUuid(bytes);
+}
+
+function uuidBytes(uuid: string): Uint8Array {
+  const hex = uuid.replace(/-/g, "");
+  if (hex.length !== 32 || /[^0-9a-fA-F]/.test(hex)) {
+    throw new TypeError(`Invalid namespace UUID: ${uuid}`);
+  }
+  const bytes = new Uint8Array(16);
+  for (let index = 0; index < bytes.length; index += 1) {
+    bytes[index] = Number.parseInt(hex.slice(index * 2, index * 2 + 2), 16);
+  }
+  return bytes;
+}
+
+function formatUuid(bytes: Uint8Array): string {
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+}
 
 /** Namespace for Claude Code adapter session_uids. Stable forever — do not change. */
 export const CLAUDE_CODE_SESSION_UID_NAMESPACE = "b4a0f5e1-7c23-4d8a-9e12-3f4b5c6d7e8f";

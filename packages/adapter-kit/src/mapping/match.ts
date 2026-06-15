@@ -1,4 +1,4 @@
-import { isObject } from "../primitives/guards.js";
+import { isRecordObject } from "../primitives/guards.js";
 import type { MatchPattern } from "../types.js";
 
 /**
@@ -14,8 +14,8 @@ export function matchesPattern(record: Record<string, unknown>, pattern: MatchPa
   for (const [key, expected] of Object.entries(pattern)) {
     if (!Object.hasOwn(record, key)) return false;
     const actual = record[key];
-    if (isObject(expected)) {
-      if (!isObject(actual)) return false;
+    if (isRecordObject(expected)) {
+      if (!isRecordObject(actual)) return false;
       if (!matchesPattern(actual, expected)) return false;
     } else if (actual !== expected) {
       return false;

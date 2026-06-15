@@ -1,5 +1,5 @@
-import { mapAgentMessageUsage } from "@agent-trail/adapter-kit";
 import type { AgentMessageUsage, Entry, Header } from "@agent-trail/types";
+import { mapAgentMessageUsage } from "../legacy-kit-helpers.js";
 import { deriveSynthesizedEntryId, OPENCODE_ENTRY_ID_NAMESPACE } from "../session-uid.js";
 import { attachmentFrom, attachmentsFrom } from "./attachments.js";
 import {

@@ -1,26 +1,14 @@
 # @agent-trail/adapter-kit
 
-Shared extraction primitives and source readers for Agent Trail adapters. Adapters compose these
-instead of reimplementing the same low-level extraction, coercion, and file-reading logic.
+Shared adapter authoring surface for Agent Trail adapters. Concrete adapters compose the mapping
+DSL, source readers, source-schema validation, and reconciliation config without reaching into
+package internals.
 
 Part of the adapter-kit redesign (epic
-[#135](https://github.com/agent-trail/agent-trail/issues/135)): primitives, the `SourceReader`
-abstraction, source-schema validation, and the typed mapping DSL + two-pass reconciler. The kit is
-ready; per-adapter migration to it is tracked separately (epic Phase 4).
-
-## Primitives
-
-| Export | Signature | Purpose |
-|---|---|---|
-| `isObject` | `(v: unknown) => v is Record<string, unknown>` | Non-null object guard (arrays included). |
-| `stringValue` | `(v: unknown) => string \| undefined` | Returns `v` when a string. |
-| `jsonObjectValue` | `(v: unknown) => Record<string, unknown> \| undefined` | Returns `v` when a non-null object. |
-| `coerceInt` | `(v: unknown) => number \| undefined` | Returns `v` when a finite number. Strict — no string coercion. |
-| `quoteShellArg` | `(v: string) => string` | POSIX single-quote a shell token when it has special chars. |
-| `commandFrom` | `(args) => string \| undefined` | Canonical shell command: `command` string → `cmd` string → argv array (quoted/joined; partial argv refused). |
-| `filePathFrom` | `(args) => string \| undefined` | `file_path` then `path`. |
-| `pick` | `(record, keys) => number \| undefined` | First non-negative-integer value across candidate keys. |
-| `mapAgentMessageUsage` | `(raw) => AgentMessageUsage \| undefined` | Maps a source usage envelope to spec §10.2 `payload.usage` (snake/camel, cache renames). |
+[#135](https://github.com/agent-trail/agent-trail/issues/135)): the `SourceReader` abstraction,
+source-schema validation, and the typed mapping DSL + two-pass reconciler. Low-level helper code is
+not part of the root API. Keep source-specific coercion, tool normalization, and identity policy in
+the concrete adapter package or a shared adapter substrate.
 
 ## Source readers
 
@@ -35,14 +23,14 @@ interface SourceReader {
 }
 ```
 
-- `new JsonlReader({ versionFrom? })` — newline-delimited JSON; yields one parsed object per line,
+- `new JsonlReader({ versionFrom? })` - newline-delimited JSON; yields one parsed object per line,
   skipping blank and malformed lines. `schemaVersion` derives from the first record via `versionFrom`.
-- `chainReaders(readers)` — drains readers sequentially; use when temporal interleaving is irrelevant.
-- `mergeByTimestamp(readers, { timestampFrom? })` — interleaves records by ascending timestamp
+- `new SqliteReader({ driver, queries, rowToRecord })` - reads through an injected SQLite driver.
+- `chainReaders(readers)` - drains readers sequentially; use when temporal interleaving is irrelevant.
+- `mergeByTimestamp(readers, { timestampFrom? })` - interleaves records by ascending timestamp
   (stable for equal/absent timestamps). Only sound when sources emit comparable timestamps.
-
-`SqliteReader` is not shipped in Phase 1; the interface and composition helpers are sized to accept
-it without breaking changes.
+- `@agent-trail/adapter-kit/bun-sqlite` - explicit Bun-only convenience subpath for
+  `bunSqliteDriver`. The root package does not import `bun:*`.
 
 ## Source schema validation
 
@@ -70,7 +58,7 @@ for await (const record of reader.records(source)) {
   const diags =
     schemaVersion === undefined ? [] : validateSourceRecord("codex", schemaVersion, record);
   if (diags.length > 0) {
-    // quarantine the record — see formatDiagnosticsText from @agent-trail/core
+    // quarantine the record; see formatDiagnosticsText from @agent-trail/core
     continue;
   }
   // convert record to trail format

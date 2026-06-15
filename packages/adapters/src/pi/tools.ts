@@ -1,4 +1,4 @@
-import { coerceInt as maybeNumber, quoteShellArg } from "@agent-trail/adapter-kit";
+import { coerceInt as maybeNumber, quoteShellArg } from "../legacy-kit-helpers.js";
 import { isObject, jsonObjectValue, stringValue } from "./source.js";
 
 const PATCH_FILE_MARKER = /^\*\*\* (Update|Add|Delete) File: (.+)$/gm;

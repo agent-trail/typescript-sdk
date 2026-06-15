@@ -12,12 +12,12 @@
 // same JSONL produces stable ids and the reconciler can group segments.
 import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
+import type { Header, ToolKind } from "@agent-trail/types";
 import {
   type AgentMessageUsage,
   mapAgentMessageUsage,
   quoteShellArg,
-} from "@agent-trail/adapter-kit";
-import type { Header, ToolKind } from "@agent-trail/types";
+} from "../legacy-kit-helpers.js";
 import {
   CODEX_SESSION_UID_NAMESPACE,
   canonicalizeIdentityString,

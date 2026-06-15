@@ -36,52 +36,13 @@ export interface AdapterDef<S = unknown> {
 }
 
 // @public (undocumented)
-export type AgentMessageUsage = {
-    input_tokens?: number;
-    output_tokens?: number;
-    input_tokens_cumulative?: number;
-    output_tokens_cumulative?: number;
-    total_tokens?: number;
-    total_tokens_cumulative?: number;
-    cache_read_tokens?: number;
-    cache_creation_tokens?: number;
-    reasoning_tokens?: number;
-    context_input_tokens?: number;
-    context_window_tokens?: number;
-};
-
-// @public (undocumented)
-export function canonicalizeIdentityString(value: string): string;
-
-// @public (undocumented)
 export function chainReaders(readers: SourceReader[]): SourceReader;
-
-// @public (undocumented)
-export function coerceInt(value: unknown): number | undefined;
-
-// @public (undocumented)
-export function commandFrom(args: Record<string, unknown>): string | undefined;
 
 // @public
 export function defineAdapter<S = unknown>(def: AdapterDef<S>): Adapter;
 
 // @public
 export function defineMapping<T extends RawRecord>(def: MappingDef<T>): MappingDef<T>;
-
-// @public
-export function deriveSessionUid(namespace: string, upstreamId: string): string;
-
-// @public
-export function deriveSynthesizedEntryId(namespace: string, seedParts: readonly string[]): string;
-
-// @public
-export function dispatch(record: RawRecord, mappings: MappingDef<any>[]): MappingDef<any> | undefined;
-
-// @public (undocumented)
-export function filePathFrom(args: Record<string, unknown>): string | undefined;
-
-// @public (undocumented)
-export function isObject(value: unknown): value is Record<string, unknown>;
 
 // @public (undocumented)
 export class JsonlReader implements SourceReader {
@@ -102,17 +63,11 @@ export interface JsonlReaderOptions {
     versionFrom?: (first: RawRecord) => string | undefined;
 }
 
-// @public (undocumented)
-export function jsonObjectValue(value: unknown): Record<string, unknown> | undefined;
-
 // @public
 export interface LinkerHints {
     // (undocumented)
     call_id?: string;
 }
-
-// @public (undocumented)
-export function mapAgentMessageUsage(raw: unknown): AgentMessageUsage | undefined;
 
 // @public (undocumented)
 export interface MappingDef<T extends RawRecord = RawRecord> {
@@ -121,9 +76,6 @@ export interface MappingDef<T extends RawRecord = RawRecord> {
     // (undocumented)
     match: MatchPattern<T>;
 }
-
-// @public
-export function matchesPattern(record: Record<string, unknown>, pattern: MatchPattern): boolean;
 
 // Warning: (ae-forgotten-export) The symbol "MatchPatternValue" needs to be exported by the entry point index.d.ts
 //
@@ -165,58 +117,7 @@ export interface ParseOptions {
 }
 
 // @public (undocumented)
-export interface Pass1Params<S = unknown> {
-    drift?: {
-        isDrift: (record: RawRecord) => boolean;
-        toDraft: (record: RawRecord) => TrailEntryDraft;
-    } | undefined;
-    // (undocumented)
-    idNamespace: string;
-    // (undocumented)
-    initialState?: (() => S) | undefined;
-    // (undocumented)
-    mappings: MappingDef<any>[];
-    // (undocumented)
-    overrides?: OverrideDef<any, S>[] | undefined;
-    // (undocumented)
-    sessionUid: string;
-    // (undocumented)
-    tsFrom: (record: RawRecord) => string;
-}
-
-// @public (undocumented)
-export function pick(record: Record<string, unknown>, keys: readonly string[]): number | undefined;
-
-// @public
-export function quarantine(input: QuarantineInput): Entry;
-
-// @public
-export function quarantineDraft(input: QuarantineDraftInput): TrailEntryDraft;
-
-// @public (undocumented)
-export interface QuarantineDraftInput {
-    agent: AgentName;
-    namespace: string;
-    originalType?: string;
-    record: RawRecord;
-}
-
-// @public (undocumented)
-export interface QuarantineInput extends QuarantineDraftInput {
-    // (undocumented)
-    id: string;
-    // (undocumented)
-    ts: string;
-}
-
-// @public (undocumented)
-export function quoteShellArg(value: string): string;
-
-// @public (undocumented)
 export type RawRecord = Record<string, unknown>;
-
-// @public
-export function reconcile(entries: Entry[], config: ReconcilerConfig, ctx: ReconcilerRuleCtx): Entry[];
 
 // @public (undocumented)
 export interface ReconcilerConfig {
@@ -242,9 +143,6 @@ export interface ReconcilerRuleCtx {
     // (undocumented)
     records?: RawRecord[];
 }
-
-// @public
-export function runPass1<S = unknown>(records: RawRecord[], params: Pass1Params<S>): Entry[];
 
 // @public
 export function selectSchemaVersion(agent: string, sourceVersion: string | number | undefined): string | undefined;
@@ -315,9 +213,6 @@ export interface SqliteReaderOptions {
     // (undocumented)
     rowToRecord: (queryName: string, row: Record<string, unknown>) => RawRecord;
 }
-
-// @public (undocumented)
-export function stringValue(value: unknown): string | undefined;
 
 // @public
 export interface TrailEntryDraft {

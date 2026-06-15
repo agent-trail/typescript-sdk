@@ -14,6 +14,7 @@ import {
   type ToolTranscriptItem,
   toolGroupTimestamp,
 } from "../index.ts";
+import { pairToolLifecycleEvents } from "../pairing.ts";
 
 const header = {
   type: "session",
@@ -308,6 +309,18 @@ test("parent-id fallback takes precedence over newer sequential calls", () => {
   expect(items[0].items[0]?.result?.id).toBe(resultId);
   expect(items[0].items[1]?.call?.id).toBe(secondCallId);
   expect(items[0].items[1]?.result).toBeUndefined();
+});
+
+test("explicit pairing ignores duplicate completions for an already matched call", () => {
+  const callId = "01HEVTA0000000000000000001";
+  const pairings = pairToolLifecycleEvents([
+    toolCallEvent(2, callId, "file_read"),
+    toolResultEvent(3, "01HEVTA0000000000000000002", callId),
+    toolResultEvent(4, "01HEVTA0000000000000000003", callId),
+  ]);
+
+  expect(pairings.get(1)).toBe(callId);
+  expect(pairings.has(2)).toBe(false);
 });
 
 test("sequential fallback does not pair child branch results to parent calls", () => {

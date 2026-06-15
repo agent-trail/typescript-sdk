@@ -32,6 +32,7 @@ type PairingBucket = {
   completions: ToolCompletionLink[];
 };
 
+/** @internal */
 export function pairToolLifecycleEvents(events: readonly RenderEvent[]): Map<number, string> {
   const pairings = new Map<number, string>();
   forEachSessionRange(events, (start, end) => {
@@ -132,7 +133,7 @@ function linkExplicitCompletions(bucket: PairingBucket, pairings: Map<number, st
   for (const completion of bucket.completions) {
     if (!completion.supportsExplicitId || completion.explicitId === undefined) continue;
     const call = bucket.callsById.get(completion.explicitId);
-    if (call !== undefined) link(call, completion, pairings);
+    if (call !== undefined && !call.matched) link(call, completion, pairings);
   }
 }
 

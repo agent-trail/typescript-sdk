@@ -32,6 +32,7 @@ const EVENT_RENDERERS: Record<string, EventRenderer> = {
   user_message: renderUserMessage,
 };
 
+/** @internal */
 export function buildRenderEvents(trail: RenderTrail): RenderEvent[] {
   return trail.groups.flatMap((group, sessionIndex) =>
     group.events.map((record) => renderEventFromRecord(record, sessionIndex)),

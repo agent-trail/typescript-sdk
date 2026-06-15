@@ -1,32 +1,39 @@
 import type { RenderMeta } from "./types.js";
 
+/** @internal */
 export function objectValue(value: unknown): Record<string, unknown> | undefined {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : undefined;
 }
 
+/** @internal */
 export function stringValue(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+/** @internal */
 export function numberValue(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
+/** @internal */
 export function booleanValue(value: unknown): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
 }
 
+/** @internal */
 export function cappedJson(value: unknown, maxLength = 2_000): string {
   const formatter = new BoundedJsonFormatter(maxLength);
   return formatter.format(value);
 }
 
+/** @internal */
 export function optionalMeta(label: string, value: string | undefined): RenderMeta[] {
   return value === undefined || value.length === 0 ? [] : [{ label, value }];
 }
 
+/** @internal */
 export function optionalToolField<K extends string>(
   key: K,
   value: string | undefined,
@@ -36,6 +43,7 @@ export function optionalToolField<K extends string>(
     : ({ [key]: value } as Record<K, string>);
 }
 
+/** @internal */
 export function compactValue(value: unknown): string {
   if (typeof value === "string") return value;
   if (typeof value === "number" || typeof value === "boolean") return String(value);
@@ -43,6 +51,7 @@ export function compactValue(value: unknown): string {
   return cappedJson(value, 240);
 }
 
+/** @internal */
 export function truncatePreview(value: string): string {
   return value.length > 48 ? `${value.slice(0, 45)}...` : value;
 }

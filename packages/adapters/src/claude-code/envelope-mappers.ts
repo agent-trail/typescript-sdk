@@ -81,7 +81,7 @@ const SYSTEM_SUBTYPE_PATTERN = /^[a-z0-9][a-z0-9_]*$/;
 // retained as a vendor extension. compact_boundary is preserved under x-claudecode
 // because the canonical context_compact entry is produced by the summary envelope.
 function systemSubtypeToKind(subtype: string | undefined): string {
-  if (subtype !== undefined && subtype in SYSTEM_SUBTYPE_KINDS) {
+  if (subtype !== undefined && Object.hasOwn(SYSTEM_SUBTYPE_KINDS, subtype)) {
     return SYSTEM_SUBTYPE_KINDS[subtype] ?? "x-claudecode/system";
   }
   return subtype !== undefined && SYSTEM_SUBTYPE_PATTERN.test(subtype)

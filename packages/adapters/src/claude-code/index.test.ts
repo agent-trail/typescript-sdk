@@ -3636,6 +3636,46 @@ test("recognizes last-prompt / mode / bridge-session as benign — no quarantine
   expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
 });
 
+test("prototype-key attachment subtypes are treated as unknown instead of handlers", async () => {
+  const trail = await parseClaudeCodeJsonl([
+    syntheticUserRecord("00000000-0000-0000-0000-0000000000e0", "hi"),
+    syntheticAttachmentRecord(
+      "00000000-0000-0000-0000-0000000000e1",
+      "00000000-0000-0000-0000-0000000000e0",
+      { type: "constructor", value: "not a capability handler" },
+    ),
+  ]);
+
+  expect(trail.groups[0]!.entries.map((entry) => entry.type)).toEqual(["user_message"]);
+  await expectNoAdapterErrors(trail);
+});
+
+test("prototype-key system subtypes map to vendor system_event kinds", async () => {
+  const trail = await parseClaudeCodeJsonl([
+    syntheticUserRecord("00000000-0000-0000-0000-0000000000e2", "hi"),
+    {
+      type: "system",
+      subtype: "constructor",
+      uuid: "00000000-0000-0000-0000-0000000000e3",
+      timestamp: "2026-05-17T14:00:07.000Z",
+      sessionId: "00000000-0000-0000-0000-ccccc0000001",
+      version: "1.0.0-synthetic",
+      content: "constructor subtype",
+    },
+  ]);
+  const event = trail.groups[0]!.entries.find(
+    (entry) =>
+      entry.type === "system_event" &&
+      (entry.payload as { kind?: string }).kind === "x-claudecode/constructor",
+  );
+
+  expect(event?.payload).toEqual({
+    kind: "x-claudecode/constructor",
+    text: "constructor subtype",
+  });
+  await expectNoAdapterErrors(trail);
+});
+
 test("parseSession stamps timestamp-less drift quarantine from the nearest source timestamp", async () => {
   const tmp = mkdtempSync(join(tmpdir(), "cc-drift-ts-"));
   const path = join(tmp, "session.jsonl");

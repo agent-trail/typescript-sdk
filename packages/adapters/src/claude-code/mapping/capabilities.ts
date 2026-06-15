@@ -38,7 +38,10 @@ function emitCapabilityAttachment(record: CcEnvelope): TrailEntryDraft[] {
   if (!gate(record)) return [];
   const context = capabilityContext(record);
   if (context === undefined) return [];
-  return CAPABILITY_HANDLERS[context.subtype]?.(context) ?? [];
+  const handler = Object.hasOwn(CAPABILITY_HANDLERS, context.subtype)
+    ? CAPABILITY_HANDLERS[context.subtype]
+    : undefined;
+  return handler?.(context) ?? [];
 }
 
 function capabilityContext(record: CcEnvelope): CapabilityContext | undefined {

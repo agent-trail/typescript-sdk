@@ -46,6 +46,11 @@ declaration surface. Changes to API reports are public API changes.
 Code that reads source-agent storage and emits Agent Trail trail files.
 Adapters preserve source evidence while normalizing to the format contract.
 
+**Adapter factory**:
+A public function that creates an adapter instance from explicit options such
+as root overrides, environment overrides, and optional drivers. The SDK does
+not export singleton adapters.
+
 **Adapter kit**:
 Shared primitives for building adapters, including mapping helpers, reader
 interfaces, and source schema validation.
@@ -67,6 +72,16 @@ contains parsed trail data, an `ok` verdict, and core diagnostics.
 A JSON Schema describing normalized upstream source-agent records before they
 are mapped to Agent Trail records. Source schemas document adapter evidence;
 they are not the Agent Trail format contract.
+
+**Source schema package**:
+The SDK package `@agent-trail/source-schemas`. It is a JSON asset package with
+versioned schema and metadata subpaths only; it has no root runtime TypeScript
+export.
+
+**Codex adapter name**:
+The canonical emitted adapter name for OpenAI Codex sessions is `codex`. Older
+oracle fixtures and monorepo notes used `codex-cli`; SDK adapter output uses
+`codex` everywhere by design.
 
 **Local store**:
 The SDK-owned content-addressed store for finalized trail artifacts. Query

@@ -1,0 +1,159 @@
+import { isObject, jsonObjectValue, stringValue } from "@agent-trail/adapter-kit";
+
+// Re-export shared primitives under the adapter's helper barrel. Pi keeps its
+// own lenient numericValue/timestampToIso (numeric-string tolerant) below.
+export { isObject, jsonObjectValue, stringValue };
+
+export type PiBlock = Record<string, unknown> & { type?: string };
+
+export type PiMessage = {
+  role?: string;
+  content?: unknown;
+  provider?: string;
+  model?: string;
+  usage?: unknown;
+  stopReason?: string;
+  toolCallId?: string | number;
+  toolName?: string;
+  isError?: boolean;
+  details?: unknown;
+  // Coding-agent message-channel variants (declaration-merged CustomAgentMessages
+  // in pi-mono `packages/coding-agent/src/core/messages.ts`). These arrive as
+  // `type:"message"` envelopes discriminated by `role`; fields live directly on
+  // the message, not in `content`.
+  // role:"bashExecution" — user `!`/`!!` shell prefix.
+  command?: string;
+  output?: string;
+  exitCode?: number;
+  cancelled?: boolean;
+  truncated?: boolean;
+  fullOutputPath?: string;
+  excludeFromContext?: boolean;
+  // role:"custom" — extension-injected message.
+  customType?: string;
+  display?: boolean;
+  // role:"branchSummary" / "compactionSummary".
+  summary?: string;
+  fromId?: string;
+  tokensBefore?: number;
+};
+
+export type PiEnvelope = {
+  type?: string;
+  id?: string;
+  parentId?: string | null;
+  timestamp?: string | number;
+  sessionId?: string;
+  version?: number | string;
+  cwd?: string;
+  message?: PiMessage;
+  fromId?: string;
+  summary?: string;
+  details?: unknown;
+  [key: string]: unknown;
+};
+
+export function parseLines(text: string): PiEnvelope[] {
+  const out: PiEnvelope[] = [];
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i += 1) {
+    const raw = lines[i] ?? "";
+    if (raw.length === 0) continue;
+    let value: unknown;
+    try {
+      value = JSON.parse(raw);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`JsonlReader: failed to parse JSON on line ${i + 1}: ${message}`, {
+        cause: error,
+      });
+    }
+    if (!isObject(value) || Array.isArray(value)) {
+      throw new Error(`JsonlReader: expected JSON object on line ${i + 1}`);
+    }
+    out.push(value as PiEnvelope);
+  }
+  return out;
+}
+
+export function asBlocks(content: unknown): PiBlock[] {
+  return Array.isArray(content) ? content.filter(isObject) : [];
+}
+
+// Numeric field coercion. Accept a number, or a numeric string (e.g., `"12000"`) — Pi top-level
+// envelopes use numbers per pi-mono `coding-agent/src/core/session-manager.ts`, but lenient at the
+// adapter boundary keeps polymorphic parsing consistent with timestampToIso().
+export function numericValue(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && /^\d+$/.test(value)) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : undefined;
+  }
+  return undefined;
+}
+
+// Tool-call id / tool-result toolCallId boundary coercion. Pi-ai types ToolCall.id as string,
+// but a non-conforming source could emit a number. Defense-in-depth: stringify finite numbers so
+// they never leak into semantic.call_id / tool_result.for_id as their raw type.
+export function idValue(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return undefined;
+}
+
+function jsonString(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (value === undefined || value === null) return "";
+  return JSON.stringify(value);
+}
+
+export function textFromContent(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    const text = content
+      .filter(isObject)
+      .filter((block) => block.type === "text" && typeof block.text === "string")
+      .map((block) => block.text as string)
+      .join("\n");
+    return text.length > 0 ? text : JSON.stringify(content);
+  }
+  return jsonString(content);
+}
+
+// Polymorphic timestamp parser. Pi top-level envelopes use ISO strings, but pi-mono internal
+// messages (BashExecutionMessage, CompactionSummaryMessage, BranchSummaryMessage in
+// `packages/coding-agent/src/core/messages.ts`) carry Unix ms numbers. Accept either at the
+// envelope boundary and emit a canonical ISO string downstream.
+function msToIsoSafe(ms: number): string | undefined {
+  // JS `Date` is valid for ±8,640,000,000,000,000 ms (~100M days). Anything beyond throws
+  // RangeError on `.toISOString()`. Guard the conversion so one malformed envelope never aborts
+  // parsing for an entire session.
+  const d = new Date(ms);
+  if (Number.isNaN(d.getTime())) return undefined;
+  try {
+    return d.toISOString();
+  } catch {
+    return undefined;
+  }
+}
+
+export function timestampToIso(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    if (value.length === 0) return undefined;
+    const parsedNum = Number(value);
+    if (Number.isFinite(parsedNum) && /^\d+$/.test(value)) {
+      return msToIsoSafe(parsedNum);
+    }
+    return value;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return msToIsoSafe(value);
+  }
+  return undefined;
+}
+
+export function versionString(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return undefined;
+}

@@ -1,0 +1,179 @@
+// Canonical normalization for vcs.remote_url (§9.2). All adapters route
+// their raw remote URL through normalizeRemoteUrl before emission so that
+// SSH and HTTPS variants of the same repository collapse to one canonical
+// form and credentials are stripped.
+//
+// Canonical form for git URLs:
+//   - https://<host>[:port]/<path>      (no trailing .git, no userinfo)
+// Other VCS (hg, svn) keep their protocol but lose userinfo and surrounding
+// whitespace.
+import { spawn } from "node:child_process";
+
+const SCP_SSH_PATTERN = /^([A-Za-z0-9_.-]+)@([A-Za-z0-9_.-]+):(.+)$/;
+const URL_SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:\/\//i;
+// Userinfo with explicit password component (user:pass@host). url-encoded
+// passwords stay caught because the ":" stays literal in the userinfo.
+const EMBEDDED_CREDENTIALS_PATTERN = /^[a-z][a-z0-9+.-]*:\/\/[^/@\s]*:[^/@\s]+@/i;
+const GIT_LOCAL_ENV_VARS = new Set([
+  "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+  "GIT_CONFIG",
+  "GIT_CONFIG_PARAMETERS",
+  "GIT_CONFIG_COUNT",
+  "GIT_OBJECT_DIRECTORY",
+  "GIT_DIR",
+  "GIT_WORK_TREE",
+  "GIT_IMPLICIT_WORK_TREE",
+  "GIT_GRAFT_FILE",
+  "GIT_INDEX_FILE",
+  "GIT_NO_REPLACE_OBJECTS",
+  "GIT_REPLACE_REF_BASE",
+  "GIT_PREFIX",
+  "GIT_SHALLOW_FILE",
+  "GIT_COMMON_DIR",
+]);
+
+type Env = Record<string, string | undefined>;
+
+function isGitLocalEnvVar(key: string): boolean {
+  return GIT_LOCAL_ENV_VARS.has(key) || /^GIT_CONFIG_(KEY|VALUE)_\d+$/.test(key);
+}
+
+export function cleanGitEnv(env: Env = process.env): Record<string, string> {
+  const clean: Record<string, string> = {};
+  for (const [key, value] of Object.entries(env)) {
+    if (value !== undefined && !isGitLocalEnvVar(key)) {
+      clean[key] = value;
+    }
+  }
+  return clean;
+}
+
+export function hasEmbeddedCredentials(raw: string): boolean {
+  return EMBEDDED_CREDENTIALS_PATTERN.test(raw);
+}
+
+export function normalizeRemoteUrl(raw: unknown): string | undefined {
+  if (typeof raw !== "string") return undefined;
+  const trimmed = raw.trim();
+  if (trimmed.length === 0) return undefined;
+
+  const scpMatch = SCP_SSH_PATTERN.exec(trimmed);
+  if (scpMatch !== null && !URL_SCHEME_PATTERN.test(trimmed)) {
+    const host = scpMatch[2] ?? "";
+    const path = scpMatch[3] ?? "";
+    return `https://${host}/${stripDotGit(path)}`;
+  }
+
+  if (!URL_SCHEME_PATTERN.test(trimmed)) {
+    return undefined;
+  }
+
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    return undefined;
+  }
+
+  url.username = "";
+  url.password = "";
+
+  const protocol = url.protocol.toLowerCase();
+  if (protocol === "ssh:" || protocol === "git:" || protocol === "git+ssh:") {
+    const host = url.host;
+    const path = stripDotGit(url.pathname.replace(/^\/+/, ""));
+    return `https://${host}/${path}`;
+  }
+
+  const pathname = stripDotGit(url.pathname);
+  return `${url.protocol}//${url.host}${pathname}${url.search}${url.hash}`;
+}
+
+function stripDotGit(path: string): string {
+  return path.endsWith(".git") ? path.slice(0, -4) : path;
+}
+
+type WorktreeInfo = {
+  name: string;
+  path: string;
+  original_cwd?: string;
+  original_branch?: string;
+  original_head_commit?: string;
+};
+
+type HeaderVcsBase = {
+  type: "git";
+  remote_url?: string;
+  worktree?: WorktreeInfo;
+};
+
+export type HeaderVcs =
+  | (HeaderVcsBase & {
+      revision: string;
+      branch?: string;
+      head_commit?: string;
+    })
+  | (HeaderVcsBase & {
+      revision: null;
+      branch: string;
+      head_commit?: never;
+    });
+
+// Resolves a git working tree's vcs header block. Runs git binaries against
+// the supplied cwd. Returns undefined if cwd is not a git working tree or git
+// is unavailable. Unborn HEAD repositories emit revision:null when their branch
+// is knowable. When the source agent stores its own revision/remote, the adapter
+// should prefer that and skip this helper.
+export async function readGitVcs(cwd: string): Promise<HeaderVcs | undefined> {
+  const revision = await runGit(["rev-parse", "HEAD"], cwd);
+  // `symbolic-ref --short` exits non-zero on detached HEAD; treat that as
+  // "no branch" rather than failing the whole vcs block.
+  const branchRaw = await runGit(["symbolic-ref", "--short", "HEAD"], cwd);
+  if (revision === undefined && branchRaw === undefined) return undefined;
+  const remoteRaw = await runGit(["config", "--get", "remote.origin.url"], cwd);
+  const trimmedRevision = revision?.trim();
+  const remoteUrl = normalizeRemoteUrl(remoteRaw);
+  if (trimmedRevision === undefined) {
+    if (branchRaw === undefined) return undefined;
+    return {
+      type: "git",
+      revision: null,
+      branch: branchRaw,
+      ...(remoteUrl !== undefined ? { remote_url: remoteUrl } : {}),
+    };
+  }
+  const vcs: HeaderVcs = { type: "git", revision: trimmedRevision };
+  if (remoteRaw !== undefined) {
+    if (remoteUrl !== undefined) vcs.remote_url = remoteUrl;
+  }
+  // runGit already trims output and returns undefined for empty strings.
+  if (branchRaw !== undefined) vcs.branch = branchRaw;
+  // head_commit is a vcs-neutral alias for revision. For git they're the same
+  // hash; the explicit field survives across vcs-type migrations.
+  if (trimmedRevision !== undefined) vcs.head_commit = trimmedRevision;
+  return vcs;
+}
+
+async function runGit(args: string[], cwd: string): Promise<string | undefined> {
+  return new Promise((resolve) => {
+    const proc = spawn("git", args, {
+      cwd,
+      env: cleanGitEnv(),
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    let stdout = "";
+    proc.stdout.setEncoding("utf8");
+    proc.stdout.on("data", (chunk: string) => {
+      stdout += chunk;
+    });
+    proc.on("error", () => resolve(undefined));
+    proc.on("close", (code) => {
+      if (code !== 0) {
+        resolve(undefined);
+        return;
+      }
+      const trimmed = stdout.trim();
+      resolve(trimmed.length > 0 ? trimmed : undefined);
+    });
+  });
+}

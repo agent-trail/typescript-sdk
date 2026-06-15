@@ -7,14 +7,16 @@
     "packages/*"
   ],
   "scripts": {
-    "check": "bun run --parallel check:biome check:types test check:exports check:spec check:api check:fallow",
+    "check": "bun run --parallel check:biome check:types test check:exports check:spec check:source-types check:api check:fallow",
     "check:api": "bun run build:declarations && bun run scripts/check-api.ts",
     "check:biome": "biome check .",
     "check:exports": "bun run scripts/check-exports.ts",
     "check:fallow": "fallow --fail-on-issues --format compact",
     "check:spec": "bun run scripts/check-spec-artifacts.ts",
+    "check:source-types": "bun run scripts/generate-source-types.ts --check",
     "check:types": "tsc --noEmit",
     "build:declarations": "bun run scripts/build-api-declarations.ts",
+    "generate:source-types": "bun run scripts/generate-source-types.ts",
     "generate:types": "bun run scripts/generate-types.ts",
     "vendor:spec": "bun run scripts/vendor-spec.ts",
     "test": "bun test"

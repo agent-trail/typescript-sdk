@@ -18,9 +18,15 @@
     "noUnusedParameters": true,
     "paths": {
       "@agent-trail/catalog": ["./packages/catalog/src/index.ts"],
+      "@agent-trail/adapter-kit": ["./packages/adapter-kit/src/index.ts"],
+      "@agent-trail/adapter-kit/bun-sqlite": [
+        "./packages/adapter-kit/src/readers/bun-sqlite-driver.ts"
+      ],
+      "@agent-trail/adapters": ["./packages/adapters/src/index.ts"],
       "@agent-trail/core": ["./packages/core/src/index.ts"],
       "@agent-trail/redact": ["./packages/redact/src/index.ts"],
       "@agent-trail/schema": ["./packages/schema/schema/v0.1.0.json"],
+      "@agent-trail/source-schemas/*": ["./packages/source-schemas/*"],
       "@agent-trail/store": ["./packages/store/src/index.ts"],
       "@agent-trail/types": ["./packages/types/src/index.ts"]
     },

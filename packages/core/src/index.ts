@@ -4,6 +4,7 @@
  * @packageDocumentation
  */
 import type { AgentTrailV010, Entry, Header, TrailEnvelope } from "@agent-trail/types";
+import type { ErrorObject } from "ajv";
 import {
   computeContentHashes as computeContentHashesImpl,
   serializeTrailJsonl as serializeTrailJsonlImpl,
@@ -12,6 +13,12 @@ import {
 import { parseTrailJsonl as parseTrailJsonlImpl } from "./parse.js";
 import { reconcileSegments as reconcileSegmentsImpl } from "./reconciliation/index.js";
 import { validateTrailJsonl as validateTrailJsonlImpl } from "./validation/index.js";
+import { pickRecordValidator } from "./validation/schema/ajv.js";
+import {
+  coalesceAjvErrors,
+  normalizeAjvPath,
+  schemaDiagnosticCode,
+} from "./validation/schema/errors.js";
 
 /**
  * Validation strictness for core trail validation.
@@ -19,6 +26,13 @@ import { validateTrailJsonl as validateTrailJsonlImpl } from "./validation/index
  * @public
  */
 export type CoreValidationMode = "strict" | "tolerant";
+
+/**
+ * Adapter-kit validation profile labels.
+ *
+ * @public
+ */
+export type ValidationProfile = "writer-strict" | "reader-tolerant";
 
 /**
  * JSONL input accepted by core parser and validator APIs.
@@ -87,6 +101,26 @@ export type TrailDiagnostic = {
   code: string;
   message: string;
 };
+
+/**
+ * Compatibility alias for diagnostics consumed by adapter packages.
+ *
+ * @public
+ */
+export type Diagnostic = TrailDiagnostic;
+
+/**
+ * Input for validating one already-parsed writer-strict record.
+ *
+ * @public
+ */
+export type WriterStrictRecordInput =
+  | ParsedTrailRecord
+  | {
+      line: number;
+      value: unknown;
+      raw?: string;
+    };
 
 /**
  * Options for core trail validation.
@@ -169,6 +203,101 @@ export function validateTrailJsonl(
   options: ValidateTrailOptions = {},
 ): Promise<ValidationResult> {
   return validateTrailJsonlImpl(input, options);
+}
+
+/**
+ * Copy a diagnostic value.
+ *
+ * @public
+ */
+export function createDiagnostic(diagnostic: Diagnostic): Diagnostic {
+  return { ...diagnostic };
+}
+
+/**
+ * Format one diagnostic as a compact stable line.
+ *
+ * @public
+ */
+export function formatDiagnosticText(diagnostic: Diagnostic): string {
+  const severity = escapeDiagnosticTextSegment(diagnostic.severity);
+  const code = escapeDiagnosticTextSegment(diagnostic.code);
+  const path = diagnostic.path === "" ? "<root>" : escapeDiagnosticTextSegment(diagnostic.path);
+  const message = escapeDiagnosticTextSegment(diagnostic.message);
+  return `${severity} ${code} line ${diagnostic.line} ${path}: ${message}`;
+}
+
+/**
+ * Format diagnostics as newline-delimited stable text.
+ *
+ * @public
+ */
+export function formatDiagnosticsText(diagnostics: Iterable<Diagnostic>): string {
+  return Array.from(diagnostics, formatDiagnosticText).join("\n");
+}
+
+/**
+ * Validate one record against the writer-strict record schema.
+ *
+ * @public
+ */
+export function validateWriterStrictRecord(input: WriterStrictRecordInput): Diagnostic[] {
+  const record = normalizeWriterStrictRecordInput(input);
+  const validate = pickRecordValidator(record);
+  if (validate(record.record)) return [];
+  return coalesceAjvErrors((validate.errors ?? []) as ErrorObject[]).map((error) =>
+    createDiagnostic({
+      line: record.line,
+      path: normalizeAjvPath(error),
+      severity: "error",
+      code: schemaDiagnosticCode(error, record.record),
+      message: error.message ?? "Schema validation failed",
+    }),
+  );
+}
+
+function normalizeWriterStrictRecordInput(input: WriterStrictRecordInput): ParsedTrailRecord {
+  if ("record" in input) return input;
+  return {
+    line: input.line,
+    record: isTrailRecordLike(input.value)
+      ? input.value
+      : { type: "x-invalid", value: input.value },
+  };
+}
+
+function isTrailRecordLike(value: unknown): value is TrailRecordLike {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    "type" in value &&
+    typeof (value as { type?: unknown }).type === "string"
+  );
+}
+
+function escapeDiagnosticTextSegment(value: string): string {
+  let escaped = "";
+  for (const character of value) {
+    const charCode = character.charCodeAt(0);
+    if (charCode < 0x20 || charCode === 0x7f) {
+      switch (character) {
+        case "\n":
+          escaped += "\\n";
+          break;
+        case "\r":
+          escaped += "\\r";
+          break;
+        case "\t":
+          escaped += "\\t";
+          break;
+        default:
+          escaped += `\\u${charCode.toString(16).padStart(4, "0")}`;
+      }
+    } else {
+      escaped += character;
+    }
+  }
+  return escaped;
 }
 
 /**

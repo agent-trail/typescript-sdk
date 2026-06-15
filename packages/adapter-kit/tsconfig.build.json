@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": false,
+    "declarationMap": false,
+    "noEmit": false,
+    "outDir": "dist",
+    "paths": {
+      "@agent-trail/core": ["../core/dist/index.d.ts"],
+      "@agent-trail/source-schemas/*": ["../source-schemas/*"],
+      "@agent-trail/types": ["../types/dist/index.d.ts"]
+    },
+    "rootDir": "src"
+  }
+}

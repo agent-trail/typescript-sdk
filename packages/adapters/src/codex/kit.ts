@@ -1,0 +1,73 @@
+import { type Adapter, defineAdapter, JsonlReader } from "@agent-trail/adapter-kit";
+import type { Entry } from "@agent-trail/types";
+import { CODEX_ENTRY_ID_NAMESPACE } from "../session-uid.js";
+import { codexMappings } from "./mappings.js";
+import { type CodexState, codexOverrides, initialCodexState } from "./overrides.js";
+import {
+  codexDropTaskPlanResults,
+  codexImageRollup,
+  codexModelReplay,
+  codexTaskPlanDeltas,
+  codexTokenRollup,
+  codexUserQueryResponses,
+  codexVcsCommitEvents,
+} from "./reconcile-rules.js";
+import { stringValue, timestampToIso } from "./source.js";
+
+type Raw = Record<string, unknown>;
+
+function cliVersionOf(first: Raw): string | undefined {
+  const payload =
+    typeof first.payload === "object" && first.payload !== null ? (first.payload as Raw) : {};
+  return stringValue(payload.cli_version) ?? stringValue(payload.originator);
+}
+
+/**
+ * Kit-based Codex adapter. Linear (parentChain handles topology), explicit
+ * call_ids (toolLinking), no per-entry source.schema_version → mappings are
+ * static (no per-parse factory). The two synthesis behaviors live in overrides
+ * (model_change, reasoning dedup); token_count→usage rollup is a custom rule.
+ * `schemaAgent: "codex"` resolves the `codex/v0.128` schema and the emitted
+ * SDK agent name uses the canonical "codex" spelling.
+ */
+const codexKitAdapter: Adapter = defineAdapter<CodexState>({
+  agent: "codex",
+  schemaAgent: "codex",
+  idNamespace: CODEX_ENTRY_ID_NAMESPACE,
+  quarantineNamespace: "codex",
+  sourceFormatVersions: ["v0.128", "v0.135"],
+  reader: new JsonlReader({ versionFrom: (first) => cliVersionOf(first as Raw) }),
+  tsFrom: (record) => timestampToIso((record as Raw).timestamp) ?? "",
+  mappings: codexMappings,
+  overrides: codexOverrides,
+  initialState: initialCodexState,
+  reconciler: {
+    toolLinking: true,
+    parentChain: false, // Codex is linear and emits no parent_id
+    cumulativeTokens: false, // usage carries native cumulative via token_count rollup
+    custom: [
+      codexImageRollup,
+      codexModelReplay,
+      codexTokenRollup,
+      codexTaskPlanDeltas,
+      codexDropTaskPlanResults,
+      codexUserQueryResponses,
+      codexVcsCommitEvents,
+    ],
+  },
+});
+
+/** Run the kit-based Codex adapter over a source file, returning emitted entries. */
+export async function parseCodexEntries(path: string, sessionUid: string): Promise<Entry[]> {
+  return codexKitAdapter.parse({ path }, { sessionUid });
+}
+
+export async function parseCodexSnapshotEntries(
+  records: Raw[],
+  sessionUid: string,
+): Promise<Entry[]> {
+  return codexKitAdapter.parseSnapshot(
+    { records, sourceVersion: records[0] === undefined ? undefined : cliVersionOf(records[0]) },
+    { sessionUid },
+  );
+}

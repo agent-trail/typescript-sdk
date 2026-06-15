@@ -1,0 +1,85 @@
+import type { Entry } from "@agent-trail/types";
+import type { RawRecord, SourcePointer, SourceSnapshot } from "../readers/types.js";
+import { reconcile } from "../reconciler/index.js";
+import { selectSchemaVersion } from "../source-schemas/select.js";
+import { validateSourceRecord } from "../source-schemas/validate.js";
+import type { AdapterDef, ParseOptions } from "../types.js";
+import { runPass1 } from "./engine.js";
+import { quarantineDraft } from "./quarantine.js";
+
+export interface Adapter {
+  /**
+   * Read a source, map its records to trail entries, and reconcile them. Records
+   * that fail a resolved source-schema validation become lossless quarantine
+   * `system_event`s; when no source schema resolves, validation is unavailable
+   * and mappings run leniently. Returns entries only — discovery and header
+   * building are per-adapter glue (#135 P4).
+   */
+  parse(source: SourcePointer, options: ParseOptions): Promise<Entry[]>;
+  /**
+   * Map and reconcile already-read source records. Snapshot records must already
+   * match the reader-equivalent shape expected by mappings and reconciler rules.
+   * When `sourceVersion` is omitted, source-schema drift validation is skipped,
+   * matching parse() behavior for sources with unknown versions.
+   */
+  parseSnapshot(snapshot: SourceSnapshot, options: ParseOptions): Promise<Entry[]>;
+}
+
+function parseSnapshotRecords<S>(
+  def: AdapterDef<S>,
+  snapshot: SourceSnapshot,
+  options: ParseOptions,
+): Entry[] {
+  const schemaAgent = def.schemaAgent ?? def.agent;
+  const schemaKey = selectSchemaVersion(schemaAgent, snapshot.sourceVersion);
+
+  const params = {
+    mappings: def.mappings,
+    idNamespace: def.idNamespace,
+    sessionUid: options.sessionUid,
+    tsFrom: def.tsFrom,
+    drift: {
+      // Quarantine only when we have a schema AND the record fails it. When
+      // the source version is unrecognized (no schemaKey), map leniently —
+      // matching the v1 adapters, which skip validation for unknown versions
+      // rather than quarantining the whole session.
+      isDrift: (record: RawRecord) =>
+        schemaKey !== undefined && validateSourceRecord(schemaAgent, schemaKey, record).length > 0,
+      toDraft: (record: RawRecord) =>
+        quarantineDraft({ agent: def.agent, namespace: def.quarantineNamespace, record }),
+    },
+    ...(def.overrides !== undefined ? { overrides: def.overrides } : {}),
+    ...(def.initialState !== undefined ? { initialState: def.initialState } : {}),
+  };
+
+  const entries = runPass1<S>(snapshot.records, params);
+
+  return reconcile(entries, def.reconciler, { agent: def.agent, records: snapshot.records });
+}
+
+/**
+ * Assemble a mapping-based adapter: a `SourceReader`, typed mappings/overrides,
+ * and an opt-in reconciler config. The returned `parse` runs the two-pass model
+ * (pure mappings → reconciler) over the reader's records.
+ */
+export function defineAdapter<S = unknown>(def: AdapterDef<S>): Adapter {
+  return {
+    async parse(source, options) {
+      const sourceVersion = await def.reader.schemaVersion(source);
+
+      const records: RawRecord[] = [];
+      for await (const record of def.reader.records(source)) {
+        records.push(record);
+      }
+
+      return parseSnapshotRecords(
+        def,
+        { records, ...(sourceVersion !== undefined ? { sourceVersion } : {}) },
+        options,
+      );
+    },
+    async parseSnapshot(snapshot, options) {
+      return parseSnapshotRecords(def, snapshot, options);
+    },
+  };
+}

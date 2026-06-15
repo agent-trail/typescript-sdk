@@ -361,6 +361,25 @@ test("reports secret-looking tool args and source raw values", async () => {
   expect(codes).toContain("source_raw_unredacted_secret");
 });
 
+test("reports fine-grained GitHub personal access tokens as unredacted secrets", async () => {
+  const token = ["github", "pat", "A".repeat(24)].join("_");
+  const result = await validateTrailJsonl(
+    jsonl([
+      baseHeader,
+      {
+        type: "tool_call",
+        id: "01HEVTA0000000000000000099",
+        ts: "2026-05-17T14:00:01.000Z",
+        payload: { tool: "web_fetch", args: { headers: { authorization: token } } },
+        source: { raw: { output: token } },
+      },
+    ]),
+  );
+  const codes = result.diagnostics.map((d) => d.code);
+  expect(codes).toContain("tool_args_unredacted_secret");
+  expect(codes).toContain("source_raw_unredacted_secret");
+});
+
 test("reports envelope session manifest drift and accepts matching manifests", async () => {
   const matching = await diagnosticCodes([
     { ...baseEnvelope, sessions: [{ id: baseHeader.id, agent: baseHeader.agent.name }] },

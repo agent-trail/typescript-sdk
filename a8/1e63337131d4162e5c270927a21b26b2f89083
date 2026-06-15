@@ -1,0 +1,36 @@
+packages/render-model/src/types.ts
+  s_72e46505fa7e07::t_23b4a9ebbb0d9e 107,154,156,158,160
+packages/render-model/etc/render-model.api.md
+  s_72e46505fa7e07::t_ac0570e506b336 8,29,33
+packages/render-model/src/transcript.ts
+  s_72e46505fa7e07::t_1a23c426dba6c2 1
+  s_72e46505fa7e07::t_01972f85a9ba1b 29-33,39,44,47-49
+  s_72e46505fa7e07::t_1c6c0572999505 24-28
+packages/render-model/src/pairing.ts
+  s_72e46505fa7e07::t_1a23c426dba6c2 85-88,122-124
+  s_72e46505fa7e07::t_aae0b12157a9c0 147
+  s_72e46505fa7e07::t_98501370702b7a 160
+  s_72e46505fa7e07::t_faa94b9effc008 137-146,149-150,153-154,156-159,161,208-211,213-215,220-240
+  s_72e46505fa7e07::t_7bb9b384974871 1-84,89-121,125-136,148,151-152,155,162-207,212,216-219,241-253
+packages/render-model/src/values.ts
+  s_72e46505fa7e07::t_51035f39710412 22-23,49-121,123-142
+  s_72e46505fa7e07::t_1a23c426dba6c2 122
+packages/render-model/src/tests/index.test.ts
+  s_72e46505fa7e07::t_1031b749d48633 7,351-376,396-398
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "a81e63337131d4162e5c270927a21b26b2f89083",
+  "prompts": {},
+  "sessions": {
+    "s_72e46505fa7e07": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ecc35-5a64-7770-bd6b-a0faadf41815",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

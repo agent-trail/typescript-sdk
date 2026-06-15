@@ -7,6 +7,7 @@ import type { RawRecord, SourceReader } from "./readers/types.js";
  * output — the trail `meta` field has no `linker` slot.
  */
 export interface LinkerHints {
+  /** Source-native call id used to pair tool calls and results. */
   call_id?: string;
 }
 
@@ -19,11 +20,17 @@ export type MetaWithLinker = { linker?: LinkerHints } & Record<string, unknown>;
  * explicitly). `payload`/`semantic`/`source` mirror the final `Entry`.
  */
 export interface TrailEntryDraft {
+  /** Final trail entry type. */
   type: Entry["type"];
+  /** Final entry payload body. */
   payload?: Record<string, unknown> | undefined;
+  /** Semantic metadata for identity, pairing, and tool classification. */
   semantic?: SemanticMetadata | undefined;
+  /** Source metadata preserved on the emitted entry. */
   source?: SourceMetadata | undefined;
+  /** Explicit parent id, or `null` to force a root entry. */
   parent_id?: string | null | undefined;
+  /** Free-form metadata plus transient linker hints. */
   meta?: MetaWithLinker | undefined;
 }
 
@@ -37,45 +44,63 @@ export type MatchPattern<T extends Record<string, unknown> = Record<string, unkn
   [K in keyof T]?: MatchPatternValue<T[K]>;
 };
 
-// Naked-parameter conditional so a union-typed property (e.g. `object | string`)
-// distributes — each arm gets its own pattern shape rather than collapsing to
-// the whole union. See PR #151 review.
-type MatchPatternValue<V> = V extends Record<string, unknown> ? MatchPattern<V> : V;
+/** Value matcher for one property in a deep-partial `MatchPattern`. */
+export type MatchPatternValue<V> = V extends Record<string, unknown> ? MatchPattern<V> : V;
 
+/** Pure mapping from matching source records to trail entry drafts. */
 export interface MappingDef<T extends RawRecord = RawRecord> {
+  /** Pattern that selects records handled by this mapping. */
   match: MatchPattern<T>;
+  /** Emit zero or more entry drafts for a matching record. */
   emit: (record: T) => TrailEntryDraft[];
 }
 
+/** Context passed to stateful override mappings. */
 export interface OverrideCtx<S> {
   /** Back-look over raw records already seen this parse (most recent last). */
   window: { recent(n: number): RawRecord[] };
+  /** Mutable adapter-defined state for this parse. */
   state: S;
   /** Emit a synthetic draft outside the matched record's own output. */
   emit(draft: TrailEntryDraft): void;
 }
 
+/** Stateful mapping hook that can observe prior records and adapter state. */
 export interface OverrideDef<T extends RawRecord = RawRecord, S = unknown> {
+  /** Pattern that selects records handled by this override. */
   match: MatchPattern<T>;
+  /** Emit zero or more entry drafts using override context. */
   emit: (record: T, ctx: OverrideCtx<S>) => TrailEntryDraft[];
 }
 
+/** Context passed to a custom reconciler rule. */
 export interface ReconcilerRuleCtx {
+  /** Adapter name for the source being reconciled. */
   agent: AgentName;
+  /** Raw source records for rules that need source context. */
   records?: RawRecord[];
 }
 
+/** Custom reconciler transform for mapped trail entries. */
 export type ReconcilerRule = (entries: Entry[], ctx: ReconcilerRuleCtx) => Entry[];
 
+/** Built-in and custom reconciliation passes to run after pure mapping. */
 export interface ReconcilerConfig {
+  /** Pair tool result entries to preceding tool calls. */
   toolLinking?: boolean;
+  /** Resolve parent chains across source records. */
   parentChain?: boolean;
+  /** Reconcile cumulative token counters. */
   cumulativeTokens?: boolean;
+  /** Enable branch reconciliation. */
   branchReconciliation?: boolean;
+  /** Custom reconciliation rules run after configured built-in passes. */
   custom?: ReconcilerRule[];
 }
 
+/** Declarative adapter definition consumed by `defineAdapter`. */
 export interface AdapterDef<S = unknown> {
+  /** Emitted Agent Trail agent name. */
   agent: AgentName;
   /**
    * Source-schema registry key for `selectSchemaVersion` / `validateSourceRecord`,
@@ -88,18 +113,23 @@ export interface AdapterDef<S = unknown> {
   idNamespace: string;
   /** Vendor namespace for quarantine `system_event` kinds (kebab-case). */
   quarantineNamespace: string;
+  /** Source-format versions understood by this adapter. */
   sourceFormatVersions: string[];
+  /** Reader that loads raw source records. */
   reader: SourceReader;
   /** Extract the ISO-8601 entry timestamp from a source record. */
   tsFrom: (record: RawRecord) => string;
-  // biome-ignore lint/suspicious/noExplicitAny: heterogeneous mapping inputs
-  mappings: MappingDef<any>[];
-  // biome-ignore lint/suspicious/noExplicitAny: heterogeneous override inputs
-  overrides?: OverrideDef<any, S>[] | undefined;
+  /** Pure mappings run for every source record. */
+  mappings: MappingDef<RawRecord>[];
+  /** Optional stateful overrides. */
+  overrides?: OverrideDef<RawRecord, S>[] | undefined;
+  /** Initial adapter-defined state for each parse. */
   initialState?: (() => S) | undefined;
+  /** Reconciliation passes to run after mapping. */
   reconciler: ReconcilerConfig;
 }
 
+/** Options passed to an adapter parse invocation. */
 export interface ParseOptions {
   /** Stable per-session id used to seed synthesized entry ids. */
   sessionUid: string;

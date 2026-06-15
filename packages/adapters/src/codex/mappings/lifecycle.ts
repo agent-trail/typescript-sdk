@@ -1,6 +1,6 @@
 import type { MappingDef, TrailEntryDraft } from "@agent-trail/adapter-kit";
 import { defineMapping } from "@agent-trail/adapter-kit";
-import { isNonEmptyString } from "../../task-plan.js";
+import { isNonEmptyString } from "../../shared/task-plan.js";
 import { buildExecCommandEndData, durationToMs, excerpt } from "../parser.js";
 import { isObject, numericValue, stringValue } from "../source.js";
 import { emittable, meta, payloadOf, type Raw, source } from "./shared.js";

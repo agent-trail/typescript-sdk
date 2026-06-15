@@ -2,12 +2,11 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import type { RawRecord, SourcePointer, SourceReader } from "./types.js";
 
+/** Options for `JsonlReader`. */
 export interface JsonlReaderOptions {
-  // Derives the source schema version from the first parsed record. Omit when
-  // the source carries no version marker.
+  /** Derives the source schema version from the first parsed record. */
   versionFrom?: (first: RawRecord) => string | undefined;
-  // Tolerant mode skips malformed / non-object lines. Strict mode throws so
-  // adapters with strict source contracts do not silently omit source records.
+  /** Parsing mode for malformed or non-object JSONL lines. */
   mode?: "tolerant" | "strict";
 }
 
@@ -36,17 +35,12 @@ function parseLine(
   return undefined;
 }
 
-// Reads newline-delimited JSON sources. In tolerant mode, yields one parsed
-// object per line while skipping blank, malformed, and non-object lines. In
-// strict mode, blank lines are still ignored but malformed / non-object lines
-// throw. Adapter owners pick the mode at their source trust boundary.
-//
-// records() and identityHash() each read the source independently (two reads if
-// both are called). Intentional for a stateless reader; revisit with a cache
-// only if a real consumer profiles it as hot.
+/** Reads newline-delimited JSON sources. */
 export class JsonlReader implements SourceReader {
+  /** Create a JSONL reader. */
   constructor(private readonly options: JsonlReaderOptions = {}) {}
 
+  /** Stream JSON object records from a JSONL source. */
   async *records(source: SourcePointer): AsyncIterable<RawRecord> {
     const text = await readFile(source.path, "utf8");
     const mode = this.options.mode ?? "tolerant";
@@ -57,6 +51,7 @@ export class JsonlReader implements SourceReader {
     }
   }
 
+  /** Return the source schema version derived from the first record. */
   async schemaVersion(source: SourcePointer): Promise<string | undefined> {
     if (this.options.versionFrom === undefined) return undefined;
     for await (const record of this.records(source)) {
@@ -65,6 +60,7 @@ export class JsonlReader implements SourceReader {
     return undefined;
   }
 
+  /** Return a SHA-256 hash of the source bytes. */
   async identityHash(source: SourcePointer): Promise<string> {
     const bytes = await readFile(source.path);
     return createHash("sha256").update(bytes).digest("hex");

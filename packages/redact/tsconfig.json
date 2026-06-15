@@ -6,5 +6,6 @@
       "@agent-trail/types": ["../types/src/index.ts"]
     }
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/tests/**/*.ts"]
 }

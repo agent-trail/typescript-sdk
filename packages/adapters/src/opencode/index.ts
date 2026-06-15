@@ -2,8 +2,6 @@ import type { SqliteDriver } from "@agent-trail/adapter-kit";
 import { parseTrailJsonl, stampContentHashes } from "@agent-trail/core";
 import type { Entry, Header } from "@agent-trail/types";
 import pkg from "../../package.json" with { type: "json" };
-import { buildTrailEnvelope } from "../envelope.js";
-import { applyHeaderMetadataUpdates } from "../header-metadata.js";
 import type {
   AdapterSourceHealth,
   DetectOptions,
@@ -11,12 +9,14 @@ import type {
   TrailAdapter,
   TrailFile,
 } from "../index.js";
-import { applyParseFidelity } from "../parse-fidelity.js";
-import { resumeCommand } from "../resume.js";
-import { OPENCODE_ENTRY_ID_NAMESPACE } from "../session-uid.js";
-import { sanitizeTrailFile } from "../trail-sanitizer.js";
-import { readGitVcs } from "../vcs.js";
-import { synthesizeVcsCommitEvents } from "../vcs-commit.js";
+import { buildTrailEnvelope } from "../shared/envelope.js";
+import { applyHeaderMetadataUpdates } from "../shared/header-metadata.js";
+import { applyParseFidelity } from "../shared/parse-fidelity.js";
+import { resumeCommand } from "../shared/resume.js";
+import { OPENCODE_ENTRY_ID_NAMESPACE } from "../shared/session-uid.js";
+import { sanitizeTrailFile } from "../shared/trail-sanitizer.js";
+import { readGitVcs } from "../shared/vcs.js";
+import { synthesizeVcsCommitEvents } from "../shared/vcs-commit.js";
 import { headerFromLoaded } from "./header.js";
 import { inspectSourceHealth } from "./health.js";
 import { entriesFromLoaded } from "./mappings.js";
@@ -45,13 +45,19 @@ async function stampTrailFile(trail: TrailFile): Promise<TrailFile> {
   return sanitizeTrailFile({ envelope, groups: [{ header, entries }] });
 }
 
+/** Options for the OpenCode adapter factory. */
 export type OpenCodeAdapterOptions = {
+  /** Environment overrides used for discovery and parsing. */
   env?: NodeJS.ProcessEnv;
+  /** Override for the OpenCode file-storage root. */
   storageDir?: string;
+  /** Override for the OpenCode SQLite database path. */
   dbPath?: string;
+  /** Optional SQLite driver used for database-backed OpenCode sessions. */
   sqliteDriver?: SqliteDriver;
 };
 
+/** Create an OpenCode adapter instance. */
 export function createOpenCodeAdapter(options: OpenCodeAdapterOptions = {}): TrailAdapter {
   const storageOptions = {
     env: options.env,

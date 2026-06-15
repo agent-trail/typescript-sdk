@@ -2,8 +2,6 @@ import { lstat, readFile, realpath, stat } from "node:fs/promises";
 import { basename, dirname, isAbsolute, relative, resolve } from "node:path";
 import type { Entry, Header } from "@agent-trail/types";
 import pkg from "../../package.json" with { type: "json" };
-import { buildTrailEnvelope } from "../envelope.js";
-import { applyHeaderMetadataUpdates } from "../header-metadata.js";
 import type {
   AdapterSourceHealth,
   DetectOptions,
@@ -12,21 +10,23 @@ import type {
   TrailFile,
   TrailSessionGroup,
 } from "../index.js";
-import { applyParseFidelity } from "../parse-fidelity.js";
-import { resumeCommand } from "../resume.js";
-import {
-  CLAUDE_CODE_SESSION_UID_NAMESPACE,
-  canonicalizeIdentityString,
-  deriveSessionUid,
-} from "../session-uid.js";
 import { withLinkedSubagentSessionIds } from "../shared/child-session-links.js";
+import { buildTrailEnvelope } from "../shared/envelope.js";
+import { applyHeaderMetadataUpdates } from "../shared/header-metadata.js";
 import {
   inspectLocalJsonlSourceHealth,
   listSafeJsonlFiles,
   newestLocalJsonlSourceVersion,
   scanLocalJsonlProjectsRoot,
 } from "../shared/local-jsonl.js";
-import { sanitizeTrailFile } from "../trail-sanitizer.js";
+import { applyParseFidelity } from "../shared/parse-fidelity.js";
+import { resumeCommand } from "../shared/resume.js";
+import {
+  CLAUDE_CODE_SESSION_UID_NAMESPACE,
+  canonicalizeIdentityString,
+  deriveSessionUid,
+} from "../shared/session-uid.js";
+import { sanitizeTrailFile } from "../shared/trail-sanitizer.js";
 import { parseClaudeCodeSnapshotEntries } from "./kit.js";
 import { buildHeader } from "./parser.js";
 import { claudeCodeConfigDir, claudeCodeProjectDir, claudeCodeProjectsRoot } from "./paths.js";
@@ -302,10 +302,13 @@ function parseLinkedChildGroup(
   }).catch(() => undefined);
 }
 
+/** Options for the Claude Code adapter factory. */
 export type ClaudeCodeAdapterOptions = {
+  /** Environment overrides used for discovery and parsing. */
   env?: NodeJS.ProcessEnv;
 };
 
+/** Create a Claude Code adapter instance. */
 export function createClaudeCodeAdapter(options: ClaudeCodeAdapterOptions = {}): TrailAdapter {
   const env = options.env ?? process.env;
   return {

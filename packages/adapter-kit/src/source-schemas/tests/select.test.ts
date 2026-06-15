@@ -1,0 +1,39 @@
+// @ts-nocheck
+import { describe, expect, test } from "bun:test";
+import { selectSchemaVersion } from "../select.js";
+
+describe("selectSchemaVersion", () => {
+  test("in-range codex cli_version resolves to its schema version", () => {
+    expect(selectSchemaVersion("codex", "0.128.4")).toBe("v0.128");
+  });
+
+  test("codex 0.129+ resolves to v0.135", () => {
+    expect(selectSchemaVersion("codex", "0.135.0-alpha.1")).toBe("v0.135");
+    expect(selectSchemaVersion("codex", "0.200.0")).toBe("v0.135");
+  });
+
+  test("out-of-range version falls back to meta.fallback", () => {
+    expect(selectSchemaVersion("codex", "0.127.9")).toBe("v0.135");
+  });
+
+  test("missing version resolves to undefined", () => {
+    expect(selectSchemaVersion("codex", undefined)).toBeUndefined();
+  });
+
+  test("unknown agent resolves to undefined", () => {
+    expect(selectSchemaVersion("nonesuch", "1.0.0")).toBeUndefined();
+  });
+
+  test("pi numeric version coerces and matches its range", () => {
+    expect(selectSchemaVersion("pi", 3)).toBe("v1");
+  });
+
+  test("claude-code prerelease version matches its range", () => {
+    expect(selectSchemaVersion("claude-code", "1.0.0-synthetic")).toBe("v1");
+  });
+
+  test("opencode version resolves to v1 with fallback for future versions", () => {
+    expect(selectSchemaVersion("opencode", "1.0.153")).toBe("v1");
+    expect(selectSchemaVersion("opencode", "2.0.0")).toBe("v1");
+  });
+});

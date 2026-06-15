@@ -4,7 +4,7 @@
 
 ```ts
 
-// @public (undocumented)
+// @public
 export type AdapterSourceHealth = {
     adapter: string;
     path: string | null;
@@ -15,32 +15,32 @@ export type AdapterSourceHealth = {
     warnings: string[];
 };
 
-// @public (undocumented)
+// @public
 export type ClaudeCodeAdapterOptions = {
     env?: NodeJS.ProcessEnv;
 };
 
-// @public (undocumented)
+// @public
 export type CodexAdapterOptions = {
     env?: NodeJS.ProcessEnv;
 };
 
-// @public (undocumented)
+// @public
 export function createClaudeCodeAdapter(options?: ClaudeCodeAdapterOptions): TrailAdapter;
 
-// @public (undocumented)
+// @public
 export function createCodexAdapter(options?: CodexAdapterOptions): TrailAdapter;
 
-// @public (undocumented)
+// @public
 export function createDefaultTrailAdapters(options?: DefaultTrailAdaptersOptions): TrailAdapter[];
 
-// @public (undocumented)
+// @public
 export function createOpenCodeAdapter(options?: OpenCodeAdapterOptions): TrailAdapter;
 
-// @public (undocumented)
+// @public
 export function createPiAdapter(options?: PiAdapterOptions): TrailAdapter;
 
-// @public (undocumented)
+// @public
 export type DefaultTrailAdaptersOptions = {
     "claude-code"?: ClaudeCodeAdapterOptions;
     codex?: CodexAdapterOptions;
@@ -48,14 +48,14 @@ export type DefaultTrailAdaptersOptions = {
     pi?: PiAdapterOptions;
 };
 
-// @public (undocumented)
+// @public
 export type DetectOptions = {
     cwd?: string | undefined;
     since?: string | undefined;
     allCwds?: boolean | undefined;
 };
 
-// @public (undocumented)
+// @public
 export type OpenCodeAdapterOptions = {
     env?: NodeJS.ProcessEnv;
     storageDir?: string;
@@ -63,12 +63,12 @@ export type OpenCodeAdapterOptions = {
     sqliteDriver?: SqliteDriver;
 };
 
-// @public (undocumented)
+// @public
 export type PiAdapterOptions = {
     env?: NodeJS.ProcessEnv;
 };
 
-// @public (undocumented)
+// @public
 export type ResumeCommand = {
     label: string;
     argv: string[];
@@ -76,7 +76,7 @@ export type ResumeCommand = {
     env?: Record<string, string> | undefined;
 };
 
-// @public (undocumented)
+// @public
 export type ResumeSessionResult = {
     supported: true;
     command: ResumeCommand;
@@ -85,7 +85,7 @@ export type ResumeSessionResult = {
     reason: string;
 };
 
-// @public (undocumented)
+// @public
 export type SessionRef = {
     id: string;
     adapter: string;
@@ -95,43 +95,27 @@ export type SessionRef = {
     headerStatus?: "header" | "filename-fallback" | undefined;
 };
 
-// @public (undocumented)
+// @public
 export interface TrailAdapter {
-    // (undocumented)
     detectSessions(opts?: DetectOptions): Promise<SessionRef[]>;
-    // (undocumented)
     isAvailable(): Promise<boolean>;
-    // (undocumented)
     readonly name: string;
-    // (undocumented)
     parseSession(ref: SessionRef): Promise<TrailFile>;
-    // (undocumented)
     resumeSession?(ref: SessionRef): Promise<ResumeSessionResult>;
-    // (undocumented)
     sourceHealth(): Promise<AdapterSourceHealth>;
-    // (undocumented)
     sourceVersion(): Promise<string | null>;
 }
 
-// @public (undocumented)
+// @public
 export type TrailFile = {
     envelope?: TrailEnvelope | undefined;
     groups: TrailSessionGroup[];
 };
 
-// @public (undocumented)
+// @public
 export type TrailSessionGroup = {
     header: Header;
     entries: Entry[];
 };
-
-// Warnings were encountered during analysis:
-//
-// dist/index.d.ts:3:5 - (ae-forgotten-export) The symbol "Header" needs to be exported by the entry point index.d.ts
-// dist/index.d.ts:4:5 - (ae-forgotten-export) The symbol "Entry" needs to be exported by the entry point index.d.ts
-// dist/index.d.ts:7:5 - (ae-forgotten-export) The symbol "TrailEnvelope" needs to be exported by the entry point index.d.ts
-// dist/opencode/index.d.ts:7:5 - (ae-forgotten-export) The symbol "SqliteDriver" needs to be exported by the entry point index.d.ts
-
-// (No @packageDocumentation comment for this package)
 
 ```

@@ -2,15 +2,15 @@ import { createHash } from "node:crypto";
 import type { TrailEntryDraft } from "@agent-trail/adapter-kit";
 import { defineMapping } from "@agent-trail/adapter-kit";
 import type { ToolKind } from "@agent-trail/types";
-import { mapAgentMessageUsage } from "../../legacy-kit-helpers.js";
-import { userQueryPayloadFromInput } from "../../shared/user-query.js";
 import {
   isNonEmptyString,
   isTaskPlanStatus,
   normalizeTaskPlanContent,
   type TaskPlanItem,
   taskPlanItemId,
-} from "../../task-plan.js";
+} from "../../shared/task-plan.js";
+import { mapAgentMessageUsage } from "../../shared/usage.js";
+import { userQueryPayloadFromInput } from "../../shared/user-query.js";
 import {
   asBlocks,
   type CcEnvelope,

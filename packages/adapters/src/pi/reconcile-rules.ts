@@ -7,9 +7,9 @@
 // piSessionTerminatedEof.
 import type { RawRecord, ReconcilerRule } from "@agent-trail/adapter-kit";
 import type { Entry, ToolKind } from "@agent-trail/types";
-import { type ParentableEntry, resolveEntryParents } from "../parenting.js";
-import { deriveSynthesizedEntryId, PI_ENTRY_ID_NAMESPACE } from "../session-uid.js";
-import { synthesizeVcsCommitEvents } from "../vcs-commit.js";
+import { type ParentableEntry, resolveEntryParents } from "../shared/parenting.js";
+import { deriveSynthesizedEntryId, PI_ENTRY_ID_NAMESPACE } from "../shared/session-uid.js";
+import { synthesizeVcsCommitEvents } from "../shared/vcs-commit.js";
 import { findAbandonedBranchRootId, nearestMappedAncestor } from "./divergence.js";
 import { PARENT_HINT, type ParentHint } from "./mappings.js";
 

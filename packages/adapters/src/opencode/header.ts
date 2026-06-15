@@ -5,7 +5,7 @@ import {
   deriveSynthesizedEntryId,
   OPENCODE_ENTRY_ID_NAMESPACE,
   OPENCODE_SESSION_UID_NAMESPACE,
-} from "../session-uid.js";
+} from "../shared/session-uid.js";
 import {
   type LoadedSession,
   modelName,

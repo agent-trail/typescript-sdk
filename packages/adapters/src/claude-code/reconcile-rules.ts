@@ -6,11 +6,11 @@
 // ccEnvelopeRefBackfill runs LAST (it strips hints).
 import type { ReconcilerRule } from "@agent-trail/adapter-kit";
 import type { Entry, ToolKind } from "@agent-trail/types";
-import { CLAUDE_CODE_ENTRY_ID_NAMESPACE, deriveSynthesizedEntryId } from "../session-uid.js";
 import { linkerCallId } from "../shared/linker-meta.js";
 import { uniqueOptionLabelToId } from "../shared/options.js";
-import { dropTaskPlanAckResults, withTaskPlanDeltas } from "../task-plan.js";
-import { synthesizeVcsCommitEvents } from "../vcs-commit.js";
+import { CLAUDE_CODE_ENTRY_ID_NAMESPACE, deriveSynthesizedEntryId } from "../shared/session-uid.js";
+import { dropTaskPlanAckResults, withTaskPlanDeltas } from "../shared/task-plan.js";
+import { synthesizeVcsCommitEvents } from "../shared/vcs-commit.js";
 import { type CcHint, HINT } from "./mappings.js";
 import { isObject, stringValue } from "./source.js";
 

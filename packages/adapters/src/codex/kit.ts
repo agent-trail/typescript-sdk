@@ -1,6 +1,6 @@
 import { type Adapter, defineAdapter, JsonlReader } from "@agent-trail/adapter-kit";
 import type { Entry } from "@agent-trail/types";
-import { CODEX_ENTRY_ID_NAMESPACE } from "../session-uid.js";
+import { CODEX_ENTRY_ID_NAMESPACE } from "../shared/session-uid.js";
 import { codexMappings } from "./mappings.js";
 import { type CodexState, codexOverrides, initialCodexState } from "./overrides.js";
 import {

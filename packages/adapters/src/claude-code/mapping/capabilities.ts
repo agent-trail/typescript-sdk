@@ -1,6 +1,6 @@
 import type { MappingDef, TrailEntryDraft } from "@agent-trail/adapter-kit";
 import { defineMapping } from "@agent-trail/adapter-kit";
-import { isNonEmptyString } from "../../task-plan.js";
+import { isNonEmptyString } from "../../shared/task-plan.js";
 import { hookEventToKind, isSessionEndHookEvent } from "../envelope-mappers.js";
 import { type CcEnvelope, isObject, jsonString, stringValue } from "../source.js";
 import {

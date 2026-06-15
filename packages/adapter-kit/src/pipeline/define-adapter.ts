@@ -7,6 +7,7 @@ import type { AdapterDef, ParseOptions } from "../types.js";
 import { runPass1 } from "./engine.js";
 import { quarantineDraft } from "./quarantine.js";
 
+/** Adapter produced by the mapping pipeline. */
 export interface Adapter {
   /**
    * Read a source, map its records to trail entries, and reconcile them. Records

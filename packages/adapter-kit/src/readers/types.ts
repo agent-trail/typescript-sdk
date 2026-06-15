@@ -1,20 +1,26 @@
+/** Raw source record as parsed by a source reader. */
 export type RawRecord = Record<string, unknown>;
 
+/** In-memory source records plus optional source-format version. */
 export interface SourceSnapshot {
+  /** Records in source order. */
   records: RawRecord[];
+  /** Upstream source-format version when known. */
   sourceVersion?: string | undefined;
 }
 
-// Points at one source artifact (a file path today; SQLite-backed readers in a
-// later phase may carry a DB path under the same shape).
+/** Points at one source artifact. */
 export interface SourcePointer {
+  /** Filesystem path or adapter-defined source locator. */
   path: string;
 }
 
-// Storage-layer boundary. Implementations own the format/storage knowledge;
-// everything above the reader (mappings, reconciler) is storage-agnostic.
+/** Storage-layer boundary for adapter source records. */
 export interface SourceReader {
+  /** Stream raw records from the source pointer. */
   records(source: SourcePointer): AsyncIterable<RawRecord>;
+  /** Detect the source-format version for the source pointer. */
   schemaVersion(source: SourcePointer): Promise<string | undefined>;
+  /** Hash source identity bytes or equivalent stable source identity. */
   identityHash(source: SourcePointer): Promise<string>;
 }

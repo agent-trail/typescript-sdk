@@ -8,7 +8,7 @@ import {
   type SourceReader,
 } from "@agent-trail/adapter-kit";
 import type { Entry } from "@agent-trail/types";
-import { CLAUDE_CODE_ENTRY_ID_NAMESPACE } from "../session-uid.js";
+import { CLAUDE_CODE_ENTRY_ID_NAMESPACE } from "../shared/session-uid.js";
 import { claudeCodeMappings, INCLUDE_SIDECHAIN } from "./mappings.js";
 import {
   ccCompactBoundaryProvenance,

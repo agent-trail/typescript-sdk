@@ -1,8 +1,6 @@
 import { readFile, stat } from "node:fs/promises";
 import { basename } from "node:path";
 import pkg from "../../package.json" with { type: "json" };
-import { buildTrailEnvelope } from "../envelope.js";
-import { applyHeaderMetadataUpdates } from "../header-metadata.js";
 import type {
   AdapterSourceHealth,
   DetectOptions,
@@ -10,15 +8,17 @@ import type {
   TrailAdapter,
   TrailFile,
 } from "../index.js";
-import { applyParseFidelity } from "../parse-fidelity.js";
-import { resumeCommand } from "../resume.js";
+import { buildTrailEnvelope } from "../shared/envelope.js";
+import { applyHeaderMetadataUpdates } from "../shared/header-metadata.js";
 import {
   inspectLocalJsonlSourceHealth,
   newestLocalJsonlSourceVersion,
   scanLocalJsonlProjectDir,
   scanLocalJsonlProjectsRoot,
 } from "../shared/local-jsonl.js";
-import { sanitizeTrailFile } from "../trail-sanitizer.js";
+import { applyParseFidelity } from "../shared/parse-fidelity.js";
+import { resumeCommand } from "../shared/resume.js";
+import { sanitizeTrailFile } from "../shared/trail-sanitizer.js";
 import { parsePiSnapshotEntries } from "./kit.js";
 import { buildHeader } from "./parser.js";
 import { piProjectDir, piProjectsRoot, piSessionsDir } from "./paths.js";
@@ -88,10 +88,13 @@ function cwdFromPiRecord(record: Record<string, unknown>): string | undefined {
   return typeof record.cwd === "string" && record.cwd.length > 0 ? record.cwd : undefined;
 }
 
+/** Options for the Pi adapter factory. */
 export type PiAdapterOptions = {
+  /** Environment overrides used for discovery and parsing. */
   env?: NodeJS.ProcessEnv;
 };
 
+/** Create a Pi adapter instance. */
 export function createPiAdapter(options: PiAdapterOptions = {}): TrailAdapter {
   const env = options.env ?? process.env;
   return {

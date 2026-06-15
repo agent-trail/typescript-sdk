@@ -1,3 +1,9 @@
+/**
+ * Authoring primitives for building Agent Trail source adapters.
+ *
+ * @packageDocumentation
+ */
+
 export { defineMapping } from "./mapping/define-mapping.js";
 export { type Adapter, defineAdapter } from "./pipeline/define-adapter.js";
 export {
@@ -24,6 +30,8 @@ export type {
   LinkerHints,
   MappingDef,
   MatchPattern,
+  MatchPatternValue,
+  MetaWithLinker,
   OverrideCtx,
   OverrideDef,
   ParseOptions,

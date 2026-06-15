@@ -1,18 +1,8 @@
-import {
-  coerceInt,
-  jsonObjectValue,
-  legacyIsObject,
-  legacyStringValue,
-} from "../legacy-kit-helpers.js";
+import { coerceInt, isRecord, jsonObjectValue, stringValue } from "../shared/value-coercion.js";
 
 // Re-export shared primitives under the adapter's helper barrel. maybeNumber is
 // the strict coerceInt; isObject/stringValue/jsonObjectValue are shared verbatim.
-export {
-  coerceInt as maybeNumber,
-  jsonObjectValue,
-  legacyIsObject as isObject,
-  legacyStringValue as stringValue,
-};
+export { coerceInt as maybeNumber, isRecord as isObject, jsonObjectValue, stringValue };
 
 export type CcEnvelope = {
   type?: string;
@@ -77,7 +67,7 @@ export function parseLines(text: string): CcEnvelope[] {
 }
 
 export function asBlocks(content: unknown): CcBlock[] {
-  return Array.isArray(content) ? content.filter(legacyIsObject) : [];
+  return Array.isArray(content) ? content.filter(isRecord) : [];
 }
 
 export function jsonString(value: unknown): string {
@@ -97,7 +87,7 @@ export function textFromToolResultContent(content: unknown): string {
 
 export function textFromTextBlocks(content: unknown[]): string {
   return content
-    .filter(legacyIsObject)
+    .filter(isRecord)
     .filter((block) => block.type === "text" && typeof block.text === "string")
     .map((block) => block.text as string)
     .join("\n");

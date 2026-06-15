@@ -1,7 +1,7 @@
 import type { MappingDef, TrailEntryDraft } from "@agent-trail/adapter-kit";
 import { defineMapping } from "@agent-trail/adapter-kit";
 import type { ToolKind } from "@agent-trail/types";
-import { mapAgentMessageUsage } from "../../legacy-kit-helpers.js";
+import { mapAgentMessageUsage } from "../../shared/usage.js";
 import {
   asBlocks,
   idValue,

@@ -6,15 +6,15 @@
 // `session_meta`, `response_item`, `event_msg`, `turn_context`, `compacted`.
 // Forward-compat: unknown top-level types are preserved verbatim under
 // `source.raw`.
-import { enforceSourceRawSize, redactValue } from "../source-raw.js";
+import { enforceSourceRawSize, redactValue } from "../shared/source-raw.js";
 
 // Strict numeric coercion is identical to the kit's coerceInt; re-export under
 // the adapter-local name. isObject/stringValue are shared verbatim.
 export {
   coerceInt as numericValue,
-  legacyIsObject as isObject,
-  legacyStringValue as stringValue,
-} from "../legacy-kit-helpers.js";
+  isRecord as isObject,
+  stringValue,
+} from "../shared/value-coercion.js";
 
 export function sanitizeSourceRaw(raw: Record<string, unknown>): Record<string, unknown> {
   return enforceSourceRawSize(redactValue(raw)).value as Record<string, unknown>;

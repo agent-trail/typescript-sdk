@@ -1,8 +1,8 @@
-import { jsonObjectValue, legacyIsObject, legacyStringValue } from "../legacy-kit-helpers.js";
+import { isRecord, jsonObjectValue, stringValue } from "../shared/value-coercion.js";
 
 // Re-export shared primitives under the adapter's helper barrel. Pi keeps its
 // own lenient numericValue/timestampToIso (numeric-string tolerant) below.
-export { jsonObjectValue, legacyIsObject as isObject, legacyStringValue as stringValue };
+export { isRecord as isObject, jsonObjectValue, stringValue };
 
 export type PiBlock = Record<string, unknown> & { type?: string };
 
@@ -68,7 +68,7 @@ export function parseLines(text: string): PiEnvelope[] {
         cause: error,
       });
     }
-    if (!legacyIsObject(value) || Array.isArray(value)) {
+    if (!isRecord(value) || Array.isArray(value)) {
       throw new Error(`JsonlReader: expected JSON object on line ${i + 1}`);
     }
     out.push(value as PiEnvelope);
@@ -77,7 +77,7 @@ export function parseLines(text: string): PiEnvelope[] {
 }
 
 export function asBlocks(content: unknown): PiBlock[] {
-  return Array.isArray(content) ? content.filter(legacyIsObject) : [];
+  return Array.isArray(content) ? content.filter(isRecord) : [];
 }
 
 // Numeric field coercion. Accept a number, or a numeric string (e.g., `"12000"`) — Pi top-level
@@ -111,7 +111,7 @@ export function textFromContent(content: unknown): string {
   if (typeof content === "string") return content;
   if (Array.isArray(content)) {
     const text = content
-      .filter(legacyIsObject)
+      .filter(isRecord)
       .filter((block) => block.type === "text" && typeof block.text === "string")
       .map((block) => block.text as string)
       .join("\n");

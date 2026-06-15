@@ -67,8 +67,16 @@ function filePatchTool(
   args: Record<string, unknown>,
 ): NormalizedToolCall | undefined {
   if (name === "apply_patch" || name === "patch" || name === "file_patch") {
-    const patch = stringValue(args.patch) ?? stringValue(args.input);
-    if (patch !== undefined) return { tool: "file_patch", args: { patch } };
+    const files = filePatchFiles(args.files);
+    if (files !== undefined) {
+      return {
+        tool: "file_patch",
+        args: {
+          files,
+          ...(typeof args.atomic === "boolean" ? { atomic: args.atomic } : {}),
+        },
+      };
+    }
   }
   return undefined;
 }
@@ -96,12 +104,36 @@ function fileSearchTool(
 }
 
 function mcpTool(name: string, args: Record<string, unknown>): NormalizedToolCall | undefined {
-  const mcp = /^mcp__(?<server>[^_]+)__(?<tool>.+)$/.exec(name);
-  if (mcp?.groups?.server === undefined || mcp.groups.tool === undefined) return undefined;
+  const mcp = mcpNameParts(name);
+  if (mcp === undefined) return undefined;
   return {
     tool: "mcp_call",
-    args: { server: mcp.groups.server, name: mcp.groups.tool, args },
+    args: { server: mcp.server, tool: mcp.tool, args },
   };
+}
+
+function filePatchFiles(value: unknown): Array<{ path: string; diff: string }> | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const files = value.map(filePatchFile).filter(isPresent);
+  return files.length === value.length && files.length > 0 ? files : undefined;
+}
+
+function filePatchFile(value: unknown): { path: string; diff: string } | undefined {
+  if (value === null || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  const path = stringValue(record.path);
+  const diff = stringValue(record.diff);
+  return path !== undefined && diff !== undefined ? { path, diff } : undefined;
+}
+
+function mcpNameParts(name: string): { server: string; tool: string } | undefined {
+  if (!name.startsWith("mcp__")) return undefined;
+  const parts = name.slice("mcp__".length).split("__");
+  if (parts.length < 2) return undefined;
+  const tool = parts.pop();
+  const server = parts.join("__");
+  if (server.length === 0 || tool === undefined || tool.length === 0) return undefined;
+  return { server, tool };
 }
 
 function editArgs(args: Record<string, unknown>): Record<string, unknown> | undefined {
@@ -120,6 +152,10 @@ function pathValue(args: Record<string, unknown>): string | undefined {
 
 function stringValue(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
+}
+
+function isPresent<T>(value: T | undefined): value is T {
+  return value !== undefined;
 }
 
 function other(name: string, args: Record<string, unknown>): NormalizedToolCall {

@@ -27,9 +27,18 @@ test("normalizeToolCall handles file reads, writes, edits, and patches", () => {
     tool: "file_edit",
     args: { path: "a.ts", old: "a", new: "b" },
   });
-  expect(normalizeToolCall({ name: "apply_patch", args: { patch: "--- a" } })).toEqual({
+  expect(
+    normalizeToolCall({
+      name: "file_patch",
+      args: { files: [{ path: "a.ts", diff: "--- a" }], atomic: true },
+    }),
+  ).toEqual({
     tool: "file_patch",
-    args: { patch: "--- a" },
+    args: { files: [{ path: "a.ts", diff: "--- a" }], atomic: true },
+  });
+  expect(normalizeToolCall({ name: "apply_patch", args: { patch: "--- a" } })).toEqual({
+    tool: "other",
+    args: { name: "apply_patch", args: { patch: "--- a" } },
   });
 });
 
@@ -50,7 +59,11 @@ test("normalizeToolCall handles search, todo, permission, and custom families", 
   });
   expect(normalizeToolCall({ name: "mcp__linear__create_issue", args: { title: "x" } })).toEqual({
     tool: "mcp_call",
-    args: { server: "linear", name: "create_issue", args: { title: "x" } },
+    args: { server: "linear", tool: "create_issue", args: { title: "x" } },
+  });
+  expect(normalizeToolCall({ name: "mcp__computer_use__click", args: { x: 1 } })).toEqual({
+    tool: "mcp_call",
+    args: { server: "computer_use", tool: "click", args: { x: 1 } },
   });
   expect(normalizeToolCall({ name: "vendor_magic", args: { value: 1 } })).toEqual({
     tool: "other",

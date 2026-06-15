@@ -10,6 +10,12 @@ import type { Header } from '@agent-trail/types';
 import type { TrailEnvelope } from '@agent-trail/types';
 
 // @public
+export const BEARER_TOKEN: RedactionPattern;
+
+// @public
+export function canonicalizeIdentityString(value: string): string;
+
+// @public
 export function computeContentHashes(trail: ParsedTrail): ContentHashes;
 
 // @public
@@ -32,6 +38,21 @@ export type CoreValidationMode = "strict" | "tolerant";
 export function createDiagnostic(diagnostic: Diagnostic): Diagnostic;
 
 // @public
+export const CREDENTIAL_CONTEXT_PLACEHOLDER = "[CREDENTIAL_VALUE]";
+
+// @public
+export const CREDENTIAL_PATTERNS: RedactionPattern[];
+
+// @public
+export const DEFAULT_PATTERNS: RedactionPattern[];
+
+// @public
+export function deriveSeededUuidV5(namespace: string, seedParts: readonly string[]): string;
+
+// @public
+export function deriveUuidV5(namespace: string, name: string): string;
+
+// @public
 export type Diagnostic = TrailDiagnostic;
 
 // @public
@@ -39,6 +60,15 @@ export function formatDiagnosticsText(diagnostics: Iterable<Diagnostic>): string
 
 // @public
 export function formatDiagnosticText(diagnostic: Diagnostic): string;
+
+// @public
+export function isCredentialKey(key: string | undefined): boolean;
+
+// @public
+export function isOpaqueTokenValue(value: string): boolean;
+
+// @public
+export function isSafeCredentialContextValue(value: string): boolean;
 
 // @public
 export type ParsedTrail = {
@@ -63,6 +93,14 @@ export function reconcileSegments(inputs: ParsedTrail[]): ReconciliationResult;
 export type ReconciliationResult = {
     trails: ParsedTrail[];
     diagnostics: TrailDiagnostic[];
+};
+
+// @public
+export type RedactionPattern = {
+    id: string;
+    description: string;
+    regex: RegExp;
+    placeholder: string;
 };
 
 // @public

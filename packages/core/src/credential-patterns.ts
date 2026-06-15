@@ -10,6 +10,11 @@ export type RedactionPattern = {
   placeholder: string;
 };
 
+/**
+ * Placeholder used when a credential-keyed field still contains sensitive context.
+ *
+ * @public
+ */
 export const CREDENTIAL_CONTEXT_PLACEHOLDER = "[CREDENTIAL_VALUE]";
 
 const CREDENTIAL_KEY_PATTERN =
@@ -26,6 +31,11 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 const SHA256_REF_PATTERN = /^sha256:[0-9a-f]{64}$/i;
 const SHA256_HEX_PATTERN = /^[0-9a-f]{64}$/i;
 
+/**
+ * Return true when a key name conventionally identifies a credential value.
+ *
+ * @public
+ */
 export function isCredentialKey(key: string | undefined): boolean {
   if (key === undefined) return false;
   return (
@@ -35,10 +45,20 @@ export function isCredentialKey(key: string | undefined): boolean {
   );
 }
 
+/**
+ * Return true when a credential-keyed value is already empty or placeholder-safe.
+ *
+ * @public
+ */
 export function isSafeCredentialContextValue(value: string): boolean {
   return value.length === 0 || PLACEHOLDER_PATTERN.test(value) || value === "<pending>";
 }
 
+/**
+ * Return true when a token-like value is an opaque identifier rather than a secret.
+ *
+ * @public
+ */
 export function isOpaqueTokenValue(value: string): boolean {
   return (
     UUID_PATTERN.test(value) || SHA256_REF_PATTERN.test(value) || SHA256_HEX_PATTERN.test(value)
@@ -273,6 +293,11 @@ const JWT_TOKEN: RedactionPattern = {
   placeholder: "[JWT]",
 };
 
+/**
+ * Generic bearer token redaction pattern.
+ *
+ * @public
+ */
 export const BEARER_TOKEN: RedactionPattern = {
   id: "bearer_token",
   description: "Bearer authorization token",
@@ -321,6 +346,11 @@ const HOME_PATH_WINDOWS: RedactionPattern = {
 // validator's source_raw_unredacted_secret check. Excludes path normalization
 // patterns (HOME_PATH, HOME_PATH_WINDOWS) — those are share-time concerns,
 // not secrets.
+/**
+ * Credential-only redaction patterns without path normalization rules.
+ *
+ * @public
+ */
 export const CREDENTIAL_PATTERNS: RedactionPattern[] = [
   ANTHROPIC_API_KEY,
   OPENAI_API_KEY,

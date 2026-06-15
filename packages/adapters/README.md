@@ -25,16 +25,16 @@ out of `@agent-trail/core` so the core package stays focused on the trail
 file contract (parsing, validation, hashing, reconciliation) and does not
 ship adapter-specific raw-handling code.
 
-`@agent-trail/core` continues to re-export the related constants for
-consumers that compute their own size budgets or pattern lists:
+Credential pattern primitives live in `@agent-trail/core` and the
+`@agent-trail/core/credential-patterns` subpath for packages that need the same
+credential-only source raw policy:
 
-- `SOURCE_RAW_HARD_CAP_BYTES`, `SOURCE_RAW_SOFT_CAP_BYTES`
 - `BEARER_TOKEN`, `CREDENTIAL_PATTERNS`, and the other named patterns from
-  `secret-patterns.ts`
+  `credential-patterns`
 
-If you are writing an adapter outside this workspace, import the constants
-from `@agent-trail/core` and implement your own size/redaction policy — or
-copy the helpers in `src/source-raw.ts`.
+Source raw size limits remain adapter-internal. If you are writing an adapter
+outside this workspace, import credential patterns from core and implement your
+own size/redaction policy, or copy the helpers in `src/source-raw.ts`.
 
 ## `SourceForOptions.schemaVersion`
 

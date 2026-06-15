@@ -17,72 +17,112 @@ function emitCustom(
   originalType: string,
   rawType: string,
 ): TrailEntryDraft[] {
+  if (args.isMessage && args.customType === "interactive-shell-transfer") {
+    return [interactiveShellTransferEntry(ctx, record, args, originalType, rawType)];
+  }
+  return [genericCustomEntry(ctx, record, args, originalType, rawType)];
+}
+
+function interactiveShellTransferEntry(
+  ctx: PiMappingContext,
+  record: PiEnvelope,
+  args: {
+    customType: string | undefined;
+    content: unknown;
+    data: unknown;
+    display: unknown;
+  },
+  originalType: string,
+  rawType: string,
+): TrailEntryDraft {
+  const inner = isObject(args.data) ? args.data : undefined;
+  const content = stringValue(args.content);
+  return {
+    type: "system_event",
+    payload: {
+      kind: "x-pi/interactive_shell_transfer",
+      text: nonBlankText(content) ?? "Interactive shell transfer",
+      data: interactiveShellTransferData(inner),
+    },
+    source: ctx.src(record, originalType),
+    meta: metaFor(record, rawType, displayMeta(args.display)),
+  };
+}
+
+function interactiveShellTransferData(
+  inner: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  const data: Record<string, unknown> = { custom_type: "interactive-shell-transfer" };
+  add(data, "session_id", stringValue(inner?.sessionId));
+  add(data, "duration", stringValue(inner?.duration));
+  if ("exitCode" in (inner ?? {})) data.exit_code = inner?.exitCode ?? null;
+  addBoolean(data, "timed_out", inner?.timedOut);
+  addBoolean(data, "cancelled", inner?.cancelled);
+  addCompletionOutputData(data, inner);
+  return data;
+}
+
+function addCompletionOutputData(
+  data: Record<string, unknown>,
+  inner: Record<string, unknown> | undefined,
+): void {
+  const completionOutput = isObject(inner?.completionOutput) ? inner.completionOutput : undefined;
+  add(data, "output_total_lines", numericValue(completionOutput?.totalLines));
+  addBoolean(data, "output_truncated", completionOutput?.truncated);
+  if (Array.isArray(completionOutput?.lines))
+    data.output_line_count = completionOutput.lines.length;
+}
+
+function genericCustomEntry(
+  ctx: PiMappingContext,
+  record: PiEnvelope,
+  args: {
+    customType: string | undefined;
+    content: unknown;
+    data: unknown;
+    display: unknown;
+    isMessage: boolean;
+  },
+  originalType: string,
+  rawType: string,
+): TrailEntryDraft {
   const { customType, isMessage } = args;
   const inner = isObject(args.data) ? args.data : undefined;
   const content = stringValue(args.content);
-  if (isMessage && customType === "interactive-shell-transfer") {
-    const data: Record<string, unknown> = { custom_type: customType };
-    const sessionId = stringValue(inner?.sessionId);
-    if (sessionId !== undefined) data.session_id = sessionId;
-    const duration = stringValue(inner?.duration);
-    if (duration !== undefined) data.duration = duration;
-    if ("exitCode" in (inner ?? {})) data.exit_code = inner?.exitCode ?? null;
-    if (typeof inner?.timedOut === "boolean") data.timed_out = inner.timedOut;
-    if (typeof inner?.cancelled === "boolean") data.cancelled = inner.cancelled;
-    const completionOutput = isObject(inner?.completionOutput) ? inner.completionOutput : undefined;
-    const totalLines = numericValue(completionOutput?.totalLines);
-    if (totalLines !== undefined) data.output_total_lines = totalLines;
-    if (typeof completionOutput?.truncated === "boolean") {
-      data.output_truncated = completionOutput.truncated;
-    }
-    if (Array.isArray(completionOutput?.lines)) {
-      data.output_line_count = completionOutput.lines.length;
-    }
-    return [
-      {
-        type: "system_event",
-        payload: {
-          kind: "x-pi/interactive_shell_transfer",
-          text:
-            content !== undefined && content.trim().length > 0
-              ? content
-              : "Interactive shell transfer",
-          data,
-        },
-        source: ctx.src(record, originalType),
-        meta: metaFor(
-          record,
-          rawType,
-          typeof args.display === "boolean" ? { "dev.pi.display": args.display } : undefined,
-        ),
-      },
-    ];
-  }
   const data: Record<string, unknown> = {};
   if (customType !== undefined) data.custom_type = customType;
   if (inner !== undefined) data.custom_data = inner;
-  const text =
-    content !== undefined && content.trim().length > 0
-      ? content
-      : customType !== undefined
-        ? `${isMessage ? "Custom message" : "Custom"}: ${customType}`
-        : isMessage
-          ? "Custom message"
-          : "Custom event";
-  const extraMeta: Meta | undefined =
-    typeof args.display === "boolean" ? { "dev.pi.display": args.display } : undefined;
-  return [
-    {
-      type: "system_event",
-      payload: {
-        kind: isMessage ? "x-pi/custom_message" : "x-pi/custom",
-        text,
-        ...(Object.keys(data).length > 0 ? { data } : {}),
-      },
-      source: ctx.src(record, originalType),
-      meta: metaFor(record, rawType, extraMeta),
+  return {
+    type: "system_event",
+    payload: {
+      kind: isMessage ? "x-pi/custom_message" : "x-pi/custom",
+      text: nonBlankText(content) ?? fallbackCustomText(customType, isMessage),
+      ...(Object.keys(data).length > 0 ? { data } : {}),
     },
-  ];
+    source: ctx.src(record, originalType),
+    meta: metaFor(record, rawType, displayMeta(args.display)),
+  };
+}
+
+function nonBlankText(value: string | undefined): string | undefined {
+  return value !== undefined && value.trim().length > 0 ? value : undefined;
+}
+
+function fallbackCustomText(customType: string | undefined, isMessage: boolean): string {
+  if (customType !== undefined) return `${isMessage ? "Custom message" : "Custom"}: ${customType}`;
+  return isMessage ? "Custom message" : "Custom event";
+}
+
+function displayMeta(display: unknown): Meta | undefined {
+  return typeof display === "boolean" ? { "dev.pi.display": display } : undefined;
+}
+
+function add(data: Record<string, unknown>, key: string, value: unknown): void {
+  if (value !== undefined) data[key] = value;
+}
+
+function addBoolean(data: Record<string, unknown>, key: string, value: unknown): void {
+  if (typeof value === "boolean") data[key] = value;
 }
 
 export function customVariantMappings(ctx: PiMappingContext): MappingDef<PiEnvelope>[] {

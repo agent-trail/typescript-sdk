@@ -1,0 +1,44 @@
+packages/sessions/README.md
+  s_4bbd91c57aaaad::t_e9de0d718cba9f 9-14,17-19
+packages/sessions/src/export.ts
+  s_4bbd91c57aaaad::t_941038e5815f87 1-35
+packages/sessions/src/types.ts
+  s_4bbd91c57aaaad::t_941038e5815f87 1-241
+packages/sessions/src/tests/sessions.test.ts
+  s_4bbd91c57aaaad::t_e02826c914645b 299-302
+  s_4bbd91c57aaaad::t_0044e2558df971 187
+  s_4bbd91c57aaaad::t_3a64796360588d 4,115-141,198-286,310,364-374
+packages/sessions/src/load.ts
+  s_4bbd91c57aaaad::t_e02826c914645b 1-5
+  s_4bbd91c57aaaad::t_941038e5815f87 6-87
+packages/sessions/src/client.ts
+  s_4bbd91c57aaaad::t_941038e5815f87 1-21
+packages/sessions/src/share.ts
+  s_4bbd91c57aaaad::t_941038e5815f87 1-45
+packages/sessions/src/index.ts
+  s_4bbd91c57aaaad::t_e02826c914645b 44-68
+packages/sessions/src/discover.ts
+  s_4bbd91c57aaaad::t_941038e5815f87 6-42
+  s_4bbd91c57aaaad::t_e02826c914645b 1-5
+packages/sessions/src/list.ts
+  s_4bbd91c57aaaad::t_941038e5815f87 1-27
+packages/sessions/src/shared.ts
+  s_4bbd91c57aaaad::t_e02826c914645b 5,9
+  s_4bbd91c57aaaad::t_941038e5815f87 1-4,6-8,10-203
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "d7e2bbb1255f8b4006f2811f731a88bf20f73037",
+  "prompts": {},
+  "sessions": {
+    "s_4bbd91c57aaaad": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ecca9-c454-7d10-ade3-fe5e2bc0bbd1",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

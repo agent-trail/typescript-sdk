@@ -1,0 +1,44 @@
+packages/adapters/src/pi/mapping/custom.ts
+  s_41a01eab7e41e9::t_299a66902bb676 72-73
+  s_41a01eab7e41e9::t_4c2ed43505c2f1 20-71,74-88,95-100,102-125
+packages/adapters/src/pi/reconcile-rules.ts
+  s_41a01eab7e41e9::t_3f0e194ad118af 422-433,442-443,445-448,455,461-464,481-483,503-504
+  s_41a01eab7e41e9::t_4ba8bf790079a1 137-142,145-148,150-151,153-182,451-453,456,458-460,465-470,472-480
+  s_41a01eab7e41e9::t_d3fc7db4e7a7a9 40-46,125,127-131,133-136,144,152,183,185-186,189,191-192,195-196,209,211-222,224-230,232-309
+  s_41a01eab7e41e9::t_382ccfd7b3d0de 126,194
+packages/adapters/src/pi/index.ts
+  s_41a01eab7e41e9::t_c5d923447be74d 1-2,15-20,36-37,44,46-49,52-57,60-73,75,78-84,87-88,100,129
+packages/adapters/src/pi/index.test.ts
+  s_41a01eab7e41e9::t_ab57a384ca88fa 1727-1733,1735,1747,1749,1766
+packages/adapters/src/shared/apply-patch-parser.ts
+  s_41a01eab7e41e9::t_e2a051bf1801c5 1-95
+packages/adapters/src/pi/mapping/messages.ts
+  s_41a01eab7e41e9::t_299a66902bb676 82-90,101-104,125-133,136-144
+  s_41a01eab7e41e9::t_333c17284b936e 21,26,31,36,41-81,91-100,105-124,134-135,145-382
+packages/adapters/src/pi/tools.ts
+  s_41a01eab7e41e9::t_299a66902bb676 146-149,157-158
+  s_41a01eab7e41e9::t_e2a051bf1801c5 2
+  s_41a01eab7e41e9::t_d32ea4fe4252c3 5-8,10-32,35-46,49-55,57-66,69-75,78-134,136-145,150-156,159-211,220-222
+packages/adapters/src/codex/parser.ts
+  s_41a01eab7e41e9::t_ff4fbb038e569e 26
+  s_41a01eab7e41e9::t_4c2ed43505c2f1 30
+  s_41a01eab7e41e9::t_e2a051bf1801c5 31
+.fallowrc.json
+  s_41a01eab7e41e9::t_1a41938773bbf8 21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "8d658eebbb8112b84d68f85a2748e803d51c20d2",
+  "prompts": {},
+  "sessions": {
+    "s_41a01eab7e41e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec547-b5c0-7200-b226-4f1ef52334a0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

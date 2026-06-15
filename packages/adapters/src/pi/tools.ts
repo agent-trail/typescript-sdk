@@ -58,12 +58,16 @@ function writeTool(args: Record<string, unknown>): ToolMapping | undefined {
 // single replacement, multi replacement, current `edits` array, and raw apply_patch text.
 function editTool(args: Record<string, unknown>): ToolMapping | undefined {
   const topPath = pathValue(args);
-  return (
-    editFromEditsArray(args, topPath) ??
-    editFromMulti(args, topPath) ??
-    editFromPatch(args) ??
-    editFromReplacement(args, topPath)
-  );
+  if (Array.isArray(args.edits) && topPath !== undefined) {
+    return editFromEditsArray(args, topPath);
+  }
+  if (Array.isArray(args.multi) && args.multi.length > 0) {
+    return editFromMulti(args, topPath);
+  }
+  if (stringValue(args.patch) !== undefined) {
+    return editFromPatch(args);
+  }
+  return editFromReplacement(args, topPath);
 }
 
 function editFromEditsArray(

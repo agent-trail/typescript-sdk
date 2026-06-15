@@ -961,6 +961,31 @@ test("toolKindAndArgs maps current pi-mono single edit shape -> file_edit replac
   });
 });
 
+test("toolKindAndArgs keeps unsupported Pi 'edit' structured shapes as other", () => {
+  const emptyEdits = { path: "a.md", edits: [], oldText: "foo", newText: "bar" };
+  expect(toolKindAndArgs("edit", emptyEdits)).toEqual({
+    tool: "other",
+    args: { name: "edit", args: emptyEdits },
+  });
+
+  const badMulti = {
+    multi: [{ path: "a.md", oldText: "foo", newText: "bar" }, "not-an-edit"],
+    oldText: "foo",
+    newText: "bar",
+    path: "a.md",
+  };
+  expect(toolKindAndArgs("edit", badMulti)).toEqual({
+    tool: "other",
+    args: { name: "edit", args: badMulti },
+  });
+
+  const invalidPatch = { patch: "not an apply_patch envelope", path: "a.md", oldText: "a" };
+  expect(toolKindAndArgs("edit", invalidPatch)).toEqual({
+    tool: "other",
+    args: { name: "edit", args: invalidPatch },
+  });
+});
+
 test("toolKindAndArgs keeps Pi 'edit' multi same-path without line context as other", () => {
   const input = {
     multi: [

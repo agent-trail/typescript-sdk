@@ -961,6 +961,31 @@ test("toolKindAndArgs maps current pi-mono single edit shape -> file_edit replac
   });
 });
 
+test("toolKindAndArgs keeps unsupported Pi 'edit' structured shapes as other", () => {
+  const emptyEdits = { path: "a.md", edits: [], oldText: "foo", newText: "bar" };
+  expect(toolKindAndArgs("edit", emptyEdits)).toEqual({
+    tool: "other",
+    args: { name: "edit", args: emptyEdits },
+  });
+
+  const badMulti = {
+    multi: [{ path: "a.md", oldText: "foo", newText: "bar" }, "not-an-edit"],
+    oldText: "foo",
+    newText: "bar",
+    path: "a.md",
+  };
+  expect(toolKindAndArgs("edit", badMulti)).toEqual({
+    tool: "other",
+    args: { name: "edit", args: badMulti },
+  });
+
+  const invalidPatch = { patch: "not an apply_patch envelope", path: "a.md", oldText: "a" };
+  expect(toolKindAndArgs("edit", invalidPatch)).toEqual({
+    tool: "other",
+    args: { name: "edit", args: invalidPatch },
+  });
+});
+
 test("toolKindAndArgs keeps Pi 'edit' multi same-path without line context as other", () => {
   const input = {
     multi: [
@@ -1724,8 +1749,15 @@ test("BashExecutionMessage maps to a user-origin shell_command tool_call + tool_
   expect(calls).toHaveLength(2);
   expect(results).toHaveLength(1);
   expect(aborts).toHaveLength(1);
+  assertSuccessfulBashExecution(calls[0]!, results);
+  assertCancelledBashExecution(calls, aborts[0]!);
+  expect(entries.some((e) => e.type === "session_terminated")).toBe(false);
 
-  const okCall = calls[0]!;
+  const diagnostics = await validateAdapterTrail(trail);
+  expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+});
+
+function assertSuccessfulBashExecution(okCall, results) {
   expect((okCall.payload as { tool?: string; args?: { command?: string } }).tool).toBe(
     "shell_command",
   );
@@ -1737,8 +1769,9 @@ test("BashExecutionMessage maps to a user-origin shell_command tool_call + tool_
     (okResult?.payload as { meta?: { shell_command?: { exit_code?: number } } }).meta?.shell_command
       ?.exit_code,
   ).toBe(0);
+}
 
-  const cancelledAbort = aborts[0];
+function assertCancelledBashExecution(calls, cancelledAbort) {
   const cancelledAbortForId = (cancelledAbort?.payload as { for_id?: string } | undefined)?.for_id;
   expect(typeof cancelledAbortForId).toBe("string");
   expect(cancelledAbort?.payload).toEqual({
@@ -1755,11 +1788,7 @@ test("BashExecutionMessage maps to a user-origin shell_command tool_call + tool_
   expect((cancelledCall?.meta as Record<string, unknown>)["dev.pi.exclude_from_context"]).toBe(
     true,
   );
-  expect(entries.some((e) => e.type === "session_terminated")).toBe(false);
-
-  const diagnostics = await validateAdapterTrail(trail);
-  expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
-});
+}
 
 // Issue #125 #4: message-channel variants (role:"branchSummary"/"compactionSummary"/
 // "custom") route to the same trail entries as their tree-entry counterparts.

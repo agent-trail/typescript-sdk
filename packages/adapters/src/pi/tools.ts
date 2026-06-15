@@ -1,255 +1,218 @@
 import { coerceInt as maybeNumber, quoteShellArg } from "../legacy-kit-helpers.js";
+import { patchFiles } from "../shared/apply-patch-parser.js";
 import { isObject, jsonObjectValue, stringValue } from "./source.js";
 
-const PATCH_FILE_MARKER = /^\*\*\* (Update|Add|Delete) File: (.+)$/gm;
-
-function endPatchIndex(input: string, start: number): number {
-  const tail = input.slice(start);
-  const match = tail.match(/^\*\*\* End Patch\b/m);
-  return match?.index === undefined ? -1 : start + match.index;
-}
-
-function countPrefixedLines(lines: string[], prefix: string): number {
-  return lines.filter((line) => line.startsWith(prefix)).length;
-}
-
-function normalizePatchBody(action: "Update" | "Add" | "Delete", body: string): string {
-  const diffBody = body
-    .split("\n")
-    .filter((line) => !line.startsWith("*** Move to:") && line !== "*** End of File")
-    .join("\n")
-    .trim();
-  if (diffBody.length === 0 || /^@@/m.test(diffBody)) return diffBody;
-
-  const lines = diffBody.split("\n");
-  const oldCount = action === "Add" ? 0 : countPrefixedLines(lines, "-");
-  const newCount = action === "Delete" ? 0 : countPrefixedLines(lines, "+");
-  return [`@@ -1,${oldCount} +1,${newCount} @@`, diffBody].join("\n");
-}
-
-function patchFiles(input: string): Array<{ path: string; diff: string }> {
-  const matches = [...input.matchAll(PATCH_FILE_MARKER)];
-  const files: Array<{ path: string; diff: string }> = [];
-  for (const [index, match] of matches.entries()) {
-    const action = match[1];
-    const sourcePath = match[2];
-    if (
-      (action !== "Update" && action !== "Add" && action !== "Delete") ||
-      sourcePath === undefined
-    ) {
-      continue;
-    }
-    const path = sourcePath.trim();
-    if (path.length === 0) continue;
-    const start = match.index + match[0].length;
-    const end = matches[index + 1]?.index ?? endPatchIndex(input, start);
-    const body = input.slice(start, end === -1 ? undefined : end).trim();
-    const moveTo = body.match(/^\*\*\* Move to: (.+)$/m)?.[1]?.trim();
-    const newPath = moveTo && moveTo.length > 0 ? moveTo : path;
-    const oldHeader = action === "Add" ? "/dev/null" : `a/${path}`;
-    const newHeader = action === "Delete" ? "/dev/null" : `b/${newPath}`;
-    const diffBody = normalizePatchBody(action, body);
-    files.push({
-      path: newPath,
-      diff: [`--- ${oldHeader}`, `+++ ${newHeader}`, diffBody]
-        .filter((part) => part.length > 0)
-        .join("\n"),
-    });
-  }
-  return files;
-}
+type ToolMapping = {
+  tool: string;
+  args: object;
+};
 
 // Pi's built-in tools (pi-mono `coding-agent/src/core/tools/`): bash, read, write, edit,
 // grep, find, ls. Mapped to canonical kinds (spec §11). MCP-extension tools real Pi
 // sessions also carry fall through to the `other` escape hatch (spec §11.7).
-export function toolKindAndArgs(
-  name: string | undefined,
-  input: unknown,
-): {
-  tool: string;
-  args: object;
-} {
+export function toolKindAndArgs(name: string | undefined, input: unknown): ToolMapping {
   const args = jsonObjectValue(input) ?? {};
   switch (name) {
-    case "read": {
-      const path = stringValue(args.path) ?? stringValue(args.file_path);
-      const offset = maybeNumber(args.offset);
-      const limit = maybeNumber(args.limit);
-      if (path !== undefined) {
-        return {
-          tool: "file_read",
-          args: {
-            path,
-            ...(offset !== undefined && limit !== undefined
-              ? { range: [offset, offset + limit] }
-              : {}),
-          },
-        };
-      }
-      break;
-    }
-    case "write": {
-      const path = stringValue(args.path) ?? stringValue(args.file_path);
-      const content = stringValue(args.content);
-      if (path !== undefined && content !== undefined) {
-        return { tool: "file_write", args: { path, content } };
-      }
-      break;
-    }
-    case "edit": {
-      // Pi `edit` arguments empirically come in four shapes:
-      //   single-replace:  { path, oldText, newText }
-      //   multi-replace:   { multi: [{ path, oldText, newText }, ...] }   (path is per-entry)
-      //   edits-array:     { path, edits: [{ oldText, newText }, ...] }   (current pi-mono schema)
-      //   apply_patch:     { patch: "*** Begin Patch\n*** Update File: ...\n..." }
-      // One-hunk replacement shapes map to spec §11.1 `file_edit` replacement
-      // args. Multi-hunk/no-line-context shapes fall through to `other` so we
-      // do not fabricate diff hunk headers. Real patch text still maps to
-      // `file_edit`/`file_patch`.
-      const topPath = stringValue(args.path) ?? stringValue(args.file_path);
-      const editsArray = Array.isArray(args.edits) ? args.edits : undefined;
-      if (editsArray !== undefined && topPath !== undefined) {
-        const hunks: Array<{ oldText: string; newText: string }> = [];
-        for (const e of editsArray) {
-          if (!isObject(e)) continue;
-          const oldText = stringValue(e.oldText) ?? stringValue(e.old_text);
-          const newText = stringValue(e.newText) ?? stringValue(e.new_text);
-          if (oldText !== undefined || newText !== undefined) {
-            hunks.push({ oldText: oldText ?? "", newText: newText ?? "" });
-          }
-        }
-        if (hunks.length > 0) {
-          if (hunks.length === 1) {
-            const [hunk] = hunks;
-            if (hunk === undefined) break;
-            return {
-              tool: "file_edit",
-              args: { path: topPath, old: hunk.oldText, new: hunk.newText },
-            };
-          }
-          break;
-        }
-        break;
-      }
-      const multi = Array.isArray(args.multi) ? args.multi : undefined;
-      if (multi !== undefined && multi.length > 0) {
-        const editsByPath = new Map<string, Array<{ oldText: string; newText: string }>>();
-        let bad = false;
-        for (const e of multi) {
-          if (!isObject(e)) {
-            bad = true;
-            break;
-          }
-          const p = stringValue(e.path) ?? topPath;
-          if (p === undefined) {
-            bad = true;
-            break;
-          }
-          const oldText = stringValue(e.oldText) ?? stringValue(e.old_text);
-          const newText = stringValue(e.newText) ?? stringValue(e.new_text);
-          if (oldText === undefined && newText === undefined) continue;
-          const arr = editsByPath.get(p) ?? [];
-          arr.push({ oldText: oldText ?? "", newText: newText ?? "" });
-          editsByPath.set(p, arr);
-        }
-        if (!bad && editsByPath.size > 1) break;
-        if (!bad && editsByPath.size === 1) {
-          const [path, hunks] = [...editsByPath.entries()][0] as [
-            string,
-            Array<{ oldText: string; newText: string }>,
-          ];
-          if (hunks.length > 0) {
-            if (hunks.length === 1) {
-              const [hunk] = hunks;
-              if (hunk === undefined) break;
-              return { tool: "file_edit", args: { path, old: hunk.oldText, new: hunk.newText } };
-            }
-            break;
-          }
-        }
-        break;
-      }
-      const patch = stringValue(args.patch);
-      if (patch !== undefined) {
-        const files = patchFiles(patch);
-        if (files.length > 1) return { tool: "file_patch", args: { files, atomic: true } };
-        if (files.length === 1) {
-          const file = files[0];
-          if (file !== undefined) return { tool: "file_edit", args: file };
-        }
-        break;
-      }
-      if (topPath !== undefined) {
-        const oldText = stringValue(args.oldText) ?? stringValue(args.oldString);
-        const newText = stringValue(args.newText) ?? stringValue(args.newString);
-        if (oldText !== undefined || newText !== undefined) {
-          return {
-            tool: "file_edit",
-            args: { path: topPath, old: oldText ?? "", new: newText ?? "" },
-          };
-        }
-      }
-      break;
-    }
-    case "bash": {
-      // Defensive arg shapes (real Pi sessions): `{command: "..."}`, `{cmd: "..."}`, and
-      // `{command: ["bash", "-lc", "..."]}` (argv-style). Quote argv entries with shell-special
-      // chars so the canonical `args.command` string round-trips through a POSIX shell.
-      const commandArray = Array.isArray(args.command)
-        ? args.command.filter((p): p is string => typeof p === "string")
-        : undefined;
-      const command =
-        stringValue(args.command) ??
-        stringValue(args.cmd) ??
-        (commandArray !== undefined && commandArray.length > 0
-          ? commandArray.map(quoteShellArg).join(" ")
-          : undefined);
-      if (command !== undefined) {
-        return {
-          tool: "shell_command",
-          args: {
-            command,
-            ...(stringValue(args.cwd) !== undefined ? { cwd: stringValue(args.cwd) } : {}),
-            ...(maybeNumber(args.timeout) !== undefined
-              ? { timeout: maybeNumber(args.timeout) }
-              : {}),
-          },
-        };
-      }
-      break;
-    }
-    case "grep": {
-      const pattern = stringValue(args.pattern);
-      if (pattern !== undefined) {
-        return {
-          tool: "file_search",
-          args: {
-            query: pattern,
-            ...(stringValue(args.path) !== undefined ? { path: stringValue(args.path) } : {}),
-            ...(stringValue(args.glob) !== undefined ? { glob: stringValue(args.glob) } : {}),
-          },
-        };
-      }
-      break;
-    }
-    case "find": {
-      const pattern = stringValue(args.pattern);
-      if (pattern !== undefined) {
-        return {
-          tool: "file_search",
-          args: {
-            query: pattern,
-            ...(stringValue(args.path) !== undefined ? { path: stringValue(args.path) } : {}),
-          },
-        };
-      }
-      break;
-    }
-    case "ls": {
-      const path = stringValue(args.path);
-      return { tool: "file_list", args: { path: path ?? "." } };
-    }
+    case "read":
+      return readTool(args) ?? otherTool(name, input);
+    case "write":
+      return writeTool(args) ?? otherTool(name, input);
+    case "edit":
+      return editTool(args) ?? otherTool(name, input);
+    case "bash":
+      return bashTool(args) ?? otherTool(name, input);
+    case "grep":
+      return grepTool(args) ?? otherTool(name, input);
+    case "find":
+      return findTool(args) ?? otherTool(name, input);
+    case "ls":
+      return listTool(args);
+    default:
+      return otherTool(name, input);
   }
+}
+
+function readTool(args: Record<string, unknown>): ToolMapping | undefined {
+  const path = pathValue(args);
+  if (path === undefined) return undefined;
+  const offset = maybeNumber(args.offset);
+  const limit = maybeNumber(args.limit);
+  return {
+    tool: "file_read",
+    args: {
+      path,
+      ...(offset !== undefined && limit !== undefined ? { range: [offset, offset + limit] } : {}),
+    },
+  };
+}
+
+function writeTool(args: Record<string, unknown>): ToolMapping | undefined {
+  const path = pathValue(args);
+  const content = stringValue(args.content);
+  return path !== undefined && content !== undefined
+    ? { tool: "file_write", args: { path, content } }
+    : undefined;
+}
+
+// Pi `edit` arguments empirically come in four shapes:
+// single replacement, multi replacement, current `edits` array, and raw apply_patch text.
+function editTool(args: Record<string, unknown>): ToolMapping | undefined {
+  const topPath = pathValue(args);
+  if (Array.isArray(args.edits) && topPath !== undefined) {
+    return editFromEditsArray(args, topPath);
+  }
+  if (Array.isArray(args.multi) && args.multi.length > 0) {
+    return editFromMulti(args, topPath);
+  }
+  if (stringValue(args.patch) !== undefined) {
+    return editFromPatch(args);
+  }
+  return editFromReplacement(args, topPath);
+}
+
+function editFromEditsArray(
+  args: Record<string, unknown>,
+  topPath: string | undefined,
+): ToolMapping | undefined {
+  const editsArray = Array.isArray(args.edits) ? args.edits : undefined;
+  if (editsArray === undefined || topPath === undefined) return undefined;
+  return editFromSingleHunk(topPath, replacementHunks(editsArray));
+}
+
+function editFromMulti(
+  args: Record<string, unknown>,
+  topPath: string | undefined,
+): ToolMapping | undefined {
+  const multi = Array.isArray(args.multi) ? args.multi : undefined;
+  if (multi === undefined || multi.length === 0) return undefined;
+  const editsByPath = editsGroupedByPath(multi, topPath);
+  if (editsByPath === undefined || editsByPath.size !== 1) return undefined;
+  const [entry] = editsByPath.entries();
+  if (entry === undefined) return undefined;
+  return editFromSingleHunk(entry[0], entry[1]);
+}
+
+function editFromPatch(args: Record<string, unknown>): ToolMapping | undefined {
+  const patch = stringValue(args.patch);
+  if (patch === undefined) return undefined;
+  const files = patchFiles(patch);
+  if (files.length > 1) return { tool: "file_patch", args: { files, atomic: true } };
+  const file = files[0];
+  return file === undefined ? undefined : { tool: "file_edit", args: file };
+}
+
+function editFromReplacement(
+  args: Record<string, unknown>,
+  topPath: string | undefined,
+): ToolMapping | undefined {
+  if (topPath === undefined) return undefined;
+  const hunk = replacementHunk(args);
+  return hunk === undefined
+    ? undefined
+    : { tool: "file_edit", args: { path: topPath, old: hunk.oldText, new: hunk.newText } };
+}
+
+function editFromSingleHunk(
+  path: string,
+  hunks: Array<{ oldText: string; newText: string }>,
+): ToolMapping | undefined {
+  const [hunk] = hunks;
+  return hunks.length === 1 && hunk !== undefined
+    ? { tool: "file_edit", args: { path, old: hunk.oldText, new: hunk.newText } }
+    : undefined;
+}
+
+function editsGroupedByPath(
+  values: unknown[],
+  topPath: string | undefined,
+): Map<string, Array<{ oldText: string; newText: string }>> | undefined {
+  const editsByPath = new Map<string, Array<{ oldText: string; newText: string }>>();
+  for (const value of values) {
+    if (!isObject(value)) return undefined;
+    const path = pathValue(value) ?? topPath;
+    if (path === undefined) return undefined;
+    const hunk = replacementHunk(value);
+    if (hunk === undefined) continue;
+    const arr = editsByPath.get(path) ?? [];
+    arr.push(hunk);
+    editsByPath.set(path, arr);
+  }
+  return editsByPath;
+}
+
+function replacementHunks(values: unknown[]): Array<{ oldText: string; newText: string }> {
+  return values.filter(isObject).map(replacementHunk).filter(isPresent);
+}
+
+function replacementHunk(
+  value: Record<string, unknown>,
+): { oldText: string; newText: string } | undefined {
+  const oldText =
+    stringValue(value.oldText) ?? stringValue(value.old_text) ?? stringValue(value.oldString);
+  const newText =
+    stringValue(value.newText) ?? stringValue(value.new_text) ?? stringValue(value.newString);
+  return oldText !== undefined || newText !== undefined
+    ? { oldText: oldText ?? "", newText: newText ?? "" }
+    : undefined;
+}
+
+function bashTool(args: Record<string, unknown>): ToolMapping | undefined {
+  // Defensive arg shapes (real Pi sessions): string command, cmd alias, or argv-style command.
+  const command =
+    stringValue(args.command) ?? stringValue(args.cmd) ?? commandArrayString(args.command);
+  if (command === undefined) return undefined;
+  const cwd = stringValue(args.cwd);
+  const timeout = maybeNumber(args.timeout);
+  return {
+    tool: "shell_command",
+    args: {
+      command,
+      ...(cwd !== undefined ? { cwd } : {}),
+      ...(timeout !== undefined ? { timeout } : {}),
+    },
+  };
+}
+
+function commandArrayString(value: unknown): string | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const parts = value.filter((part): part is string => typeof part === "string");
+  return parts.length > 0 ? parts.map(quoteShellArg).join(" ") : undefined;
+}
+
+function grepTool(args: Record<string, unknown>): ToolMapping | undefined {
+  const pattern = stringValue(args.pattern);
+  if (pattern === undefined) return undefined;
+  const path = stringValue(args.path);
+  const glob = stringValue(args.glob);
+  return {
+    tool: "file_search",
+    args: {
+      query: pattern,
+      ...(path !== undefined ? { path } : {}),
+      ...(glob !== undefined ? { glob } : {}),
+    },
+  };
+}
+
+function findTool(args: Record<string, unknown>): ToolMapping | undefined {
+  const pattern = stringValue(args.pattern);
+  if (pattern === undefined) return undefined;
+  const path = stringValue(args.path);
+  return {
+    tool: "file_search",
+    args: { query: pattern, ...(path !== undefined ? { path } : {}) },
+  };
+}
+
+function listTool(args: Record<string, unknown>): ToolMapping {
+  return { tool: "file_list", args: { path: stringValue(args.path) ?? "." } };
+}
+
+function pathValue(args: Record<string, unknown>): string | undefined {
+  return stringValue(args.path) ?? stringValue(args.file_path);
+}
+
+function otherTool(name: string | undefined, input: unknown): ToolMapping {
   return {
     tool: "other",
     args: {
@@ -257,4 +220,8 @@ export function toolKindAndArgs(
       ...(isObject(input) ? { args: input } : {}),
     },
   };
+}
+
+function isPresent<T>(value: T | undefined): value is T {
+  return value !== undefined;
 }

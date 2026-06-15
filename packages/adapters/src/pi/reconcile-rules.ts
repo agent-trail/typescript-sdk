@@ -37,6 +37,13 @@ function rawParentEdge(raw: Record<string, unknown> | undefined): ParentHintEdge
 
 type ParentHintEdge = { sid: string; pid: string | null };
 
+type ParentResolutionState = {
+  parentBySourceId: Map<string, string | null>;
+  sourceIdToFirstEntryId: Map<string, string>;
+  sourceIdToEntryIds: Map<string, string[]>;
+  activeLeafSourceId: string | undefined;
+};
+
 function firstKeptEntryIdFrom(entry: Entry): string | undefined {
   const raw = entry.source?.raw;
   if (raw !== undefined) {
@@ -115,40 +122,78 @@ function rawParentEdgeFromRecord(record: RawRecord): ParentHintEdge | undefined 
  * the transient hints. Tree parenting + `divergence.ts` for Pi's forked sessions.
  */
 export const piParentResolution: ReconcilerRule = (entries, ctx) => {
-  const parentBySourceId = new Map<string, string | null>();
-  const sourceIdToFirstEntryId = new Map<string, string>();
-  const sourceIdToEntryIds = new Map<string, string[]>();
-  const sourceIdToLastEntryId = new Map<string, string>();
-  const lastEntryIdForSid = new Map<string, string>();
+  const state = buildParentResolutionState(entries, ctx.records ?? []);
+  const built = parentableEntries(entries);
+  const parented = resolveEntryParents(
+    built,
+    state.parentBySourceId,
+    sourceIdToLastEntryId(entries),
+  );
 
-  for (const record of ctx.records ?? []) {
-    const edge = rawParentEdgeFromRecord(record);
-    if (edge !== undefined && !parentBySourceId.has(edge.sid)) {
-      parentBySourceId.set(edge.sid, edge.pid);
-    }
+  return parented.map((entry) => resolvePiParentedEntry(entry, state, ctx.records ?? []));
+};
+
+function buildParentResolutionState(entries: Entry[], records: RawRecord[]): ParentResolutionState {
+  const state: ParentResolutionState = {
+    parentBySourceId: new Map<string, string | null>(),
+    sourceIdToFirstEntryId: new Map<string, string>(),
+    sourceIdToEntryIds: new Map<string, string[]>(),
+    activeLeafSourceId: undefined,
+  };
+
+  for (const record of records) {
+    addParentEdge(state.parentBySourceId, rawParentEdgeFromRecord(record));
   }
-
   for (const entry of entries) {
-    const edge = rawParentEdgeFromEntry(entry);
-    if (edge !== undefined && !parentBySourceId.has(edge.sid)) {
-      parentBySourceId.set(edge.sid, edge.pid);
-    }
-    const hint = hintOf(entry);
-    const provenanceSourceId = hint?.sid ?? edge?.sid;
-    if (provenanceSourceId !== undefined) {
-      const sourceEntryIds = sourceIdToEntryIds.get(provenanceSourceId) ?? [];
-      sourceEntryIds.push(entry.id);
-      sourceIdToEntryIds.set(provenanceSourceId, sourceEntryIds);
-    }
-    if (hint === undefined) continue;
-    if (hint !== undefined && !parentBySourceId.has(hint.sid)) {
-      parentBySourceId.set(hint.sid, hint.pid);
-    }
-    if (!sourceIdToFirstEntryId.has(hint.sid)) sourceIdToFirstEntryId.set(hint.sid, entry.id);
-    sourceIdToLastEntryId.set(hint.sid, entry.id);
+    addEntryParentState(state, entry);
   }
+  return state;
+}
 
-  const built: ParentableEntry[] = entries.map((entry) => {
+function addEntryParentState(state: ParentResolutionState, entry: Entry): void {
+  const edge = rawParentEdgeFromEntry(entry);
+  addParentEdge(state.parentBySourceId, edge);
+  const hint = hintOf(entry);
+  appendSourceEntryId(state.sourceIdToEntryIds, hint?.sid ?? edge?.sid, entry.id);
+  if (hint === undefined) return;
+  addParentEdge(state.parentBySourceId, { sid: hint.sid, pid: hint.pid });
+  if (!state.sourceIdToFirstEntryId.has(hint.sid)) {
+    state.sourceIdToFirstEntryId.set(hint.sid, entry.id);
+  }
+}
+
+function addParentEdge(
+  parentBySourceId: Map<string, string | null>,
+  edge: ParentHintEdge | undefined,
+): void {
+  if (edge !== undefined && !parentBySourceId.has(edge.sid)) {
+    parentBySourceId.set(edge.sid, edge.pid);
+  }
+}
+
+function appendSourceEntryId(
+  sourceIdToEntryIds: Map<string, string[]>,
+  sourceId: string | undefined,
+  entryId: string,
+): void {
+  if (sourceId === undefined) return;
+  const sourceEntryIds = sourceIdToEntryIds.get(sourceId) ?? [];
+  sourceEntryIds.push(entryId);
+  sourceIdToEntryIds.set(sourceId, sourceEntryIds);
+}
+
+function sourceIdToLastEntryId(entries: Entry[]): Map<string, string> {
+  const ids = new Map<string, string>();
+  for (const entry of entries) {
+    const hint = hintOf(entry);
+    if (hint !== undefined) ids.set(hint.sid, entry.id);
+  }
+  return ids;
+}
+
+function parentableEntries(entries: Entry[]): ParentableEntry[] {
+  const lastEntryIdForSid = new Map<string, string>();
+  return entries.map((entry) => {
     const hint = hintOf(entry);
     if (hint === undefined) {
       return { entry, parentSourceId: rawParentEdgeFromEntry(entry)?.pid ?? null };
@@ -161,82 +206,107 @@ export const piParentResolution: ReconcilerRule = (entries, ctx) => {
     lastEntryIdForSid.set(hint.sid, entry.id);
     return { entry, parentSourceId: hint.pid, localParentId };
   });
+}
 
-  const parented = resolveEntryParents(built, parentBySourceId, sourceIdToLastEntryId);
+function resolvePiParentedEntry(
+  entry: Entry,
+  state: ParentResolutionState,
+  records: RawRecord[],
+): Entry {
+  const hint = hintOf(entry);
+  let next = resolveSystemEventTargets(entry, state);
+  next = resolveBranchSummary(next, hint, state);
+  next = fillCompactionReplacements(next, records, state.sourceIdToEntryIds);
+  next = backfillEnvelopeRef(next, hint, state.sourceIdToFirstEntryId);
+  return stripHint(next);
+}
 
-  // Pi's authoritative active-branch-tip, tracked positionally: the most recent
-  // `x-pi/leaf_change` at or before a branch_summary is the active leaf when that
-  // summary was recorded. Falls back to the branch_summary's own parent when no
-  // explicit leaf precedes it (the pre-#125 behavior — so leaf-free sessions are
-  // unchanged). Raw Pi source id, since findAbandonedBranchRootId walks by it.
-  let activeLeafSourceId: string | undefined;
+function resolveSystemEventTargets(entry: Entry, state: ParentResolutionState): Entry {
+  if (entry.type !== "system_event") return entry;
+  const payload = entry.payload as { kind?: string; data?: Record<string, unknown> };
+  if (payload.kind === "x-pi/leaf_change") return resolveLeafChangeTarget(entry, payload, state);
+  if (payload.kind === "x-pi/label") return resolveLabelTarget(entry, payload, state);
+  return entry;
+}
 
-  return parented.map((entry) => {
-    const hint = hintOf(entry);
-    let next = entry;
-    if (entry.type === "system_event") {
-      const payload = entry.payload as { kind?: string; data?: Record<string, unknown> };
-      if (payload.kind === "x-pi/leaf_change") {
-        const rawLeaf = payload.data?.leaf_id;
-        if (typeof rawLeaf === "string") {
-          activeLeafSourceId = rawLeaf; // raw id captured before resolution below
-          const mapped = resolveTargetEntryId(rawLeaf, parentBySourceId, sourceIdToFirstEntryId);
-          if (mapped !== undefined) {
-            next = {
-              ...next,
-              payload: { ...payload, data: { ...payload.data, leaf_id: mapped } },
-            } as Entry;
-          }
-        } else {
-          // A cleared tip (Pi leaf targetId:null → no data.leaf_id) resets the
-          // tracker, so a later branch_summary falls back to its own parent
-          // rather than a stale leaf.
-          activeLeafSourceId = undefined;
-        }
-      } else if (payload.kind === "x-pi/label") {
-        const rawTarget = payload.data?.target_id;
-        if (typeof rawTarget === "string") {
-          const mapped = resolveTargetEntryId(rawTarget, parentBySourceId, sourceIdToFirstEntryId);
-          if (mapped !== undefined) {
-            next = {
-              ...next,
-              payload: { ...payload, data: { ...payload.data, target_id: mapped } },
-            } as Entry;
-          }
-        }
-      }
-    }
-    if (hint?.fromId !== undefined && entry.type === "branch_summary") {
-      const activeLeaf =
-        activeLeafSourceId ?? (typeof hint.pid === "string" ? hint.pid : undefined);
-      const resolved = findAbandonedBranchRootId(
-        hint.fromId,
-        activeLeaf,
-        parentBySourceId,
-        sourceIdToFirstEntryId,
-      );
-      next = {
-        ...entry,
-        payload: { ...entry.payload, abandoned_branch_id: resolved },
-      } as Entry;
-    }
-    if (entry.type === "context_compact") {
-      const firstKeptEntryId = firstKeptEntryIdFrom(entry);
-      const replaced =
-        firstKeptEntryId !== undefined
-          ? replacedIdsBeforeSourceId(firstKeptEntryId, ctx.records ?? [], sourceIdToEntryIds)
-          : undefined;
-      if (replaced !== undefined) {
-        next = {
-          ...next,
-          payload: { ...next.payload, replaced_message_ids: replaced },
-        } as Entry;
-      }
-    }
-    next = backfillEnvelopeRef(next, hint, sourceIdToFirstEntryId);
-    return stripHint(next);
-  });
-};
+function resolveLeafChangeTarget(
+  entry: Entry,
+  payload: { kind?: string; data?: Record<string, unknown> },
+  state: ParentResolutionState,
+): Entry {
+  const rawLeaf = payload.data?.leaf_id;
+  if (typeof rawLeaf !== "string") {
+    // A cleared tip resets the tracker before the next branch_summary.
+    state.activeLeafSourceId = undefined;
+    return entry;
+  }
+  state.activeLeafSourceId = rawLeaf;
+  const mapped = resolveTargetEntryId(
+    rawLeaf,
+    state.parentBySourceId,
+    state.sourceIdToFirstEntryId,
+  );
+  return mapped === undefined ? entry : withPayloadData(entry, payload, { leaf_id: mapped });
+}
+
+function resolveLabelTarget(
+  entry: Entry,
+  payload: { kind?: string; data?: Record<string, unknown> },
+  state: ParentResolutionState,
+): Entry {
+  const rawTarget = payload.data?.target_id;
+  if (typeof rawTarget !== "string") return entry;
+  const mapped = resolveTargetEntryId(
+    rawTarget,
+    state.parentBySourceId,
+    state.sourceIdToFirstEntryId,
+  );
+  return mapped === undefined ? entry : withPayloadData(entry, payload, { target_id: mapped });
+}
+
+function withPayloadData(
+  entry: Entry,
+  payload: { kind?: string; data?: Record<string, unknown> },
+  data: Record<string, unknown>,
+): Entry {
+  return {
+    ...entry,
+    payload: { ...payload, data: { ...payload.data, ...data } },
+  } as Entry;
+}
+
+function resolveBranchSummary(
+  entry: Entry,
+  hint: ParentHint | undefined,
+  state: ParentResolutionState,
+): Entry {
+  if (hint?.fromId === undefined || entry.type !== "branch_summary") return entry;
+  const activeLeaf =
+    state.activeLeafSourceId ?? (typeof hint.pid === "string" ? hint.pid : undefined);
+  const resolved = findAbandonedBranchRootId(
+    hint.fromId,
+    activeLeaf,
+    state.parentBySourceId,
+    state.sourceIdToFirstEntryId,
+  );
+  return { ...entry, payload: { ...entry.payload, abandoned_branch_id: resolved } } as Entry;
+}
+
+function fillCompactionReplacements(
+  entry: Entry,
+  records: RawRecord[],
+  sourceIdToEntryIds: Map<string, string[]>,
+): Entry {
+  if (entry.type !== "context_compact") return entry;
+  const firstKeptEntryId = firstKeptEntryIdFrom(entry);
+  const replaced =
+    firstKeptEntryId === undefined
+      ? undefined
+      : replacedIdsBeforeSourceId(firstKeptEntryId, records, sourceIdToEntryIds);
+  return replaced === undefined
+    ? entry
+    : ({ ...entry, payload: { ...entry.payload, replaced_message_ids: replaced } } as Entry);
+}
 
 // Multi-block assistant blocks after the first carry `source.raw.envelope_ref`
 // pointing at the first block's entry id (placeholder until now). Replace it with
@@ -349,6 +419,18 @@ export const piModelChangeFromModel: ReconcilerRule = (entries) => {
  * (`semantic.call_id`), matching the validator's blocking subset.
  */
 export const piSessionTerminatedEof: ReconcilerRule = (entries) => {
+  const pairings = toolCallPairingState(entries);
+  if (pairings.toolCallEntryIds.size === 0) return entries;
+  const matched = matchedToolCallEntryIds(entries, pairings);
+  const openCallIds = Array.from(pairings.toolCallEntryIds).filter((id) => !matched.has(id));
+  if (openCallIds.length === 0) return entries;
+  return [...entries, eofSessionTerminatedEntry(entries, openCallIds)];
+};
+
+function toolCallPairingState(entries: Entry[]): {
+  toolCallEntryIds: Set<string>;
+  callIdToEntryId: Map<string, string>;
+} {
   const toolCallEntryIds = new Set<string>();
   const callIdToEntryId = new Map<string, string>();
   for (const entry of entries) {
@@ -357,30 +439,48 @@ export const piSessionTerminatedEof: ReconcilerRule = (entries) => {
     const callId = entry.semantic?.call_id;
     if (typeof callId === "string") callIdToEntryId.set(callId, entry.id);
   }
-  if (toolCallEntryIds.size === 0) return entries;
+  return { toolCallEntryIds, callIdToEntryId };
+}
 
+function matchedToolCallEntryIds(
+  entries: Entry[],
+  pairings: { toolCallEntryIds: Set<string>; callIdToEntryId: Map<string, string> },
+): Set<string> {
   const matched = new Set<string>();
   for (const entry of entries) {
-    if (entry.type !== "tool_result" && entry.type !== "tool_call_aborted") continue;
-    if (
-      entry.type === "tool_call_aborted" &&
-      (entry.payload as { scope?: unknown }).scope !== "tool_call"
-    ) {
-      continue;
-    }
-    const forId = (entry.payload as { for_id?: unknown }).for_id;
-    if (typeof forId === "string" && toolCallEntryIds.has(forId)) matched.add(forId);
-    if (entry.type !== "tool_result") continue;
-    const callId = entry.semantic?.call_id;
-    if (typeof callId === "string") {
-      const eid = callIdToEntryId.get(callId);
-      if (eid !== undefined) matched.add(eid);
-    }
+    if (!isToolPairingEntry(entry)) continue;
+    addForIdMatch(matched, entry, pairings.toolCallEntryIds);
+    if (entry.type === "tool_result") addCallIdMatch(matched, entry, pairings.callIdToEntryId);
   }
+  return matched;
+}
 
-  const openCallIds = Array.from(toolCallEntryIds).filter((id) => !matched.has(id));
-  if (openCallIds.length === 0) return entries;
+function isToolPairingEntry(entry: Entry): boolean {
+  if (entry.type === "tool_result") return true;
+  return entry.type === "tool_call_aborted" && isCallScopedAbort(entry);
+}
 
+function isCallScopedAbort(entry: Entry): boolean {
+  return (entry.payload as { scope?: unknown }).scope === "tool_call";
+}
+
+function addForIdMatch(matched: Set<string>, entry: Entry, toolCallEntryIds: Set<string>): void {
+  const forId = (entry.payload as { for_id?: unknown }).for_id;
+  if (typeof forId === "string" && toolCallEntryIds.has(forId)) matched.add(forId);
+}
+
+function addCallIdMatch(
+  matched: Set<string>,
+  entry: Entry,
+  callIdToEntryId: Map<string, string>,
+): void {
+  const callId = entry.semantic?.call_id;
+  if (typeof callId !== "string") return;
+  const entryId = callIdToEntryId.get(callId);
+  if (entryId !== undefined) matched.add(entryId);
+}
+
+function eofSessionTerminatedEntry(entries: Entry[], openCallIds: string[]): Entry {
   // The id is seeded from openCallIds, which are themselves sessionUid-derived
   // engine ids ([sessionUid, recordIndex, type, ordinal]) — so the synthesized
   // id is already session-scoped and deterministic without threading sessionUid
@@ -400,5 +500,5 @@ export const piSessionTerminatedEof: ReconcilerRule = (entries) => {
       synthesized: true,
     },
   };
-  return [...entries, synthesized];
-};
+  return synthesized;
+}

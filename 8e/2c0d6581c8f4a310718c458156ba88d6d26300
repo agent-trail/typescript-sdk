@@ -1,0 +1,82 @@
+packages/adapters/src/codex/discovery.ts
+  s_41a01eab7e41e9::t_93af4ddefc6500 46,51-63,69-98
+  s_41a01eab7e41e9::t_60fa8b2d01cfd1 5
+  s_41a01eab7e41e9::t_399dcee5364cea 127,136-157
+packages/adapters/src/shared/linker-meta.ts
+  s_41a01eab7e41e9::t_865bb36c495c63 1-8
+packages/adapters/src/codex/index.test.ts
+  s_41a01eab7e41e9::t_06a798f55e7f6f 82-127,134-226
+  s_41a01eab7e41e9::t_60fa8b2d01cfd1 128-133,2797-2803
+  s_41a01eab7e41e9::t_2341bd6b028501 1296,1299,1756,1758,2804-2819
+packages/adapters/src/codex/mappings/lifecycle.ts
+  s_41a01eab7e41e9::t_c0c885015adb67 385-398,400,406-407
+  s_41a01eab7e41e9::t_f096bfc24c8d27 96,112,114-119,121-131,133-135,139-140,142,144-153,176-188,192-194,196,199,201-202,205-206
+packages/adapters/src/codex/stateful.test.ts
+  s_41a01eab7e41e9::t_9c44700374a336 21-31,86-97,99
+.fallowrc.json
+  s_41a01eab7e41e9::t_60fa8b2d01cfd1 22
+packages/adapters/src/shared/user-query.ts
+  s_41a01eab7e41e9::t_60fa8b2d01cfd1 92-95
+  s_41a01eab7e41e9::t_baf3e1b3244c69 1
+  s_41a01eab7e41e9::t_740e865520169d 2-91,96-116
+packages/adapters/src/codex/overrides.ts
+  s_41a01eab7e41e9::t_1494c96f933e3e 150-284,299-305
+packages/adapters/src/codex/mappings.ts
+  s_41a01eab7e41e9::t_f4d76d8a42811f 55-75,80-81,88
+packages/adapters/src/codex/mappings/messages.ts
+  s_41a01eab7e41e9::t_f184ca57c5f9a1 145-148,166-169,171,173,179-183
+  s_41a01eab7e41e9::t_78c12b3974709b 175-178,186-189,193,196-199
+  s_41a01eab7e41e9::t_d318dbafc9bfe8 30-35,74,77-90,92-103,106,108,110,112,126-128,133-134,139,141-144,190-192,194,212-213
+  s_41a01eab7e41e9::t_c0c885015adb67 38,41,45-52,60
+  s_41a01eab7e41e9::t_b3f01d744bd5df 2,53-59
+  s_41a01eab7e41e9::t_677cc4d5d5e5d6 149-165,170,172,174,184-185
+  s_41a01eab7e41e9::t_d31b6f9e6cce6c 24-29,116,129-132,135-138,140
+packages/adapters/src/codex/mappings/tools.ts
+  s_41a01eab7e41e9::t_369e2ce6fed7b7 34-52,55-69,72-85,98-100,102-103,105
+  s_41a01eab7e41e9::t_c60bf7a8e027b8 4,24-31
+packages/adapters/src/claude-code/index.ts
+  s_41a01eab7e41e9::t_98f355f5d14119 22
+  s_41a01eab7e41e9::t_f0a576a9a99a63 235
+packages/adapters/src/codex/reconcile-rules.ts
+  s_41a01eab7e41e9::t_865bb36c495c63 4
+  s_41a01eab7e41e9::t_5c664fac6aa02d 5,291
+  s_41a01eab7e41e9::t_7af747b215391e 142-143,146,152-196,289,295-302,308-349,354
+packages/adapters/src/shared/child-session-links.ts
+  s_41a01eab7e41e9::t_f464aeae41a5eb 1-31
+packages/adapters/src/claude-code/mapping/messages.ts
+  s_41a01eab7e41e9::t_3dc97d9603cd37 6,34-44
+packages/adapters/src/claude-code/reconcile-rules.ts
+  s_41a01eab7e41e9::t_865bb36c495c63 10
+  s_41a01eab7e41e9::t_5c664fac6aa02d 11,398
+packages/adapters/src/shared/options.ts
+  s_41a01eab7e41e9::t_5c664fac6aa02d 1-16
+packages/adapters/src/codex/parser.ts
+  s_41a01eab7e41e9::t_bff5e58a01d437 205-208,210-216,218-242,250-266,268-273,276-322
+  s_41a01eab7e41e9::t_19ea0dc44b2b82 379-381
+  s_41a01eab7e41e9::t_0f10e946c25ab7 333,364-367,371-378,382-399,404-407,410
+  s_41a01eab7e41e9::t_60fa8b2d01cfd1 368-370
+packages/adapters/src/codex/assembly.ts
+  s_41a01eab7e41e9::t_93b3471a53e2bd 83-99,141,145-148,151-155,161-186,189-191,194,196-235
+  s_41a01eab7e41e9::t_f0a576a9a99a63 13,314
+  s_41a01eab7e41e9::t_c0c885015adb67 49,51-52,56-62,65-68,71-72
+  s_41a01eab7e41e9::t_94e737b5a61d7d 304-305,308-309
+  s_41a01eab7e41e9::t_68bfb8c6e5af0d 106-112,115-120,128-130
+packages/adapters/src/codex/health.ts
+  s_41a01eab7e41e9::t_069c5f9c1f6d0c 1-2,10,12-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "8e2c0d6581c8f4a310718c458156ba88d6d26300",
+  "prompts": {},
+  "sessions": {
+    "s_41a01eab7e41e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec547-b5c0-7200-b226-4f1ef52334a0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

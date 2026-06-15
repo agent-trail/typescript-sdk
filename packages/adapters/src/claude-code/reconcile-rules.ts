@@ -43,53 +43,76 @@ function omitPayloadUsage(entry: Entry): Entry {
  * assistants still trigger it. Runs before ccEnvelopeRefBackfill strips hints.
  */
 export const ccModelChangeSynth: ReconcilerRule = (entries) => {
-  let prevModel: string | undefined;
-  let lastSid: string | undefined;
+  const tracker: ModelTracker = {};
   const out: Entry[] = [];
   for (const entry of entries) {
-    const hint = hintOf(entry);
-    const model = hint?.model;
-    const sid = hint?.sid;
-    if (model !== undefined && sid !== undefined && sid !== lastSid) {
-      if (prevModel !== undefined && prevModel !== model) {
-        // v1 synthesizes from the assistant envelope: source agent/original_type
-        // "assistant" + the redacted envelope (carried on the first assistant
-        // entry's source.raw.envelope) under source.raw, synthesized.
-        const envelope = entry.source?.raw?.envelope;
-        const schemaVersion = entry.source?.schema_version;
-        const source = {
-          agent: "claude-code",
-          original_type: "assistant",
-          ...(schemaVersion !== undefined ? { schema_version: schemaVersion } : {}),
-          synthesized: true,
-          ...(envelope !== undefined ? { raw: envelope } : {}),
-        } as Entry["source"];
-        const modelChangeId = deriveSynthesizedEntryId(CLAUDE_CODE_ENTRY_ID_NAMESPACE, [
-          "model_change",
-          entry.id,
-          prevModel,
-          model,
-        ]);
-        out.push({
-          type: "model_change",
-          id: modelChangeId,
-          ts: entry.ts,
-          parent_id: entry.parent_id ?? null,
-          payload: { from_model: prevModel, to_model: model },
-          source,
-        } as Entry);
-        out.push({ ...entry, parent_id: modelChangeId });
-        prevModel = model;
-        lastSid = sid;
-        continue;
-      }
-      prevModel = model;
-      lastSid = sid;
+    const modelChange = nextModelChange(entry, tracker);
+    if (modelChange !== undefined) {
+      out.push(modelChange);
+      out.push({ ...entry, parent_id: modelChange.id });
+      continue;
     }
     out.push(entry);
   }
   return out;
 };
+
+type ModelTracker = {
+  prevModel?: string;
+  lastSid?: string;
+};
+
+type ModelHint = {
+  model: string;
+  sid: string;
+};
+
+function nextModelChange(entry: Entry, tracker: ModelTracker): Entry | undefined {
+  const current = modelHint(entry);
+  if (current === undefined || current.sid === tracker.lastSid) return undefined;
+  const previous = tracker.prevModel;
+  tracker.prevModel = current.model;
+  tracker.lastSid = current.sid;
+  return previous !== undefined && previous !== current.model
+    ? modelChangeEntry(entry, previous, current.model)
+    : undefined;
+}
+
+function modelHint(entry: Entry): ModelHint | undefined {
+  const hint = hintOf(entry);
+  return hint?.model !== undefined && hint.sid !== undefined
+    ? { model: hint.model, sid: hint.sid }
+    : undefined;
+}
+
+function modelChangeEntry(entry: Entry, prevModel: string, model: string): Entry {
+  const modelChangeId = deriveSynthesizedEntryId(CLAUDE_CODE_ENTRY_ID_NAMESPACE, [
+    "model_change",
+    entry.id,
+    prevModel,
+    model,
+  ]);
+  return {
+    type: "model_change",
+    id: modelChangeId,
+    ts: entry.ts,
+    parent_id: entry.parent_id ?? null,
+    payload: { from_model: prevModel, to_model: model },
+    source: modelChangeSource(entry),
+  } as Entry;
+}
+
+function modelChangeSource(entry: Entry): Entry["source"] {
+  const envelope = entry.source?.raw?.envelope;
+  const schemaVersion = entry.source?.schema_version;
+  return {
+    agent: "claude-code",
+    original_type: "assistant",
+    ...(schemaVersion !== undefined ? { schema_version: schemaVersion } : {}),
+    synthesized: true,
+    ...(envelope !== undefined ? { raw: envelope } : {}),
+  } as Entry["source"];
+}
 
 function hasVcsBranchUpdate(entry: Entry): boolean {
   return (
@@ -211,71 +234,109 @@ export const ccCompactBoundaryProvenance: ReconcilerRule = (entries) => {
  * (linked by payload.for_id from the built-in toolLinking pass). Same as Pi.
  */
 export const ccToolKindToResult: ReconcilerRule = (entries) => {
-  const kindByCallEntryId = new Map<string, ToolKind>();
-  const readRangeByCallEntryId = new Map<string, [number, number]>();
-  const queryByCallId = new Map<string, Entry>();
-  for (const entry of entries) {
-    if (entry.type === "tool_call") {
-      const kind = entry.semantic?.tool_kind;
-      if (kind !== undefined) kindByCallEntryId.set(entry.id, kind);
-      if (kind === "file_read") {
-        const range = (entry.payload as { args?: { range?: unknown } }).args?.range;
-        if (
-          Array.isArray(range) &&
-          range.length === 2 &&
-          typeof range[0] === "number" &&
-          typeof range[1] === "number"
-        ) {
-          readRangeByCallEntryId.set(entry.id, [range[0], range[1]]);
-        }
-      }
-    }
-    if (entry.type === "user_query") {
-      const callId = entry.semantic?.call_id ?? linkerCallId(entry);
-      if (callId !== undefined) queryByCallId.set(callId, entry);
-    }
-  }
-  return entries.map((entry) => {
-    if (entry.type !== "tool_result") return entry;
-    const callId = entry.semantic?.call_id ?? linkerCallId(entry);
-    const query = callId !== undefined ? queryByCallId.get(callId) : undefined;
-    if (query !== undefined) {
-      return {
-        ...entry,
-        type: "user_query_response",
-        payload: {
-          for_id: query.id,
-          answers: answersForQuery(query, (entry.payload as { output?: unknown }).output),
-        },
-        semantic: {
-          ...(callId !== undefined ? { call_id: callId } : {}),
-        },
-      } as Entry;
-    }
-    const forId = (entry.payload as { for_id?: unknown }).for_id;
-    if (typeof forId !== "string") return entry;
-    const kind = kindByCallEntryId.get(forId);
-    if (kind === undefined) return entry;
-    const range = readRangeByCallEntryId.get(forId);
-    return {
-      ...entry,
-      payload:
-        range === undefined
-          ? entry.payload
-          : {
-              ...entry.payload,
-              meta: {
-                ...(entry.payload as { meta?: object }).meta,
-                file_read: {
-                  ...((entry.payload as { meta?: { file_read?: object } }).meta?.file_read ?? {}),
-                  range,
-                },
-              },
-            },
-      semantic: { ...entry.semantic, tool_kind: kind },
-    };
-  });
+  const context = toolResultContext(entries);
+  return entries.map((entry) => reconcileToolResult(entry, context));
 };
+
+type ToolResultContext = {
+  kindByCallEntryId: Map<string, ToolKind>;
+  readRangeByCallEntryId: Map<string, [number, number]>;
+  queryByCallId: Map<string, Entry>;
+};
+
+function toolResultContext(entries: readonly Entry[]): ToolResultContext {
+  const context: ToolResultContext = {
+    kindByCallEntryId: new Map(),
+    readRangeByCallEntryId: new Map(),
+    queryByCallId: new Map(),
+  };
+  for (const entry of entries) {
+    collectToolCallContext(entry, context);
+    collectUserQueryContext(entry, context);
+  }
+  return context;
+}
+
+function collectToolCallContext(entry: Entry, context: ToolResultContext): void {
+  if (entry.type !== "tool_call") return;
+  const kind = entry.semantic?.tool_kind;
+  if (kind === undefined) return;
+  context.kindByCallEntryId.set(entry.id, kind);
+  const range = kind === "file_read" ? fileReadRange(entry) : undefined;
+  if (range !== undefined) context.readRangeByCallEntryId.set(entry.id, range);
+}
+
+function fileReadRange(entry: Entry): [number, number] | undefined {
+  const range = (entry.payload as { args?: { range?: unknown } }).args?.range;
+  return isNumericRange(range) ? [range[0], range[1]] : undefined;
+}
+
+function isNumericRange(value: unknown): value is [number, number] {
+  return (
+    Array.isArray(value) &&
+    value.length === 2 &&
+    typeof value[0] === "number" &&
+    typeof value[1] === "number"
+  );
+}
+
+function collectUserQueryContext(entry: Entry, context: ToolResultContext): void {
+  if (entry.type !== "user_query") return;
+  const callId = entry.semantic?.call_id ?? linkerCallId(entry);
+  if (callId !== undefined) context.queryByCallId.set(callId, entry);
+}
+
+function reconcileToolResult(entry: Entry, context: ToolResultContext): Entry {
+  if (entry.type !== "tool_result") return entry;
+  return queryResponseEntry(entry, context) ?? toolKindResultEntry(entry, context) ?? entry;
+}
+
+function queryResponseEntry(entry: Entry, context: ToolResultContext): Entry | undefined {
+  const callId = entry.semantic?.call_id ?? linkerCallId(entry);
+  const query = callId !== undefined ? context.queryByCallId.get(callId) : undefined;
+  if (query === undefined) return undefined;
+  return {
+    ...entry,
+    type: "user_query_response",
+    payload: {
+      for_id: query.id,
+      answers: answersForQuery(query, (entry.payload as { output?: unknown }).output),
+    },
+    semantic: {
+      ...(callId !== undefined ? { call_id: callId } : {}),
+    },
+  } as Entry;
+}
+
+function toolKindResultEntry(entry: Entry, context: ToolResultContext): Entry | undefined {
+  const forId = (entry.payload as { for_id?: unknown }).for_id;
+  if (typeof forId !== "string") return undefined;
+  const kind = context.kindByCallEntryId.get(forId);
+  return kind === undefined
+    ? undefined
+    : withToolKind(entry, kind, context.readRangeByCallEntryId.get(forId));
+}
+
+function withToolKind(entry: Entry, kind: ToolKind, range: [number, number] | undefined): Entry {
+  return {
+    ...entry,
+    payload: range === undefined ? entry.payload : withFileReadRange(entry, range),
+    semantic: { ...entry.semantic, tool_kind: kind },
+  } as Entry;
+}
+
+function withFileReadRange(entry: Entry, range: [number, number]): Entry["payload"] {
+  return {
+    ...entry.payload,
+    meta: {
+      ...(entry.payload as { meta?: object }).meta,
+      file_read: {
+        ...((entry.payload as { meta?: { file_read?: object } }).meta?.file_read ?? {}),
+        range,
+      },
+    },
+  };
+}
 
 function queryQuestions(entry: Entry): Record<string, unknown>[] {
   const questions = (entry.payload as { questions?: unknown }).questions;
@@ -312,48 +373,10 @@ function selectedFor(
   question: Record<string, unknown>,
   answerText: string,
 ): Record<string, unknown> {
-  const selected =
-    question.multi_select === true
-      ? answerText
-          .split(",")
-          .map((value) => value.trim())
-          .filter((value) => value.length > 0)
-      : answerText.length > 0
-        ? [answerText]
-        : [];
-  const options = (Array.isArray(question.options) ? question.options : []).filter(
-    (option): option is Record<string, unknown> => option !== null && typeof option === "object",
-  );
-  const optionIds = new Set(
-    options.map((option) => option.id).filter((id): id is string => typeof id === "string"),
-  );
-  const optionLabels = new Set(
-    options
-      .map((option) => option.label)
-      .filter((label): label is string => typeof label === "string"),
-  );
-  const knownValues = new Set<string>();
-  const labelCounts = new Map<string, number>();
-  for (const option of options) {
-    const label = option.label;
-    const id = option.id;
-    if (typeof label === "string") labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1);
-    if (typeof id === "string") {
-      knownValues.add(id);
-    } else if (typeof label === "string") {
-      knownValues.add(label);
-    }
-  }
-  const labelToId = new Map<string, string>();
-  for (const option of options) {
-    const label = option.label;
-    const id = option.id;
-    if (typeof label === "string" && typeof id === "string" && labelCounts.get(label) === 1) {
-      labelToId.set(label, id);
-    }
-  }
-  const normalizedSelected = selected.map((value) => labelToId.get(value) ?? value);
-  const knownOptions = optionIds.size > 0 ? knownValues : optionLabels;
+  const selected = selectedAnswerValues(question, answerText);
+  const options = questionOptions(question);
+  const normalizedSelected = normalizeSelectedLabels(selected, options);
+  const knownOptions = knownOptionSet(options);
   if (question.allow_other !== true || knownOptions.size === 0) {
     return { selected: normalizedSelected };
   }
@@ -362,27 +385,104 @@ function selectedFor(
   return { selected: known, ...(unknown.length > 0 ? { other: unknown.join(", ") } : {}) };
 }
 
+function selectedAnswerValues(question: Record<string, unknown>, answerText: string): string[] {
+  if (question.multi_select === true) {
+    return answerText
+      .split(",")
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+  }
+  return answerText.length > 0 ? [answerText] : [];
+}
+
+function questionOptions(question: Record<string, unknown>): Record<string, unknown>[] {
+  return (Array.isArray(question.options) ? question.options : []).filter(isObject);
+}
+
+function normalizeSelectedLabels(selected: string[], options: Record<string, unknown>[]): string[] {
+  const labelToId = uniqueLabelToId(options);
+  return selected.map((value) => labelToId.get(value) ?? value);
+}
+
+function uniqueLabelToId(options: Record<string, unknown>[]): Map<string, string> {
+  const labelCounts = new Map<string, number>();
+  for (const option of options) {
+    const label = option.label;
+    if (typeof label === "string") labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1);
+  }
+  const out = new Map<string, string>();
+  for (const option of options) {
+    const label = option.label;
+    const id = option.id;
+    if (typeof label === "string" && typeof id === "string" && labelCounts.get(label) === 1) {
+      out.set(label, id);
+    }
+  }
+  return out;
+}
+
+function knownOptionSet(options: Record<string, unknown>[]): Set<string> {
+  const optionIds = stringSet(options.map((option) => option.id));
+  return optionIds.size > 0 ? fallbackKnownValues(options) : stringSet(options.map((o) => o.label));
+}
+
+function fallbackKnownValues(options: Record<string, unknown>[]): Set<string> {
+  const knownValues = new Set<string>();
+  for (const option of options) {
+    const id = option.id;
+    const label = option.label;
+    if (typeof id === "string") knownValues.add(id);
+    else if (typeof label === "string") knownValues.add(label);
+  }
+  return knownValues;
+}
+
+function stringSet(values: unknown[]): Set<string> {
+  return new Set(values.filter((value): value is string => typeof value === "string"));
+}
+
 function answersForQuery(query: Entry, output: unknown): Record<string, unknown> {
   const serialized = parseSerializedAnswers(output);
   if (serialized.size === 0) return {};
   const questions = queryQuestions(query);
   const fallback = questions.length === 1 && serialized.has("") ? serialized.get("") : undefined;
-  const textCounts = new Map<string, number>();
-  for (const question of questions) {
-    const text = typeof question.question === "string" ? question.question : undefined;
-    if (text !== undefined) textCounts.set(text, (textCounts.get(text) ?? 0) + 1);
-  }
+  const textCounts = questionTextCounts(questions);
   const out: Record<string, unknown> = {};
   for (const question of questions) {
-    const id = typeof question.id === "string" ? question.id : undefined;
-    const text = typeof question.question === "string" ? question.question : undefined;
-    if (id === undefined) continue;
-    const answerText =
-      (text !== undefined && textCounts.get(text) === 1 ? serialized.get(text) : undefined) ??
-      fallback;
-    if (answerText !== undefined) out[id] = selectedFor(question, answerText);
+    addQuestionAnswer(out, question, serialized, textCounts, fallback);
   }
   return out;
+}
+
+function questionTextCounts(questions: Record<string, unknown>[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const question of questions) {
+    const text = typeof question.question === "string" ? question.question : undefined;
+    if (text !== undefined) counts.set(text, (counts.get(text) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function addQuestionAnswer(
+  out: Record<string, unknown>,
+  question: Record<string, unknown>,
+  serialized: Map<string, string>,
+  textCounts: Map<string, number>,
+  fallback: string | undefined,
+): void {
+  const id = typeof question.id === "string" ? question.id : undefined;
+  if (id === undefined) return;
+  const answerText = answerForQuestion(question, serialized, textCounts) ?? fallback;
+  if (answerText !== undefined) out[id] = selectedFor(question, answerText);
+}
+
+function answerForQuestion(
+  question: Record<string, unknown>,
+  serialized: Map<string, string>,
+  textCounts: Map<string, number>,
+): string | undefined {
+  const text = typeof question.question === "string" ? question.question : undefined;
+  return text !== undefined && textCounts.get(text) === 1 ? serialized.get(text) : undefined;
 }
 
 /** Fill permission `mode_change.from_mode` from the prior permission mode. */
@@ -415,23 +515,60 @@ export const ccVcsCommitEvents: ReconcilerRule = (entries) =>
   synthesizeVcsCommitEvents(entries, { idNamespace: CLAUDE_CODE_ENTRY_ID_NAMESPACE });
 
 function hookFallbackPayload(entry: Entry): Entry["payload"] {
+  const fields = hookFallbackFields(entry);
+  return {
+    kind: "hook_failed",
+    text: fields.hookName !== undefined ? `Hook failed: ${fields.hookName}` : "Hook failed",
+    data: hookFallbackData(fields),
+  };
+}
+
+type HookFallbackFields = {
+  hookName?: string;
+  code?: string;
+  details?: string;
+};
+
+function hookFallbackFields(entry: Entry): HookFallbackFields {
   const raw = isObject(entry.source?.raw) ? entry.source.raw : undefined;
   const attachment = isObject(raw?.attachment) ? raw.attachment : raw;
   const payload = entry.payload as { blocked_by?: unknown };
+  return {
+    ...hookNameField(attachment, payload),
+    ...hookCodeField(attachment),
+    ...hookDetailsField(attachment),
+  };
+}
+
+function hookNameField(
+  attachment: Record<string, unknown> | undefined,
+  payload: { blocked_by?: unknown },
+): Pick<HookFallbackFields, "hookName"> {
   const hookName = stringValue(attachment?.hookName) ?? stringValue(payload.blocked_by);
+  return hookName !== undefined ? { hookName } : {};
+}
+
+function hookCodeField(
+  attachment: Record<string, unknown> | undefined,
+): Pick<HookFallbackFields, "code"> {
   const code = stringValue(attachment?.code);
+  return code !== undefined ? { code } : {};
+}
+
+function hookDetailsField(
+  attachment: Record<string, unknown> | undefined,
+): Pick<HookFallbackFields, "details"> {
   const details = stringValue(attachment?.message);
-  const data: Record<string, unknown> = {
+  return details !== undefined ? { details } : {};
+}
+
+function hookFallbackData(fields: HookFallbackFields): Record<string, unknown> {
+  return {
     severity: "error",
     blocking: true,
-    ...(hookName !== undefined ? { hook_name: hookName } : {}),
-    ...(code !== undefined ? { code } : {}),
-    ...(details !== undefined ? { details } : {}),
-  };
-  return {
-    kind: "hook_failed",
-    text: hookName !== undefined ? `Hook failed: ${hookName}` : "Hook failed",
-    data,
+    ...(fields.hookName !== undefined ? { hook_name: fields.hookName } : {}),
+    ...(fields.code !== undefined ? { code: fields.code } : {}),
+    ...(fields.details !== undefined ? { details: fields.details } : {}),
   };
 }
 

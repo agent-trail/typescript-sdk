@@ -253,6 +253,160 @@ async function parseClaudeCodeJsonl(records: Record<string, unknown>[]) {
   }
 }
 
+function syntheticUserRecord(uuid: string, content: string): Record<string, unknown> {
+  return {
+    type: "user",
+    uuid,
+    timestamp: "2026-05-17T14:00:06.000Z",
+    sessionId: "00000000-0000-0000-0000-ccccc0000001",
+    version: "1.0.0-synthetic",
+    cwd: "/tmp/synthetic-project",
+    parentUuid: null,
+    isSidechain: false,
+    message: { role: "user", content },
+  };
+}
+
+function syntheticAttachmentRecord(
+  uuid: string,
+  parentUuid: string,
+  attachment: Record<string, unknown>,
+): Record<string, unknown> {
+  return {
+    type: "attachment",
+    uuid,
+    timestamp: "2026-05-17T14:00:06.100Z",
+    sessionId: "00000000-0000-0000-0000-ccccc0000001",
+    parentUuid,
+    attachment,
+  };
+}
+
+function systemEventByOriginalType(trail, originalType: string) {
+  return trail.groups[0]!.entries.find(
+    (entry) => entry.type === "system_event" && entry.source?.original_type === originalType,
+  );
+}
+
+async function expectNoAdapterErrors(trail) {
+  const diagnostics = await validateAdapterTrail(trail);
+  expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+}
+
+function expectHookSuccessTruncation(evt, stdout: string, stderr: string) {
+  const data = evt.payload.data;
+  expect(data.stdout_excerpt.length).toBeLessThan(stdout.length);
+  expect(data.stdout_excerpt.startsWith("o".repeat(2048))).toBe(true);
+  expect(data.stderr_excerpt.length).toBeLessThan(stderr.length);
+  expect(data.stderr_excerpt.startsWith("e".repeat(2048))).toBe(true);
+  expectHookSuccessRawElision(evt.source.raw.attachment, stdout.length, stderr.length);
+}
+
+function expectHookSuccessRawElision(rawAttachment, stdoutLength: number, stderrLength: number) {
+  expect(rawAttachment.stdout).toBeUndefined();
+  expect(rawAttachment.stderr).toBeUndefined();
+  expect(rawAttachment.stdout_elided).toBe(true);
+  expect(rawAttachment.stdout_chars).toBe(stdoutLength);
+  expect(rawAttachment.stderr_elided).toBe(true);
+  expect(rawAttachment.stderr_chars).toBe(stderrLength);
+}
+
+function expectHookAdditionalContextEvent(evt) {
+  expect(evt).toBeDefined();
+  expect(evt.payload.kind).toBe("context_injected");
+  expect(evt.payload.text).toContain("CAVEMAN MODE ACTIVE");
+  expect(evt.payload.data.source_kind).toBe("hook");
+  expect(evt.payload.data.name).toBe("inject-context");
+  expect(evt.payload.data.hook_event).toBe("UserPromptSubmit");
+  expect(evt.payload.data.hook_name).toBe("inject-context");
+  expect(evt.payload.data.tool_call_id).toBe("tooluse-ctx");
+  expect(evt.payload.data.content).toEqual([{ type: "text", text: "CAVEMAN MODE ACTIVE" }]);
+  expect(evt.semantic.call_id).toBe("tooluse-ctx");
+}
+
+function expectFidelityFanout(entries) {
+  expect(entries.slice(0, 7).map((e) => e.type)).toEqual([
+    "session_metadata_update",
+    "user_message",
+    "agent_message",
+    "agent_thinking",
+    "agent_thinking",
+    "tool_call",
+    "tool_call",
+  ]);
+  expectFidelityTextAndThinking(entries);
+  expectFidelityReadCall(entries);
+  expectFidelityBashCall(entries);
+}
+
+function expectFidelityTextAndThinking(entries) {
+  const text = entries[2];
+  expect(text.type).toBe("agent_message");
+  expect(text.parent_id).toBe(entries[1].id);
+  const thinking = entries[3];
+  expect(thinking.type).toBe("agent_thinking");
+  expect(thinking.parent_id).toBe(text.id);
+  expect(thinking.semantic.group_id).toBe("req_synthetic_adv_01");
+}
+
+function expectFidelityReadCall(entries) {
+  const read = entries.find(
+    (e) => e.type === "tool_call" && e.semantic?.call_id === "tooluse-read",
+  );
+  expect(read).toBeDefined();
+  expect(read.payload).toEqual({ tool: "file_read", args: { path: "package.json" } });
+  expect(read.semantic).toEqual({
+    group_id: "req_synthetic_adv_01",
+    call_id: "tooluse-read",
+    tool_kind: "file_read",
+  });
+}
+
+function expectFidelityBashCall(entries) {
+  const read = entries.find(
+    (e) => e.type === "tool_call" && e.semantic?.call_id === "tooluse-read",
+  );
+  const bash = entries.find(
+    (e) => e.type === "tool_call" && e.semantic?.call_id === "tooluse-bash",
+  );
+  expect(bash).toBeDefined();
+  expect(bash.payload).toEqual({ tool: "shell_command", args: { command: "bun run check" } });
+  expect(bash.parent_id).toBe(read.id);
+}
+
+function expectInterruptModelSequence(entries) {
+  expect(entries.map((e) => e.type)).toEqual([
+    "session_metadata_update",
+    "user_message",
+    "agent_message",
+    "user_interrupt",
+    "user_message",
+    "model_change",
+    "agent_message",
+    "agent_message",
+  ]);
+}
+
+function expectInterruptEntry(entries) {
+  const interrupt = entries[3];
+  expect(interrupt.type).toBe("user_interrupt");
+  expect(interrupt.payload).toEqual({ reason: "user for tool use" });
+  expect(interrupt.parent_id).toBe(entries[2].id);
+}
+
+function expectModelChangeEntry(entries) {
+  const modelChange = entries.find((e) => e.type === "model_change");
+  expect(modelChange.type).toBe("model_change");
+  expect(modelChange.payload).toEqual({
+    from_model: "claude-opus-4-7",
+    to_model: "claude-sonnet-4-5",
+  });
+  expect(modelChange.source.synthesized).toBe(true);
+  expect(modelChange.parent_id).toBe(entries[4].id);
+  expect(entries[6].parent_id).toBe(modelChange.id);
+  expect(entries.filter((e) => e.type === "model_change")).toHaveLength(1);
+}
+
 async function parseCapabilityChangesFixture() {
   return claudeCodeAdapter.parseSession({
     id: "capability-changes",
@@ -1711,24 +1865,11 @@ test("parseSession() truncates hook_success stdout and stderr excerpts", async (
   const stdout = "o".repeat(3000);
   const stderr = "e".repeat(3000);
   const trail = await parseClaudeCodeJsonl([
-    {
-      type: "user",
-      uuid: "00000000-0000-0000-0000-0000000000aa",
-      timestamp: "2026-05-17T14:00:06.000Z",
-      sessionId: "00000000-0000-0000-0000-ccccc0000001",
-      version: "1.0.0-synthetic",
-      cwd: "/tmp/synthetic-project",
-      parentUuid: null,
-      isSidechain: false,
-      message: { role: "user", content: "run hook" },
-    },
-    {
-      type: "attachment",
-      uuid: "00000000-0000-0000-0000-0000000000ab",
-      timestamp: "2026-05-17T14:00:06.100Z",
-      sessionId: "00000000-0000-0000-0000-ccccc0000001",
-      parentUuid: "00000000-0000-0000-0000-cccccccccc12",
-      attachment: {
+    syntheticUserRecord("00000000-0000-0000-0000-0000000000aa", "run hook"),
+    syntheticAttachmentRecord(
+      "00000000-0000-0000-0000-0000000000ab",
+      "00000000-0000-0000-0000-cccccccccc12",
+      {
         type: "hook_success",
         hookEvent: "PostToolUse",
         hookName: "PostToolUse:Bash",
@@ -1736,27 +1877,12 @@ test("parseSession() truncates hook_success stdout and stderr excerpts", async (
         stdout,
         stderr,
       },
-    },
+    ),
   ]);
-  const evt = trail.groups[0]!.entries.find(
-    (entry) =>
-      entry.type === "system_event" && entry.source?.original_type === "attachment.hook_success",
-  );
-  const data = (evt?.payload as { data?: Record<string, unknown> }).data;
+  const evt = systemEventByOriginalType(trail, "attachment.hook_success");
 
-  expect((data?.stdout_excerpt as string).length).toBeLessThan(stdout.length);
-  expect((data?.stdout_excerpt as string).startsWith("o".repeat(2048))).toBe(true);
-  expect((data?.stderr_excerpt as string).length).toBeLessThan(stderr.length);
-  expect((data?.stderr_excerpt as string).startsWith("e".repeat(2048))).toBe(true);
-  const rawAttachment = evt?.source?.raw?.attachment as Record<string, unknown> | undefined;
-  expect(rawAttachment?.stdout).toBeUndefined();
-  expect(rawAttachment?.stderr).toBeUndefined();
-  expect(rawAttachment?.stdout_elided).toBe(true);
-  expect(rawAttachment?.stdout_chars).toBe(stdout.length);
-  expect(rawAttachment?.stderr_elided).toBe(true);
-  expect(rawAttachment?.stderr_chars).toBe(stderr.length);
-  const diagnostics = await validateAdapterTrail(trail);
-  expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+  expectHookSuccessTruncation(evt, stdout, stderr);
+  await expectNoAdapterErrors(trail);
 });
 
 test("parseSession() omits blank hook_success tool ids from data and semantic", async () => {
@@ -1821,6 +1947,10 @@ test("parseSession() uses normalized hook_success tool ids for semantic linkage"
         type: "hook_success",
         hookEvent: "PostToolUse",
         hookName: "PostToolUse:Bash",
+        hook_event: 42,
+        hook_name: false,
+        exit_code: "0",
+        exitCode: 0,
         toolUseID: " tooluse-trimmed ",
       },
     },
@@ -1832,6 +1962,9 @@ test("parseSession() uses normalized hook_success tool ids for semantic linkage"
   const data = (evt?.payload as { data?: Record<string, unknown> }).data;
 
   expect(data?.tool_call_id).toBe("tooluse-trimmed");
+  expect(data?.hook_event).toBe("PostToolUse");
+  expect(data?.hook_name).toBe("PostToolUse:Bash");
+  expect(data?.exit_code).toBe(0);
   expect(evt?.semantic?.call_id).toBe("tooluse-trimmed");
   const diagnostics = await validateAdapterTrail(trail);
   expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
@@ -1839,51 +1972,23 @@ test("parseSession() uses normalized hook_success tool ids for semantic linkage"
 
 test("parseSession() maps hook_additional_context attachments to a system_event", async () => {
   const trail = await parseClaudeCodeJsonl([
-    {
-      type: "user",
-      uuid: "00000000-0000-0000-0000-0000000000b0",
-      timestamp: "2026-05-17T14:00:06.000Z",
-      sessionId: "00000000-0000-0000-0000-ccccc0000001",
-      version: "1.0.0-synthetic",
-      cwd: "/tmp/synthetic-project",
-      parentUuid: null,
-      isSidechain: false,
-      message: { role: "user", content: "build the thing" },
-    },
-    {
-      type: "attachment",
-      uuid: "00000000-0000-0000-0000-0000000000b1",
-      timestamp: "2026-05-17T14:00:06.100Z",
-      sessionId: "00000000-0000-0000-0000-ccccc0000001",
-      parentUuid: "00000000-0000-0000-0000-0000000000b0",
-      attachment: {
+    syntheticUserRecord("00000000-0000-0000-0000-0000000000b0", "build the thing"),
+    syntheticAttachmentRecord(
+      "00000000-0000-0000-0000-0000000000b1",
+      "00000000-0000-0000-0000-0000000000b0",
+      {
         type: "hook_additional_context",
         hookEvent: "UserPromptSubmit",
         hookName: "inject-context",
         toolUseID: "tooluse-ctx",
         content: [{ type: "text", text: "CAVEMAN MODE ACTIVE" }],
       },
-    },
+    ),
   ]);
-  const evt = trail.groups[0]!.entries.find(
-    (entry) =>
-      entry.type === "system_event" &&
-      entry.source?.original_type === "attachment.hook_additional_context",
-  );
+  const evt = systemEventByOriginalType(trail, "attachment.hook_additional_context");
 
-  expect(evt).toBeDefined();
-  expect((evt?.payload as { kind?: string }).kind).toBe("context_injected");
-  const payload = evt?.payload as { text?: string; data?: Record<string, unknown> };
-  expect(payload.text).toContain("CAVEMAN MODE ACTIVE");
-  expect(payload.data?.source_kind).toBe("hook");
-  expect(payload.data?.name).toBe("inject-context");
-  expect(payload.data?.hook_event).toBe("UserPromptSubmit");
-  expect(payload.data?.hook_name).toBe("inject-context");
-  expect(payload.data?.tool_call_id).toBe("tooluse-ctx");
-  expect(payload.data?.content).toEqual([{ type: "text", text: "CAVEMAN MODE ACTIVE" }]);
-  expect(evt?.semantic?.call_id).toBe("tooluse-ctx");
-  const diagnostics = await validateAdapterTrail(trail);
-  expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+  expectHookAdditionalContextEvent(evt);
+  await expectNoAdapterErrors(trail);
 });
 
 test("parseSession() hashes hook_additional_context inline media instead of preserving base64", async () => {
@@ -2452,44 +2557,7 @@ test("parseSession() fans out mixed assistant blocks and multiple tool calls in 
   // Multi-block envelopes mint fresh UUIDs per block (see entry-metadata.ts);
   // assert source order + types instead of specific compound id strings. Block
   // call_ids preserved via semantic.call_id remain stable across runs.
-  const types = trail.groups[0]!.entries.slice(0, 7).map((e) => e.type);
-  expect(types).toEqual([
-    "session_metadata_update",
-    "user_message",
-    "agent_message",
-    "agent_thinking",
-    "agent_thinking",
-    "tool_call",
-    "tool_call",
-  ]);
-
-  const text = trail.groups[0]!.entries[2];
-  expect(text?.type).toBe("agent_message");
-  // The first agent block chains off the leading user_message.
-  expect(text?.parent_id).toBe(trail.groups[0]!.entries[1]?.id);
-
-  const thinking = trail.groups[0]!.entries[3];
-  expect(thinking?.type).toBe("agent_thinking");
-  expect(thinking?.parent_id).toBe(text?.id);
-  expect(thinking?.semantic?.group_id).toBe("req_synthetic_adv_01");
-
-  const read = trail.groups[0]!.entries.find(
-    (e) => e.type === "tool_call" && e.semantic?.call_id === "tooluse-read",
-  );
-  expect(read).toBeDefined();
-  expect(read?.payload).toEqual({ tool: "file_read", args: { path: "package.json" } });
-  expect(read?.semantic).toEqual({
-    group_id: "req_synthetic_adv_01",
-    call_id: "tooluse-read",
-    tool_kind: "file_read",
-  });
-
-  const bash = trail.groups[0]!.entries.find(
-    (e) => e.type === "tool_call" && e.semantic?.call_id === "tooluse-bash",
-  );
-  expect(bash).toBeDefined();
-  expect(bash?.payload).toEqual({ tool: "shell_command", args: { command: "bun run check" } });
-  expect(bash?.parent_id).toBe(read?.id);
+  expectFidelityFanout(trail.groups[0]!.entries);
 });
 
 test("toolKindAndArgs promotes common Claude tools out of other", () => {
@@ -2498,6 +2566,10 @@ test("toolKindAndArgs promotes common Claude tools out of other", () => {
     args: { path: "src/app.ts", range: [10, 15] },
   });
   expect(toolKindAndArgs("LS", { path: "src" })).toEqual({
+    tool: "file_list",
+    args: { path: "src" },
+  });
+  expect(toolKindAndArgs("LS", { path: "src", file_path: "wrong" })).toEqual({
     tool: "file_list",
     args: { path: "src" },
   });
@@ -2618,7 +2690,9 @@ test("AskUserQuestion emits structured user query and response events", async ()
                   {
                     question: "Ship it?",
                     header: "Ship",
+                    multi_select: "yes",
                     multiSelect: true,
+                    allow_other: "yes",
                     allowOther: true,
                     options: [
                       { id: "yes-safe", label: "yes", description: "Ship now" },
@@ -3500,41 +3574,13 @@ test("parseSession() emits v0.1-shaped deterministic entry ids across synthesize
 
 test("interrupt-and-model-change fixture: emits user_interrupt and synthetic model_change in expected sequence", async () => {
   const trail = await parseInterruptModelFixture();
-  const types = trail.groups[0]!.entries.map((e) => e.type);
-  expect(types).toEqual([
-    "session_metadata_update",
-    "user_message",
-    "agent_message",
-    "user_interrupt",
-    "user_message",
-    "model_change",
-    "agent_message",
-    "agent_message",
-  ]);
+  const entries = trail.groups[0]!.entries;
 
   // Indices follow the sequence asserted above; assert linkage via those entries'
   // own ids rather than reconstructing the kit's internal id scheme.
-  const interrupt = trail.groups[0]!.entries[3];
-  expect(interrupt?.type).toBe("user_interrupt");
-  expect(interrupt?.payload).toEqual({ reason: "user for tool use" });
-  expect(interrupt?.parent_id).toBe(trail.groups[0]!.entries[2]?.id);
-
-  const modelChange = trail.groups[0]!.entries.find((e) => e.type === "model_change");
-  expect(modelChange?.type).toBe("model_change");
-  expect(modelChange?.payload).toEqual({
-    from_model: "claude-opus-4-7",
-    to_model: "claude-sonnet-4-5",
-  });
-  expect(modelChange?.source?.synthesized).toBe(true);
-  // model_change is synthesized before the second user_message's agent reply;
-  // its parent is the preceding user_message.
-  expect(modelChange?.parent_id).toBe(trail.groups[0]!.entries[4]?.id);
-
-  const sonnetMsg = trail.groups[0]!.entries[6];
-  expect(sonnetMsg?.type).toBe("agent_message");
-  expect(sonnetMsg?.parent_id).toBe(modelChange?.id);
-
-  expect(trail.groups[0]!.entries.filter((e) => e.type === "model_change")).toHaveLength(1);
+  expectInterruptModelSequence(entries);
+  expectInterruptEntry(entries);
+  expectModelChangeEntry(entries);
 });
 
 test("interrupt-and-model-change fixture round-trips through validateAdapterTrail with zero error diagnostics", async () => {
@@ -3601,6 +3647,46 @@ test("recognizes last-prompt / mode / bridge-session as benign — no quarantine
   expect(entries.map((e) => e.type)).toEqual(["user_message"]);
   const diagnostics = await validateAdapterTrail(trail);
   expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+});
+
+test("prototype-key attachment subtypes are treated as unknown instead of handlers", async () => {
+  const trail = await parseClaudeCodeJsonl([
+    syntheticUserRecord("00000000-0000-0000-0000-0000000000e0", "hi"),
+    syntheticAttachmentRecord(
+      "00000000-0000-0000-0000-0000000000e1",
+      "00000000-0000-0000-0000-0000000000e0",
+      { type: "constructor", value: "not a capability handler" },
+    ),
+  ]);
+
+  expect(trail.groups[0]!.entries.map((entry) => entry.type)).toEqual(["user_message"]);
+  await expectNoAdapterErrors(trail);
+});
+
+test("prototype-key system subtypes map to vendor system_event kinds", async () => {
+  const trail = await parseClaudeCodeJsonl([
+    syntheticUserRecord("00000000-0000-0000-0000-0000000000e2", "hi"),
+    {
+      type: "system",
+      subtype: "constructor",
+      uuid: "00000000-0000-0000-0000-0000000000e3",
+      timestamp: "2026-05-17T14:00:07.000Z",
+      sessionId: "00000000-0000-0000-0000-ccccc0000001",
+      version: "1.0.0-synthetic",
+      content: "constructor subtype",
+    },
+  ]);
+  const event = trail.groups[0]!.entries.find(
+    (entry) =>
+      entry.type === "system_event" &&
+      (entry.payload as { kind?: string }).kind === "x-claudecode/constructor",
+  );
+
+  expect(event?.payload).toEqual({
+    kind: "x-claudecode/constructor",
+    text: "constructor subtype",
+  });
+  await expectNoAdapterErrors(trail);
 });
 
 test("parseSession stamps timestamp-less drift quarantine from the nearest source timestamp", async () => {

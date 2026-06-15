@@ -74,26 +74,55 @@ function sessionTimeVcs(
     head_commit: "claude-code.worktree-state.originalHeadCommit",
   };
 
-  const branch = firstString(envelopes, options, "gitBranch");
-  if (branch !== undefined) {
-    vcs.branch = branch;
-    provenance.branch = "claude-code.gitBranch";
-  }
-
-  const name = stringValue(worktreeSession?.worktreeName);
-  const path = stringValue(worktreeSession?.worktreePath);
-  if (name !== undefined && path !== undefined) {
-    const worktree: NonNullable<NonNullable<Header["vcs"]>["worktree"]> = { name, path };
-    const originalCwd = stringValue(worktreeSession?.originalCwd);
-    const originalBranch = stringValue(worktreeSession?.originalBranch);
-    if (originalCwd !== undefined) worktree.original_cwd = originalCwd;
-    if (originalBranch !== undefined) worktree.original_branch = originalBranch;
-    worktree.original_head_commit = originalHeadCommit;
-    vcs.worktree = worktree;
-    provenance.worktree = "claude-code.worktree-state";
-  }
+  applyBranchVcs(vcs, provenance, envelopes, options);
+  applyWorktreeVcs(vcs, provenance, worktreeSession, originalHeadCommit);
 
   return { vcs, provenance };
+}
+
+function applyBranchVcs(
+  vcs: NonNullable<Header["vcs"]>,
+  provenance: Record<string, string>,
+  envelopes: CcEnvelope[],
+  options: { includeSidechain?: boolean },
+): void {
+  const branch = firstString(envelopes, options, "gitBranch");
+  if (branch === undefined) return;
+  vcs.branch = branch;
+  provenance.branch = "claude-code.gitBranch";
+}
+
+function applyWorktreeVcs(
+  vcs: NonNullable<Header["vcs"]>,
+  provenance: Record<string, string>,
+  worktreeSession: Record<string, unknown> | undefined,
+  originalHeadCommit: string,
+): void {
+  const worktree = worktreeVcs(worktreeSession, originalHeadCommit);
+  if (worktree === undefined) return;
+  vcs.worktree = worktree;
+  provenance.worktree = "claude-code.worktree-state";
+}
+
+function worktreeVcs(
+  worktreeSession: Record<string, unknown> | undefined,
+  originalHeadCommit: string,
+): NonNullable<NonNullable<Header["vcs"]>["worktree"]> | undefined {
+  const name = stringValue(worktreeSession?.worktreeName);
+  const path = stringValue(worktreeSession?.worktreePath);
+  if (name === undefined || path === undefined) return undefined;
+  return {
+    name,
+    path,
+    ...optionalString("original_cwd", worktreeSession?.originalCwd),
+    ...optionalString("original_branch", worktreeSession?.originalBranch),
+    original_head_commit: originalHeadCommit,
+  };
+}
+
+function optionalString(key: string, value: unknown): Record<string, string> {
+  const string = stringValue(value);
+  return string === undefined ? {} : { [key]: string };
 }
 
 export function buildHeader(

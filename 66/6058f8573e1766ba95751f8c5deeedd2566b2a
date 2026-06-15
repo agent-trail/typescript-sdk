@@ -1,0 +1,19 @@
+packages/source-schemas/type-smoke.test.ts
+  s_41a01eab7e41e9::t_2b0d2056e1a0ca 17,33,46-81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "666058f8573e1766ba95751f8c5deeedd2566b2a",
+  "prompts": {},
+  "sessions": {
+    "s_41a01eab7e41e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec547-b5c0-7200-b226-4f1ef52334a0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

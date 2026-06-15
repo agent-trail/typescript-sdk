@@ -8,6 +8,7 @@ type EventGraph = {
 type ToolCallLink = {
   branchScope: string;
   id: string;
+  isSubagentInvoke: boolean;
   matched: boolean;
   parentId?: string;
   semanticCallId?: string;
@@ -37,6 +38,7 @@ export function pairToolLifecycleEvents(events: readonly RenderEvent[]): Map<num
     const bucket = buildPairingBucket(events, start, end);
     linkExplicitCompletions(bucket, pairings);
     linkSemanticCompletions(bucket, pairings);
+    linkParentCompletions(bucket, pairings);
     linkSequentialCompletions(bucket, pairings);
   });
   return pairings;
@@ -96,6 +98,7 @@ function addCall(bucket: PairingBucket, graph: EventGraph, event: RenderEvent): 
   const call: ToolCallLink = {
     branchScope: branchScope(event, graph),
     id: event.id,
+    isSubagentInvoke: event.tool?.name === "subagent_invoke",
     matched: false,
     ...optionalParentId(event.parentId),
     ...optionalSemanticCallId(event.tool?.semanticCallId),
@@ -159,6 +162,25 @@ function canUseSemanticFallback(
   return (
     !completion.matched && completion.supportsFallback && completion.semanticCallId !== undefined
   );
+}
+
+function linkParentCompletions(bucket: PairingBucket, pairings: Map<number, string>): void {
+  for (const completion of bucket.completions) {
+    if (!canUseParentFallback(completion)) continue;
+    const call = unmatchedCallById(bucket, completion.parentId);
+    if (call !== undefined) link(call, completion, pairings);
+  }
+}
+
+function canUseParentFallback(
+  completion: ToolCompletionLink,
+): completion is ToolCompletionLink & { parentId: string } {
+  return !completion.matched && completion.supportsFallback && completion.parentId !== undefined;
+}
+
+function unmatchedCallById(bucket: PairingBucket, callId: string): ToolCallLink | undefined {
+  const call = bucket.callsById.get(callId);
+  return call === undefined || call.matched || call.isSubagentInvoke ? undefined : call;
 }
 
 function linkSequentialCompletions(bucket: PairingBucket, pairings: Map<number, string>): void {

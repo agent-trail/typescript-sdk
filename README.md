@@ -1,7 +1,8 @@
 # Agent Trail TypeScript SDK
 
 TypeScript packages for Agent Trail schema assets, generated types, core JSONL
-utilities, redaction, catalog metadata, and content-addressed local storage.
+utilities, shared render models, redaction, catalog metadata, and
+content-addressed local storage.
 
 ## Related Repositories
 

@@ -291,6 +291,25 @@ test("sequential fallback pairs same-parent sibling tool events", () => {
   expect(items[1].result?.id).toBe("01HEVTA0000000000000000003");
 });
 
+test("parent-id fallback takes precedence over newer sequential calls", () => {
+  const firstCallId = "01HEVTA0000000000000000001";
+  const secondCallId = "01HEVTA0000000000000000002";
+  const resultId = "01HEVTA0000000000000000003";
+  const items = buildTranscriptItems([
+    toolCallEvent(2, firstCallId, "file_read"),
+    toolCallEvent(3, secondCallId, "file_search"),
+    toolResultEvent(4, resultId, undefined, { parentId: firstCallId }),
+  ]);
+
+  expect(items).toHaveLength(1);
+  expect(items[0]?.kind).toBe("tool_group");
+  if (items[0]?.kind !== "tool_group") throw new Error("expected grouped tool events");
+  expect(items[0].items[0]?.call?.id).toBe(firstCallId);
+  expect(items[0].items[0]?.result?.id).toBe(resultId);
+  expect(items[0].items[1]?.call?.id).toBe(secondCallId);
+  expect(items[0].items[1]?.result).toBeUndefined();
+});
+
 test("sequential fallback does not pair child branch results to parent calls", () => {
   const invokeId = "01HEVTA0000000000000000001";
   const items = buildTranscriptItems([

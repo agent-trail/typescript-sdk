@@ -1,0 +1,55 @@
+packages/adapters/src/codex/parser.ts
+  s_41a01eab7e41e9::t_6e5c44117f7421 15,20
+packages/adapters/src/opencode/mappings.ts
+  s_41a01eab7e41e9::t_6e5c44117f7421 2
+packages/adapters/src/pi/mapping/messages.ts
+  s_41a01eab7e41e9::t_8b0b8191795255 2,4
+packages/adapter-kit/src/primitives/guards.ts
+  s_41a01eab7e41e9::t_4fa022ea5d04b9 1
+packages/adapters/src/pi/source.ts
+  s_41a01eab7e41e9::t_5ccf04d135f488 71,80,114
+  s_41a01eab7e41e9::t_6eeef2a294b68a 1,5
+packages/adapter-kit/src/mapping/match.ts
+  s_41a01eab7e41e9::t_4fa022ea5d04b9 1,17-18
+packages/adapters/src/pi/tools.ts
+  s_41a01eab7e41e9::t_6e5c44117f7421 1
+packages/adapters/src/session-uid.ts
+  s_41a01eab7e41e9::t_4e2cea674d59dc 1-2,5-6,11-57
+packages/adapter-kit/src/import-smoke.test.ts
+  s_41a01eab7e41e9::t_9c22c2ef5a4f1e 11-25
+packages/adapters/src/codex/source.ts
+  s_41a01eab7e41e9::t_4fa022ea5d04b9 13-17
+packages/adapters/src/claude-code/mapping/messages.ts
+  s_41a01eab7e41e9::t_8b0b8191795255 3,5
+packages/adapter-kit/README.md
+  s_41a01eab7e41e9::t_c38c222195ffb0 3-5,8-11,26,28-30,32-33,61
+packages/adapter-kit/src/reconciler/cumulative-tokens.ts
+  s_41a01eab7e41e9::t_bba61b9642b8ec 22-66,80,86,94,98-100,106
+  s_41a01eab7e41e9::t_4fa022ea5d04b9 2,85
+packages/adapters/src/legacy-kit-helpers.ts
+  s_41a01eab7e41e9::t_4fa022ea5d04b9 19,24,27,52
+  s_41a01eab7e41e9::t_2d21be828420a3 15-18,20-23,25-26,28-34,43,54,56,58,64,70,72,78,86,94,96-100,103
+.fallowrc.json
+  s_41a01eab7e41e9::t_6eeef2a294b68a 13
+  s_41a01eab7e41e9::t_635e39752acb58 16
+packages/adapters/src/claude-code/source.ts
+  s_41a01eab7e41e9::t_6eeef2a294b68a 3,13
+  s_41a01eab7e41e9::t_5ccf04d135f488 80,93
+  s_41a01eab7e41e9::t_4fa022ea5d04b9 1-2,4-6,10-12,14-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "475318a242d6c9ca07b7efe2591b2f5abf23818c",
+  "prompts": {},
+  "sessions": {
+    "s_41a01eab7e41e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec547-b5c0-7200-b226-4f1ef52334a0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

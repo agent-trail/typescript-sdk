@@ -1,0 +1,51 @@
+packages/adapters/src/opencode/index.test.ts
+  s_41a01eab7e41e9::t_f5f48eb26400b3 87-118,528-541
+packages/adapters/src/codex/index.ts
+  s_41a01eab7e41e9::t_f42c0e48227208 28
+packages/redact/src/secret-patterns.ts
+  s_41a01eab7e41e9::t_f42c0e48227208 72
+packages/adapters/src/opencode/index.ts
+  s_41a01eab7e41e9::t_f42c0e48227208 117,122,126
+packages/adapters/src/pi/index.test.ts
+  s_41a01eab7e41e9::t_f5f48eb26400b3 4,214-235
+packages/adapters/src/secret-patterns.ts
+  s_41a01eab7e41e9::t_f42c0e48227208 63
+packages/adapters/src/pi/index.ts
+  s_41a01eab7e41e9::t_f42c0e48227208 1-2,156-168,172-178,238-242,245-246
+packages/adapters/src/opencode/health.ts
+  s_41a01eab7e41e9::t_f42c0e48227208 3-8,11,13,15-16,20,30
+packages/adapters/src/codex/index.test.ts
+  s_41a01eab7e41e9::t_f5f48eb26400b3 220-301
+packages/adapters/src/claude-code/index.test.ts
+  s_41a01eab7e41e9::t_f5f48eb26400b3 145-166
+packages/adapters/src/source-raw.test.ts
+  s_41a01eab7e41e9::t_f5f48eb26400b3 27-31
+packages/adapters/src/codex/assembly.ts
+  s_41a01eab7e41e9::t_b4d21f2527d055 257-264
+  s_41a01eab7e41e9::t_f42c0e48227208 24-26,75-79,107,166,168,196-200,233,235,239-243,273-274,280,282,342-349
+packages/adapters/src/claude-code/index.ts
+  s_41a01eab7e41e9::t_f42c0e48227208 81-93,97-103,452-456,459-460
+packages/core/src/validation/scalars.ts
+  s_41a01eab7e41e9::t_f42c0e48227208 6
+packages/redact/test/redact.test.ts
+  s_41a01eab7e41e9::t_bbac94451c8954 51
+  s_41a01eab7e41e9::t_f5f48eb26400b3 47-50,52-64
+packages/core/test/validation-graph.test.ts
+  s_41a01eab7e41e9::t_f5f48eb26400b3 364-382
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "20efc0dba33c72ecc2c60cd059a3d8c92e180bf9",
+  "prompts": {},
+  "sessions": {
+    "s_41a01eab7e41e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec547-b5c0-7200-b226-4f1ef52334a0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

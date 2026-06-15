@@ -1,0 +1,48 @@
+packages/sessions/src/index.ts
+  s_4bbd91c57aaaad::t_11ac3a02c15cbd 45,49-50,56,59,77-78
+  s_4bbd91c57aaaad::t_57a0289774ecc1 1-33,35-39,41-44,79-298,302-306,310-366,369-393,407-409,413-466,468-474,477-509,513,537-538,547-561,565-611,630-669,673-688
+  s_4bbd91c57aaaad::t_5fdd8dd1323190 34,40,299-301,307-309,410-412,510-512,518,562-564,670-672
+  s_4bbd91c57aaaad::t_5160d6a7d485ce 526-535,539-546,612-617
+  s_4bbd91c57aaaad::t_5588ae9fe946d0 367-368,467,475-476,514-517,521-525,536
+  s_4bbd91c57aaaad::t_529ff9240bd41d 53,58
+  s_4bbd91c57aaaad::t_e6af6d7117f762 519-520
+  s_4bbd91c57aaaad::t_5193139880ffa6 394-406,618-629
+  s_4bbd91c57aaaad::t_0986937dbb8a10 46-48,51-52,54-55,57,60-76
+packages/sessions/api-extractor.json
+  s_4bbd91c57aaaad::t_57a0289774ecc1 1-42
+packages/sessions/README.md
+  s_4bbd91c57aaaad::t_e164dabfaa24f1 1-13
+packages/sessions/package.json
+  s_4bbd91c57aaaad::t_57a0289774ecc1 1-41
+tsconfig.json
+  s_4bbd91c57aaaad::t_5fe83365394029 32
+packages/sessions/src/tests/sessions.test.ts
+  s_4bbd91c57aaaad::t_5a7d7fe0d4ded0 127
+  s_4bbd91c57aaaad::t_5193139880ffa6 126,166,229
+  s_4bbd91c57aaaad::t_5fdd8dd1323190 7,19
+  s_4bbd91c57aaaad::t_ae2e38ebafabc0 1-6,8-18,20-125,128-165,167-219,221-228,230-241
+  s_4bbd91c57aaaad::t_4a40b2c809795a 220
+packages/sessions/etc/sessions.api.md
+  s_4bbd91c57aaaad::t_e957f772b81dab 1-13,25-47,62-64,70-154,162-184,220-221,232-257,285-367,374,380-381
+  s_4bbd91c57aaaad::t_dea16669857e51 14-24,48-61,65-69,155-161,185-219,222-231,258-284,368-373,375-379
+packages/sessions/tsconfig.build.json
+  s_4bbd91c57aaaad::t_57a0289774ecc1 1-17
+packages/sessions/tsconfig.json
+  s_4bbd91c57aaaad::t_57a0289774ecc1 1-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "1a76c149ad30de84a7f5bba2314edb18d9f48d4c",
+  "prompts": {},
+  "sessions": {
+    "s_4bbd91c57aaaad": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ecca9-c454-7d10-ade3-fe5e2bc0bbd1",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

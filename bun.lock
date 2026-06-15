@@ -60,6 +60,10 @@
         "yaml": "2.9.0",
       },
     },
+    "packages/render-model": {
+      "name": "@agent-trail/render-model",
+      "version": "0.1.0",
+    },
     "packages/schema": {
       "name": "@agent-trail/schema",
       "version": "0.1.0",
@@ -91,6 +95,8 @@
     "@agent-trail/core": ["@agent-trail/core@workspace:packages/core"],
 
     "@agent-trail/redact": ["@agent-trail/redact@workspace:packages/redact"],
+
+    "@agent-trail/render-model": ["@agent-trail/render-model@workspace:packages/render-model"],
 
     "@agent-trail/schema": ["@agent-trail/schema@workspace:packages/schema"],
 

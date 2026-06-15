@@ -12,6 +12,7 @@
     "check:biome": "biome check .",
     "check:exports": "bun run scripts/check-exports.ts",
     "check:fallow": "fallow --fail-on-issues --format compact",
+    "check:render-model-oracle": "bun run scripts/check-render-model-oracle.ts",
     "check:spec": "bun run scripts/check-spec-artifacts.ts",
     "check:source-types": "bun run scripts/generate-source-types.ts --check",
     "check:types": "tsc --noEmit",

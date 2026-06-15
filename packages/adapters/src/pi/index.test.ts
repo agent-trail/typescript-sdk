@@ -1,7 +1,7 @@
 // @ts-nocheck
 // biome-ignore-all lint/style/noNonNullAssertion: ported oracle fixture tests assert fixed fixture shape.
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createPiAdapter, validateAdapterTrail } from "../index.js";
@@ -209,6 +209,30 @@ test("piAdapter implements TrailAdapter method surface", () => {
   expect(typeof piAdapter.parseSession).toBe("function");
   expect(typeof piAdapter.isAvailable).toBe("function");
   expect(typeof piAdapter.sourceVersion).toBe("function");
+});
+
+test("detectSessions() and sourceVersion() skip symlinked top-level session files", async () => {
+  const dir = createProjectDir();
+  const outsideDir = mkdtempSync(join(tmpdir(), "pi-adapter-linked-top-level-"));
+  try {
+    const outsideSession = join(outsideDir, "linked.jsonl");
+    writeFileSync(
+      outsideSession,
+      `${JSON.stringify({
+        type: "session",
+        version: 3,
+        id: "00000000-0000-0000-0000-eeeee0000099",
+        timestamp: "2026-05-21T14:00:00.000Z",
+        cwd: process.cwd(),
+      })}\n`,
+    );
+    symlinkSync(outsideSession, join(dir, "linked.jsonl"), "file");
+
+    expect(await piAdapter.detectSessions()).toEqual([]);
+    expect(await piAdapter.sourceVersion()).toBeNull();
+  } finally {
+    rmSync(outsideDir, { recursive: true, force: true });
+  }
 });
 
 // TDD step 2: header building

@@ -60,7 +60,7 @@ const AWS_ACCESS_KEY: RedactionPattern = {
 const GITHUB_PAT: RedactionPattern = {
   id: "github_pat",
   description: "GitHub personal access token",
-  regex: /\bghp_[A-Za-z0-9]{36}\b/g,
+  regex: /\b(?:ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{22,})\b/g,
   placeholder: "[GITHUB_PAT]",
 };
 

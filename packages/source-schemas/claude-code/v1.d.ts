@@ -28,3 +28,6 @@ export interface ClaudeCodeV1Record {
     | "bridge-session";
   [k: string]: unknown;
 }
+
+declare const schema: Record<string, unknown>;
+export default schema;

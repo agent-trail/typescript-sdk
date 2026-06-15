@@ -1,17 +1,23 @@
 import type { AdapterSourceHealth } from "../index.js";
 import { opencodeDataDir, opencodeDbPath, opencodeStorageDir } from "./paths.js";
-import { dirExists, discoveredSummaries, pathExists } from "./storage/index.js";
+import {
+  dirExists,
+  discoveredSummaries,
+  type OpenCodeStorageOptions,
+  pathExists,
+} from "./storage/index.js";
 
 export async function inspectSourceHealth(
-  env: NodeJS.ProcessEnv = process.env,
+  options: OpenCodeStorageOptions = {},
 ): Promise<AdapterSourceHealth> {
+  const env = options.env ?? process.env;
   const dataDir = opencodeDataDir(env);
-  const storageDir = opencodeStorageDir(env);
-  const dbPath = opencodeDbPath(env);
+  const storageDir = options.storageDir ?? opencodeStorageDir(env);
+  const dbPath = options.dbPath ?? opencodeDbPath(env);
   const storagePresent = await dirExists(storageDir);
   const dbPresent = await pathExists(dbPath);
   const present = storagePresent || dbPresent;
-  const summaries = present ? await discoveredSummaries({ allCwds: true }, { env }) : [];
+  const summaries = present ? await discoveredSummaries({ allCwds: true }, options) : [];
   const sessionCount = summaries.length;
   const versions = new Set(
     summaries
@@ -21,7 +27,7 @@ export async function inspectSourceHealth(
   const [sourceVersion] = versions;
   return {
     adapter: "opencode",
-    path: dataDir ?? dbPath ?? null,
+    path: options.storageDir ?? dataDir ?? dbPath ?? null,
     present,
     readable: present,
     sessionCount,

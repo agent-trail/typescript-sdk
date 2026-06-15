@@ -13,3 +13,6 @@ export type CodexV0_135Record = {
   payload?: unknown;
   [k: string]: unknown;
 };
+
+declare const schema: Record<string, unknown>;
+export default schema;

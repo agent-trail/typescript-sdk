@@ -142,6 +142,28 @@ test("createClaudeCodeAdapter env override discovers sessions without mutating p
   }
 });
 
+test("detectSessions() and sourceVersion() skip symlinked top-level session files", async () => {
+  const dir = createProjectDir();
+  const outsideDir = mkdtempSync(join(tmpdir(), "cc-adapter-linked-top-level-"));
+  try {
+    const outsideSession = join(outsideDir, "linked.jsonl");
+    writeFileSync(
+      outsideSession,
+      `${JSON.stringify({
+        type: "summary",
+        cwd: process.cwd(),
+        version: "1.0.0-linked",
+      })}\n`,
+    );
+    symlinkSync(outsideSession, join(dir, "linked.jsonl"), "file");
+
+    expect(await claudeCodeAdapter.detectSessions()).toEqual([]);
+    expect(await claudeCodeAdapter.sourceVersion()).toBeNull();
+  } finally {
+    rmSync(outsideDir, { recursive: true, force: true });
+  }
+});
+
 test("detectSessions() returns empty when project dir is missing", async () => {
   expect(await claudeCodeAdapter.detectSessions()).toEqual([]);
 });

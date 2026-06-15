@@ -44,6 +44,24 @@ test("redactTrailJsonl redacts secrets and reports mutation accounting", async (
   });
 });
 
+test("redactTrailJsonl redacts fine-grained GitHub personal access tokens", async () => {
+  const token = ["github", "pat", "A".repeat(24)].join("_");
+  const result = await redactTrailJsonl(
+    jsonl([
+      header,
+      {
+        type: "tool_call",
+        id: "01HEVTA0000000000000000099",
+        ts: "2026-05-17T14:00:01.000Z",
+        payload: { tool: "shell", args: { command: `echo ${token}` } },
+      },
+    ]),
+  );
+
+  expect(result.jsonl).not.toContain(token);
+  expect(result.jsonl).toContain("[GITHUB_PAT]");
+});
+
 test("redactTrailJsonl strips unresolved secret user query answers", async () => {
   const result = await redactTrailJsonl(
     jsonl([

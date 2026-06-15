@@ -217,6 +217,88 @@ test("createCodexAdapter env override discovers sessions without mutating proces
   expect(refs.map((ref) => ref.id)).toEqual([id]);
 });
 
+test("createCodexAdapter env override is used for parse-time session index and child lookup", async () => {
+  const customCodexHome = mkdtempSync(join(tmpdir(), "codex-adapter-parse-env-"));
+  try {
+    const sessionsDir = codexSessionsDir({ CODEX_HOME: customCodexHome });
+    if (sessionsDir === undefined) throw new Error("expected sessions dir");
+    const dayDir = join(sessionsDir, "2026", "05", "30");
+    mkdirSync(dayDir, { recursive: true });
+    const parentId = "019d9000-bbbb-7000-a000-000000000071";
+    const childId = "019d9000-bbbb-7000-a000-000000000072";
+    const parentPath = join(dayDir, `rollout-2026-05-30T01-46-00-000Z-${parentId}.jsonl`);
+    const childPath = join(dayDir, `rollout-2026-05-30T01-47-00-000Z-${childId}.jsonl`);
+    writeFileSync(
+      parentPath,
+      `${JSON.stringify({
+        timestamp: "2026-05-30T01:46:00.000Z",
+        type: "session_meta",
+        payload: { id: parentId, timestamp: "2026-05-30T01:46:00.000Z", cwd: "/factory" },
+      })}\n${JSON.stringify({
+        timestamp: "2026-05-30T01:46:01.000Z",
+        type: "response_item",
+        payload: {
+          type: "function_call",
+          call_id: "call-spawn-1",
+          name: "spawn_agent",
+          arguments: JSON.stringify({ agent_type: "reviewer", message: "inspect parser" }),
+        },
+      })}\n${JSON.stringify({
+        timestamp: "2026-05-30T01:46:02.000Z",
+        type: "response_item",
+        payload: {
+          type: "function_call_output",
+          call_id: "call-spawn-1",
+          output: JSON.stringify({ agent_id: childId }),
+        },
+      })}\n`,
+    );
+    writeFileSync(
+      childPath,
+      `${JSON.stringify({
+        timestamp: "2026-05-30T01:47:00.000Z",
+        type: "session_meta",
+        payload: {
+          id: childId,
+          timestamp: "2026-05-30T01:47:00.000Z",
+          cwd: "/factory",
+          thread_source: "subagent",
+          source: { subagent: { thread_spawn: { parent_thread_id: parentId } } },
+        },
+      })}\n${JSON.stringify({
+        timestamp: "2026-05-30T01:47:01.000Z",
+        type: "event_msg",
+        payload: { type: "agent_message", message: "child result" },
+      })}\n`,
+    );
+    writeFileSync(
+      join(customCodexHome, "session_index.jsonl"),
+      `${JSON.stringify({
+        id: parentId,
+        thread_name: "  Custom env session  ",
+        updated_at: "2026-06-02T04:51:00.000000Z",
+      })}\n`,
+    );
+
+    const adapter = createCodexAdapter({ env: { CODEX_HOME: customCodexHome } });
+    const trail = await adapter.parseSession({ id: parentId, adapter: "codex", path: parentPath });
+    const invoke = trail.groups[0]!.entries.find(
+      (entry) => entry.type === "tool_call" && entry.payload.tool === "subagent_invoke",
+    );
+
+    expect(trail.groups).toHaveLength(2);
+    expect(trail.groups[0]!.header.name).toBe("Custom env session");
+    expect(invoke?.payload.args).toEqual({
+      task: "inspect parser",
+      agent_type: "reviewer",
+      session_id: childId,
+    });
+    expect(trail.groups[1]!.header.id).toBe(childId);
+  } finally {
+    rmSync(customCodexHome, { recursive: true, force: true });
+  }
+});
+
 test("detectSessions({ allCwds: true }) returns sessions across the entire date tree", async () => {
   seedSession({
     date: { y: "2026", m: "05", d: "28" },

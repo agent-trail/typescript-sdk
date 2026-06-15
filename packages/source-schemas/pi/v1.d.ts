@@ -21,3 +21,6 @@ export interface PiV1Record {
     | "leaf";
   [k: string]: unknown;
 }
+
+declare const schema: Record<string, unknown>;
+export default schema;

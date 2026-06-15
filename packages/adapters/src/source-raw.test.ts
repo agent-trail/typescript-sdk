@@ -24,6 +24,11 @@ test("redactValue replaces a Bearer token nested in an object", () => {
   expect(input.headers.authorization).toBe("Bearer abcdefABCDEF0123456789xyzXYZ");
 });
 
+test("redactValue replaces fine-grained GitHub personal access tokens", () => {
+  const token = ["github", "pat", "A".repeat(24)].join("_");
+  expect(redactValue(`token=${token}`)).toBe("token=[GITHUB_PAT]");
+});
+
 test("redactValue replaces credential-keyed source raw strings", () => {
   const input = {
     password: "novel internal password",

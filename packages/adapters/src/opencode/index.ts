@@ -114,16 +114,16 @@ export function createOpenCodeAdapter(options: OpenCodeAdapterOptions = {}): Tra
     },
 
     async isAvailable(): Promise<boolean> {
-      const health = await inspectSourceHealth(options.env);
+      const health = await inspectSourceHealth(storageOptions);
       return health.present && health.readable;
     },
 
     async sourceVersion(): Promise<string | null> {
-      return (await inspectSourceHealth(options.env)).sourceVersion;
+      return (await inspectSourceHealth(storageOptions)).sourceVersion;
     },
 
     async sourceHealth(): Promise<AdapterSourceHealth> {
-      const health = await inspectSourceHealth(options.env);
+      const health = await inspectSourceHealth(storageOptions);
       if (options.sqliteDriver === undefined && options.dbPath !== undefined) {
         return {
           ...health,

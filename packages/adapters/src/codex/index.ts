@@ -25,7 +25,7 @@ export function createCodexAdapter(options: CodexAdapterOptions = {}): TrailAdap
       if (ref.path === undefined) {
         throw new Error("Codex adapter requires SessionRef.path");
       }
-      return parseCodexTrailFile(ref.path, PRODUCER);
+      return parseCodexTrailFile(ref.path, PRODUCER, { env });
     },
 
     async resumeSession(ref: SessionRef) {

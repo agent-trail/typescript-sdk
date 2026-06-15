@@ -78,12 +78,29 @@ async function buildSessionRef(filePath: string, id: string): Promise<SessionRef
   return ref;
 }
 
+async function safeSessionFilePath(dir: string, name: string): Promise<string | undefined> {
+  if (!name.endsWith(".jsonl")) return undefined;
+  const file = join(dir, name);
+  const fileStat = await lstat(file).catch(() => undefined);
+  if (fileStat === undefined || !fileStat.isFile() || fileStat.isSymbolicLink()) return undefined;
+  const realDir = await realpath(dir).catch(() => undefined);
+  const realFile = await realpath(file).catch(() => undefined);
+  if (realDir === undefined || realFile === undefined) return undefined;
+  const rel = relative(realDir, realFile);
+  if (rel.length === 0 || rel.startsWith("..") || isAbsolute(rel)) return undefined;
+  return file;
+}
+
 async function scanProjectDir(dir: string): Promise<SessionRef[]> {
   if (!(await dirExists(dir))) return [];
   const entries = await readdir(dir);
-  const jsonlNames = entries.filter((name) => name.endsWith(".jsonl"));
-  return mapConcurrent(jsonlNames, DISCOVERY_CONCURRENCY_LIMIT, (name) =>
-    buildSessionRef(join(dir, name), name.slice(0, -".jsonl".length)),
+  const files = (
+    await mapConcurrent(entries, DISCOVERY_CONCURRENCY_LIMIT, (name) =>
+      safeSessionFilePath(dir, name),
+    )
+  ).filter((file): file is string => file !== undefined);
+  return mapConcurrent(files, DISCOVERY_CONCURRENCY_LIMIT, (file) =>
+    buildSessionRef(file, basename(file, ".jsonl")),
   );
 }
 
@@ -432,12 +449,15 @@ export function createClaudeCodeAdapter(options: ClaudeCodeAdapterOptions = {}):
       const dir = claudeCodeProjectDir({ configDir, cwd: process.cwd() });
       if (!(await dirExists(dir))) return null;
       const entries = await readdir(dir);
-      const jsonlFiles = entries.filter((name) => name.endsWith(".jsonl"));
+      const jsonlFiles = (
+        await mapConcurrent(entries, DISCOVERY_CONCURRENCY_LIMIT, (name) =>
+          safeSessionFilePath(dir, name),
+        )
+      ).filter((file): file is string => file !== undefined);
       if (jsonlFiles.length === 0) return null;
       const withMtime = await Promise.all(
-        jsonlFiles.map(async (name) => {
-          const path = join(dir, name);
-          const s = await stat(path);
+        jsonlFiles.map(async (path) => {
+          const s = await lstat(path);
           return { path, mtime: s.mtimeMs };
         }),
       );

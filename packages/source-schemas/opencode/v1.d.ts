@@ -33,3 +33,6 @@ export type OpenCodeV1Record = {
     | "file";
   [k: string]: unknown;
 };
+
+declare const schema: Record<string, unknown>;
+export default schema;

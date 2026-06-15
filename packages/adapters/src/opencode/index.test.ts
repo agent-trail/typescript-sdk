@@ -84,6 +84,38 @@ test("opencodeAdapter reports available when file storage exists", async () => {
   expect(await opencodeAdapter.isAvailable()).toBe(true);
 });
 
+test("createOpenCodeAdapter storageDir override drives health without mutating process env", async () => {
+  const customDataDir = mkdtempSync(join(tmpdir(), "opencode-adapter-health-storage-"));
+  try {
+    const storageDir = join(customDataDir, "storage");
+    const sessionDir = join(storageDir, "session", "project-health");
+    mkdirSync(sessionDir, { recursive: true });
+    writeFileSync(
+      join(sessionDir, "ses_health.json"),
+      `${JSON.stringify({
+        version: "1.2.3",
+        projectID: "project-health",
+        directory: "/factory/health",
+        time: { updated: 1766258479000 },
+      })}\n`,
+    );
+    const adapter = createOpenCodeAdapter({ storageDir });
+
+    expect(await adapter.isAvailable()).toBe(true);
+    expect(await adapter.sourceVersion()).toBe("1.2.3");
+    expect(await adapter.sourceHealth()).toMatchObject({
+      adapter: "opencode",
+      path: storageDir,
+      present: true,
+      readable: true,
+      sessionCount: 1,
+      sourceVersion: "1.2.3",
+    });
+  } finally {
+    rmSync(customDataDir, { recursive: true, force: true });
+  }
+});
+
 test("OpenCode source schema recognizes every upstream-known part type", () => {
   const partTypes = [
     "text",
@@ -491,6 +523,22 @@ test("sourceHealth warns when SQLite DB exists but no sqliteDriver is injected",
   const health = await adapter.sourceHealth();
   expect(health.present).toBe(true);
   expect(health.warnings).toContain("OpenCode SQLite discovery skipped: sqliteDriver missing");
+});
+
+test("createOpenCodeAdapter dbPath override drives health when sqlite driver is injected", async () => {
+  const dbPath = seedSqliteSession({ id: "ses_db_health", directory: "/work/db-health" });
+  const adapter = createOpenCodeAdapter({ dbPath, sqliteDriver: bunSqliteDriver });
+
+  expect(await adapter.isAvailable()).toBe(true);
+  expect(await adapter.sourceVersion()).toBe("1.0.153");
+  expect(await adapter.sourceHealth()).toMatchObject({
+    adapter: "opencode",
+    present: true,
+    readable: true,
+    sessionCount: 1,
+    sourceVersion: "1.0.153",
+    warnings: [],
+  });
 });
 
 test("detectSessions() returns SQLite sessions with virtual paths", async () => {

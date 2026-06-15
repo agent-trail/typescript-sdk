@@ -15,22 +15,6 @@ export type AdapterSourceHealth = {
     warnings: string[];
 };
 
-// Warning: (ae-forgotten-export) The symbol "TrailEnvelope" needs to be exported by the entry point index.d.ts
-//
-// @public (undocumented)
-export function buildTrailEnvelope(opts: BuildTrailEnvelopeOptions): TrailEnvelope;
-
-// @public (undocumented)
-export type BuildTrailEnvelopeOptions = {
-    producer: string;
-    header?: Header | undefined;
-    groups?: TrailSessionGroup[] | undefined;
-    randomId?: (() => string) | undefined;
-    now?: (() => string) | undefined;
-    name?: string | undefined;
-    meta?: Record<string, unknown> | undefined;
-};
-
 // @public (undocumented)
 export type ClaudeCodeAdapterOptions = {
     env?: NodeJS.ProcessEnv;
@@ -40,9 +24,6 @@ export type ClaudeCodeAdapterOptions = {
 export type CodexAdapterOptions = {
     env?: NodeJS.ProcessEnv;
 };
-
-// @public (undocumented)
-export function createAdapterByName(name: string, options?: DefaultTrailAdaptersOptions): TrailAdapter | undefined;
 
 // @public (undocumented)
 export function createClaudeCodeAdapter(options?: ClaudeCodeAdapterOptions): TrailAdapter;
@@ -60,9 +41,6 @@ export function createOpenCodeAdapter(options?: OpenCodeAdapterOptions): TrailAd
 export function createPiAdapter(options?: PiAdapterOptions): TrailAdapter;
 
 // @public (undocumented)
-export const DEFAULT_ADAPTER_NAMES: readonly string[];
-
-// @public (undocumented)
 export type DefaultTrailAdaptersOptions = {
     "claude-code"?: ClaudeCodeAdapterOptions;
     codex?: CodexAdapterOptions;
@@ -76,17 +54,6 @@ export type DetectOptions = {
     since?: string | undefined;
     allCwds?: boolean | undefined;
 };
-
-// Warning: (ae-forgotten-export) The symbol "TrailDiagnostic" needs to be exported by the entry point index.d.ts
-//
-// @public
-export type Diagnostic = TrailDiagnostic;
-
-// @public (undocumented)
-export const DISCOVERY_CONCURRENCY_LIMIT = 32;
-
-// @public (undocumented)
-export function mapConcurrent<T, U>(values: readonly T[], limit: number, mapper: (value: T, index: number) => Promise<U>): Promise<U[]>;
 
 // @public (undocumented)
 export type OpenCodeAdapterOptions = {
@@ -153,29 +120,16 @@ export type TrailFile = {
 };
 
 // @public (undocumented)
-export function trailRecords(trail: TrailFile): object[];
-
-// @public (undocumented)
 export type TrailSessionGroup = {
     header: Header;
     entries: Entry[];
 };
 
-// @public (undocumented)
-export function validateAdapterTrail(trail: TrailFile, options?: ValidateAdapterTrailOptions): Promise<Diagnostic[]>;
-
-// @public (undocumented)
-export type ValidateAdapterTrailOptions = {
-    profile?: ValidationProfile | undefined;
-};
-
-// @public
-export type ValidationProfile = "writer-strict" | "reader-tolerant";
-
 // Warnings were encountered during analysis:
 //
-// dist/envelope.d.ts:5:5 - (ae-forgotten-export) The symbol "Header" needs to be exported by the entry point index.d.ts
-// dist/index.d.ts:6:5 - (ae-forgotten-export) The symbol "Entry" needs to be exported by the entry point index.d.ts
+// dist/index.d.ts:3:5 - (ae-forgotten-export) The symbol "Header" needs to be exported by the entry point index.d.ts
+// dist/index.d.ts:4:5 - (ae-forgotten-export) The symbol "Entry" needs to be exported by the entry point index.d.ts
+// dist/index.d.ts:7:5 - (ae-forgotten-export) The symbol "TrailEnvelope" needs to be exported by the entry point index.d.ts
 // dist/opencode/index.d.ts:7:5 - (ae-forgotten-export) The symbol "SqliteDriver" needs to be exported by the entry point index.d.ts
 
 // (No @packageDocumentation comment for this package)

@@ -7,6 +7,16 @@ Pending: Cursor, Aider (see `docs/parser-source-matrix.md`).
 For the end-to-end checklist for adding a new adapter, see
 [`docs/adapter-authoring.md`](../../docs/adapter-authoring.md).
 
+## Public API
+
+The package root is factory-first. It exports adapter contracts, session and
+health result types, factory options, `createClaudeCodeAdapter`,
+`createCodexAdapter`, `createOpenCodeAdapter`, `createPiAdapter`, and
+`createDefaultTrailAdapters`.
+
+Parser internals, registry helpers, concurrency helpers, trail-envelope builders,
+and validation conveniences are not public root exports.
+
 ## Shared seam
 
 All adapters build on a single internal seam:

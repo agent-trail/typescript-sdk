@@ -5,9 +5,10 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, utimesSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createClaudeCodeAdapter, validateAdapterTrail } from "../index.js";
+import { createClaudeCodeAdapter } from "../index.js";
 import { CLAUDE_CODE_SESSION_UID_NAMESPACE, deriveSessionUid } from "../session-uid.js";
 import { ID_PATTERN } from "../test-helpers.js";
+import { validateAdapterTrail } from "../trail-file.js";
 import { cleanGitEnv } from "../vcs.js";
 import { INLINE_ATTACHMENT_MAX_DECODED_BYTES } from "./mappings.js";
 import { claudeCodeConfigDir, claudeCodeProjectDir, mangleCwd } from "./paths.js";

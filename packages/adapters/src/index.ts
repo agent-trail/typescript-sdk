@@ -1,7 +1,4 @@
-import { type Diagnostic, type ValidationProfile, validateTrailJsonl } from "@agent-trail/core";
 import type { Entry, Header, TrailEnvelope } from "@agent-trail/types";
-
-export type { Diagnostic, ValidationProfile } from "@agent-trail/core";
 
 export type TrailSessionGroup = { header: Header; entries: Entry[] };
 
@@ -60,42 +57,13 @@ export interface TrailAdapter {
   sourceHealth(): Promise<AdapterSourceHealth>;
 }
 
-export type ValidateAdapterTrailOptions = { profile?: ValidationProfile | undefined };
-
 export type { ClaudeCodeAdapterOptions } from "./claude-code/index.js";
 export { createClaudeCodeAdapter } from "./claude-code/index.js";
 export type { CodexAdapterOptions } from "./codex/index.js";
 export { createCodexAdapter } from "./codex/index.js";
-export type { BuildTrailEnvelopeOptions } from "./envelope.js";
-export { buildTrailEnvelope } from "./envelope.js";
 export type { OpenCodeAdapterOptions } from "./opencode/index.js";
 export { createOpenCodeAdapter } from "./opencode/index.js";
 export type { PiAdapterOptions } from "./pi/index.js";
 export { createPiAdapter } from "./pi/index.js";
-export { DISCOVERY_CONCURRENCY_LIMIT, mapConcurrent } from "./shared/concurrency.js";
 export type { DefaultTrailAdaptersOptions } from "./shared/registry.js";
-export {
-  createAdapterByName,
-  createDefaultTrailAdapters,
-  DEFAULT_ADAPTER_NAMES,
-} from "./shared/registry.js";
-
-export function trailRecords(trail: TrailFile): object[] {
-  const records: object[] = [];
-  if (trail.envelope !== undefined) records.push(trail.envelope);
-  for (const group of trail.groups) {
-    records.push(group.header, ...group.entries);
-  }
-  return records;
-}
-
-export async function validateAdapterTrail(
-  trail: TrailFile,
-  options: ValidateAdapterTrailOptions = {},
-): Promise<Diagnostic[]> {
-  const lines = trailRecords(trail).map((record) => JSON.stringify(record));
-  const result = await validateTrailJsonl(`${lines.join("\n")}\n`, {
-    mode: options.profile === "reader-tolerant" ? "tolerant" : "strict",
-  });
-  return result.diagnostics;
-}
+export { createDefaultTrailAdapters } from "./shared/registry.js";

@@ -7,7 +7,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { validateSourceRecord } from "@agent-trail/adapter-kit";
 import { bunSqliteDriver } from "../../../adapter-kit/src/readers/bun-sqlite-driver.js";
-import { createOpenCodeAdapter, trailRecords, validateAdapterTrail } from "../index.js";
+import { createOpenCodeAdapter } from "../index.js";
+import { trailRecords, validateAdapterTrail } from "../trail-file.js";
 import { tokenTotalsFromSession } from "./metadata.js";
 import { mapTool } from "./tools.js";
 

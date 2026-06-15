@@ -13,8 +13,8 @@ import {
   createOpenCodeAdapter,
   createPiAdapter,
   type TrailAdapter,
-  trailRecords,
 } from "./index.js";
+import { trailRecords } from "./trail-file.js";
 
 const claudeCodeAdapter = createClaudeCodeAdapter();
 const codexAdapter = createCodexAdapter();

@@ -4,7 +4,7 @@ import codexV0135 from "@agent-trail/source-schemas/codex/v0.135" with { type: "
 import opencodeV1 from "@agent-trail/source-schemas/opencode/v1" with { type: "json" };
 import piV1 from "@agent-trail/source-schemas/pi/v1" with { type: "json" };
 import type { ValidateFunction } from "ajv";
-import Ajv2020 from "ajv/dist/2020";
+import Ajv2020 from "ajv/dist/2020.js";
 
 type SourceSchema = Record<string, unknown>;
 

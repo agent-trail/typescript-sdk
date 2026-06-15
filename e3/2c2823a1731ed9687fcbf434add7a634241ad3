@@ -1,0 +1,83 @@
+.fallowrc.json
+  s_41a01eab7e41e9::t_56adc14270a91a 5,14-21,24-29
+packages/adapters/src/task-plan.ts
+  s_41a01eab7e41e9::t_ec7271eb5fcc58 114-120,122-123,125,127-136,138
+packages/adapters/src/test-helpers.ts
+  s_41a01eab7e41e9::t_5e0e4e1c437961 72-74,88,124
+  s_41a01eab7e41e9::t_b0faa4a00aa857 49-71,77-87,89-90,93-94,99-102,104-113,115-122
+  s_41a01eab7e41e9::t_a41a89cafea3d6 460
+  s_41a01eab7e41e9::t_4fa9abb2549c9b 132,141-148,192-195,203-229,335-348,436,439-459,461-475,478
+tsconfig.json
+  s_41a01eab7e41e9::t_a8c86e79c83762 27-28
+packages/core/src/credential-patterns.ts
+  s_41a01eab7e41e9::t_25518bf17fd2d0 1-24,28-39,46-371
+  s_41a01eab7e41e9::t_a7af265832ca45 25-27,40-45
+packages/core/package.json
+  s_41a01eab7e41e9::t_a8c86e79c83762 19-26
+packages/adapters/src/shared/local-jsonl.test.ts
+  s_41a01eab7e41e9::t_2dfc00b467df98 1,11-140
+  s_41a01eab7e41e9::t_5e0e4e1c437961 2-10
+packages/adapters/src/source-raw.test.ts
+  s_41a01eab7e41e9::t_1d24c1ecb09cf1 91-95
+packages/adapters/src/source-raw.ts
+  s_41a01eab7e41e9::t_d5a662a180b566 94,96-105,107,112-117
+packages/core/src/identity.ts
+  s_41a01eab7e41e9::t_ce3f4aa8d78421 1-59
+packages/adapter-kit/src/mapping/ids.ts
+  s_41a01eab7e41e9::t_ce3f4aa8d78421 1,27
+packages/adapters/src/trail-sanitizer.ts
+  s_41a01eab7e41e9::t_5e0e4e1c437961 102
+  s_41a01eab7e41e9::t_e25299231908dc 9-12,14,16-17,20,31-42
+  s_41a01eab7e41e9::t_5b304b4b8309d6 69,73,79-100,103-109,121,125-130,136-172
+packages/adapters/src/real-session-fixtures.test.ts
+  s_41a01eab7e41e9::t_3cbb3f0f495263 403-404,406
+  s_41a01eab7e41e9::t_f8c8308c11da0a 396-401,407-415,417,422-430,445,451-515,577,580,595-652
+packages/adapters/src/secret-patterns.ts
+  s_41a01eab7e41e9::t_a7af265832ca45 1,3-8
+packages/adapters/src/header-metadata.ts
+  s_41a01eab7e41e9::t_c855db71f3cd17 3-4,11-12,16-31
+packages/adapters/src/shared/tool-normalizer.test.ts
+  s_41a01eab7e41e9::t_5e0e4e1c437961 41-46
+  s_41a01eab7e41e9::t_2dfc00b467df98 1-40,47-59
+packages/adapters/src/shared/local-jsonl.ts
+  s_41a01eab7e41e9::t_42548caf4c133b 1-34,36-160,162-165,173-177,196-202,204-217
+  s_41a01eab7e41e9::t_7d743a0d6a2bac 178-179,181-195
+  s_41a01eab7e41e9::t_5e0e4e1c437961 203
+  s_41a01eab7e41e9::t_ae880f3d08857f 35,161,166-172,180
+packages/adapters/src/legacy-kit-helpers.ts
+  s_41a01eab7e41e9::t_d52fe6bd707730 93-99,106-107,109,113-114,117-118,123-125,130
+  s_41a01eab7e41e9::t_0741ffe8678931 51-54,56-58,60-63,65-67,69-77,79-88,90-92,100-105,108,110-112
+  s_41a01eab7e41e9::t_5e0e4e1c437961 89,119
+packages/redact/etc/redact.api.md
+  s_41a01eab7e41e9::t_0b1624222c7189 7-10,68
+packages/adapters/src/vcs-commit.ts
+  s_41a01eab7e41e9::t_e4c0a0088adc56 33-41,43-49,52-56,59-68,70-132,134,152,156,165-179,219-221,226-231
+  s_41a01eab7e41e9::t_5e0e4e1c437961 58,347-349,416
+  s_41a01eab7e41e9::t_3ed9b18dd7b2d5 282,284-288,294-305,307-310,312-342,344-346,350-415,417-422
+  s_41a01eab7e41e9::t_7d53f2316d3c19 133,135-144
+packages/redact/src/secret-patterns.ts
+  s_41a01eab7e41e9::t_a7af265832ca45 1-8
+packages/adapters/src/shared/tool-normalizer.ts
+  s_41a01eab7e41e9::t_ae880f3d08857f 17-33,35,40-41,43-46,54-55,57,62-63,65-68,73-74,76-79,83-84,89-90,95-96,98,100-104
+  s_41a01eab7e41e9::t_cfcef8c6c009a5 99
+  s_41a01eab7e41e9::t_5e0e4e1c437961 109-112
+  s_41a01eab7e41e9::t_42548caf4c133b 1-16,34,36-39,42,47-53,56,58-61,64,69-72,75,80-82,85-88,91-94,97,105-108,113-127
+packages/adapters/src/session-uid.ts
+  s_41a01eab7e41e9::t_ce3f4aa8d78421 1-5,16,23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "e32c2823a1731ed9687fcbf434add7a634241ad3",
+  "prompts": {},
+  "sessions": {
+    "s_41a01eab7e41e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec547-b5c0-7200-b226-4f1ef52334a0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

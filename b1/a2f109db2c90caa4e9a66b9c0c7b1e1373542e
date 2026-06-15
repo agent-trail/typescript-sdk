@@ -1,0 +1,41 @@
+packages/adapters/src/claude-code/mapping/capabilities.ts
+  s_41a01eab7e41e9::t_1606c5514a80ae 192,230,299-300,302,388,390-392
+  s_41a01eab7e41e9::t_0da5dd7bd3c3d1 389,393
+  s_41a01eab7e41e9::t_d8df3572bfc42c 303-307
+packages/adapters/src/claude-code/tools.ts
+  s_41a01eab7e41e9::t_b0425f70a4c932 108-111
+packages/adapters/src/claude-code/envelope-mappers.test.ts
+  s_41a01eab7e41e9::t_13500feeddbbbb 8
+  s_41a01eab7e41e9::t_1ff41093d58450 1-7,9
+packages/adapters/src/shared/local-jsonl.test.ts
+  s_41a01eab7e41e9::t_57bc406e2187af 106-117
+packages/adapters/src/claude-code/mapping/messages.ts
+  s_41a01eab7e41e9::t_0da5dd7bd3c3d1 82
+  s_41a01eab7e41e9::t_00bb775c91ed3d 81
+  s_41a01eab7e41e9::t_28dfcdaa9e479a 68-77
+packages/adapters/src/shared/local-jsonl.ts
+  s_41a01eab7e41e9::t_8789d776bdc973 65
+  s_41a01eab7e41e9::t_bb0163e0db5dde 66
+packages/adapters/src/claude-code/index.test.ts
+  s_41a01eab7e41e9::t_1832e58e4f1e74 2693,2695
+  s_41a01eab7e41e9::t_3f98fdbb2eefe4 2572-2575
+  s_41a01eab7e41e9::t_5b103cae642f3d 1950-1953,1965-1967
+packages/adapters/src/claude-code/envelope-mappers.ts
+  s_41a01eab7e41e9::t_27b556b2a46c2a 4-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "b1a2f109db2c90caa4e9a66b9c0c7b1e1373542e",
+  "prompts": {},
+  "sessions": {
+    "s_41a01eab7e41e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec547-b5c0-7200-b226-4f1ef52334a0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

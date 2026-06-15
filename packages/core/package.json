@@ -16,6 +16,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./credential-patterns": {
+      "types": "./dist/credential-patterns.d.ts",
+      "default": "./dist/credential-patterns.js"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {

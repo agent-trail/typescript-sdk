@@ -4,9 +4,10 @@ Shared extraction primitives and source readers for Agent Trail adapters. Adapte
 instead of reimplementing the same low-level extraction, coercion, and file-reading logic.
 
 Part of the adapter-kit redesign (epic
-[#135](https://github.com/agent-trail/agent-trail/issues/135)): primitives, the `SourceReader`
-abstraction, source-schema validation, and the typed mapping DSL + two-pass reconciler. The kit is
-ready; per-adapter migration to it is tracked separately (epic Phase 4).
+[#135](https://github.com/agent-trail/agent-trail/issues/135)): adapter authoring helpers, the
+`SourceReader` abstraction, source-schema validation, and the typed mapping DSL. Low-level pass
+execution, quarantine construction, pattern dispatch, and direct reconciliation helpers are package
+internals rather than root exports.
 
 ## Primitives
 
@@ -41,8 +42,8 @@ interface SourceReader {
 - `mergeByTimestamp(readers, { timestampFrom? })` — interleaves records by ascending timestamp
   (stable for equal/absent timestamps). Only sound when sources emit comparable timestamps.
 
-`SqliteReader` is not shipped in Phase 1; the interface and composition helpers are sized to accept
-it without breaking changes.
+- `SqliteReader` — driver-injected SQLite reader. Bun callers can import `bunSqliteDriver` from the
+  `@agent-trail/adapter-kit/bun-sqlite` subpath; Node callers provide a compatible driver wrapper.
 
 ## Source schema validation
 

@@ -6,6 +6,12 @@ test("@agent-trail/adapter-kit root omits Bun SQLite convenience export", async 
   expect(typeof kit.JsonlReader).toBe("function");
   expect(typeof kit.validateSourceRecord).toBe("function");
   expect("bunSqliteDriver" in kit).toBe(false);
+  expect("dispatch" in kit).toBe(false);
+  expect("runPass1" in kit).toBe(false);
+  expect("quarantine" in kit).toBe(false);
+  expect("quarantineDraft" in kit).toBe(false);
+  expect("reconcile" in kit).toBe(false);
+  expect("matchesPattern" in kit).toBe(false);
 });
 
 test("@agent-trail/adapter-kit/bun-sqlite convenience module exports Bun driver", async () => {

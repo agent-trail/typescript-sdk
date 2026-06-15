@@ -1,4 +1,14 @@
 import { canonicalizeIdentityString } from "../session-uid.js";
+import {
+  fileListTool,
+  fileReadTool,
+  fileSearchTool,
+  fileWriteTool,
+  otherTool,
+  replacementEditTool,
+  shellCommandTool,
+  subagentInvokeTool,
+} from "../shared/tool-normalizer.js";
 import { isObject, jsonObjectValue, maybeNumber, stringValue } from "./source.js";
 
 // Mirrors schema.json#/$defs/sessionUid; keep in sync with schema id rules.
@@ -22,43 +32,22 @@ export function toolKindAndArgs(
   const args = jsonObjectValue(input) ?? {};
   switch (name) {
     case "Bash": {
-      const command = stringValue(args.command);
-      if (command !== undefined) {
-        return {
-          tool: "shell_command",
-          args: {
-            command,
-            ...(stringValue(args.cwd) !== undefined ? { cwd: stringValue(args.cwd) } : {}),
-            ...(maybeNumber(args.timeout) !== undefined
-              ? { timeout: maybeNumber(args.timeout) }
-              : {}),
-          },
-        };
-      }
+      const mapped = shellCommandTool({
+        command: stringValue(args.command),
+        cwd: stringValue(args.cwd),
+        timeout: maybeNumber(args.timeout),
+      });
+      if (mapped !== undefined) return mapped;
       break;
     }
     case "Read": {
-      const path = stringValue(args.file_path) ?? stringValue(args.path);
-      const offset = maybeNumber(args.offset);
-      const limit = maybeNumber(args.limit);
-      if (path !== undefined) {
-        return {
-          tool: "file_read",
-          args: {
-            path,
-            ...(offset !== undefined && limit !== undefined
-              ? { range: [offset, offset + limit] }
-              : {}),
-          },
-        };
-      }
+      const mapped = fileReadTool(args, ["file_path", "path"]);
+      if (mapped !== undefined) return mapped;
       break;
     }
     case "Write": {
-      const path = stringValue(args.file_path) ?? stringValue(args.path);
-      const content = stringValue(args.content);
-      if (path !== undefined && content !== undefined)
-        return { tool: "file_write", args: { path, content } };
+      const mapped = fileWriteTool(args, ["file_path", "path"]);
+      if (mapped !== undefined) return mapped;
       break;
     }
     case "Edit": {
@@ -67,15 +56,13 @@ export function toolKindAndArgs(
       const newString = stringValue(args.new_string);
       if (path !== undefined && (oldString !== undefined || newString !== undefined)) {
         const replaceAll = typeof args.replace_all === "boolean" ? args.replace_all : undefined;
-        return {
-          tool: "file_edit",
-          args: {
-            path,
-            old: oldString ?? "",
-            new: newString ?? "",
-            ...(replaceAll !== undefined ? { replace_all: replaceAll } : {}),
-          },
-        };
+        const extra = replaceAll !== undefined ? { replace_all: replaceAll } : undefined;
+        return replacementEditTool({
+          path,
+          oldText: oldString,
+          newText: newString,
+          ...(extra !== undefined ? { extra } : {}),
+        }) as { tool: string; args: object };
       }
       break;
     }
@@ -99,7 +86,11 @@ export function toolKindAndArgs(
           if (hunks.length === 1) {
             const [hunk] = hunks;
             if (hunk === undefined) break;
-            return { tool: "file_edit", args: { path, old: hunk.oldText, new: hunk.newText } };
+            return replacementEditTool({
+              path,
+              oldText: hunk.oldText,
+              newText: hunk.newText,
+            }) as { tool: string; args: object };
           }
           break;
         }
@@ -107,8 +98,7 @@ export function toolKindAndArgs(
       break;
     }
     case "LS": {
-      const path = stringValue(args.path) ?? stringValue(args.file_path) ?? ".";
-      return { tool: "file_list", args: { path } };
+      return fileListTool(stringValue(args.path) ?? stringValue(args.file_path));
     }
     case "NotebookEdit": {
       const path =
@@ -131,22 +121,18 @@ export function toolKindAndArgs(
     }
     case "Grep": {
       const query = stringValue(args.pattern) ?? stringValue(args.query);
-      if (query !== undefined) {
-        return {
-          tool: "file_search",
-          args: {
-            query,
-            ...(stringValue(args.path) !== undefined ? { path: stringValue(args.path) } : {}),
-            ...(stringValue(args.glob) !== undefined ? { glob: stringValue(args.glob) } : {}),
-          },
-        };
-      }
+      const mapped = fileSearchTool({
+        query,
+        path: stringValue(args.path),
+        glob: stringValue(args.glob),
+      });
+      if (mapped !== undefined) return mapped;
       break;
     }
     case "Glob": {
       const pattern = stringValue(args.pattern);
-      if (pattern !== undefined)
-        return { tool: "file_search", args: { query: pattern, glob: pattern } };
+      const mapped = fileSearchTool({ query: pattern, glob: pattern });
+      if (mapped !== undefined) return mapped;
       break;
     }
     case "WebFetch": {
@@ -178,25 +164,15 @@ export function toolKindAndArgs(
         stringValue(args.prompt) ?? stringValue(args.description) ?? stringValue(args.name);
       if (task !== undefined) {
         const sessionId = agentTrailId(args.session_id);
-        return {
-          tool: "subagent_invoke",
-          args: {
-            task,
-            ...(stringValue(args.subagent_type) !== undefined
-              ? { agent_type: stringValue(args.subagent_type) }
-              : {}),
-            ...(sessionId !== undefined ? { session_id: sessionId } : {}),
-          },
-        };
+        const mapped = subagentInvokeTool({
+          task,
+          agentType: stringValue(args.subagent_type),
+          sessionId,
+        });
+        if (mapped !== undefined) return mapped;
       }
       break;
     }
   }
-  return {
-    tool: "other",
-    args: {
-      ...(name !== undefined ? { name } : { name: "unknown" }),
-      ...(isObject(input) ? { args: input } : {}),
-    },
-  };
+  return otherTool(name, input);
 }

@@ -74,9 +74,6 @@ export function deriveSessionUid(namespace: string, upstreamId: string): string;
 // @public
 export function deriveSynthesizedEntryId(namespace: string, seedParts: readonly string[]): string;
 
-// @public
-export function dispatch(record: RawRecord, mappings: MappingDef<any>[]): MappingDef<any> | undefined;
-
 // @public (undocumented)
 export function filePathFrom(args: Record<string, unknown>): string | undefined;
 
@@ -122,9 +119,6 @@ export interface MappingDef<T extends RawRecord = RawRecord> {
     match: MatchPattern<T>;
 }
 
-// @public
-export function matchesPattern(record: Record<string, unknown>, pattern: MatchPattern): boolean;
-
 // Warning: (ae-forgotten-export) The symbol "MatchPatternValue" needs to be exported by the entry point index.d.ts
 //
 // @public
@@ -165,58 +159,13 @@ export interface ParseOptions {
 }
 
 // @public (undocumented)
-export interface Pass1Params<S = unknown> {
-    drift?: {
-        isDrift: (record: RawRecord) => boolean;
-        toDraft: (record: RawRecord) => TrailEntryDraft;
-    } | undefined;
-    // (undocumented)
-    idNamespace: string;
-    // (undocumented)
-    initialState?: (() => S) | undefined;
-    // (undocumented)
-    mappings: MappingDef<any>[];
-    // (undocumented)
-    overrides?: OverrideDef<any, S>[] | undefined;
-    // (undocumented)
-    sessionUid: string;
-    // (undocumented)
-    tsFrom: (record: RawRecord) => string;
-}
-
-// @public (undocumented)
 export function pick(record: Record<string, unknown>, keys: readonly string[]): number | undefined;
-
-// @public
-export function quarantine(input: QuarantineInput): Entry;
-
-// @public
-export function quarantineDraft(input: QuarantineDraftInput): TrailEntryDraft;
-
-// @public (undocumented)
-export interface QuarantineDraftInput {
-    agent: AgentName;
-    namespace: string;
-    originalType?: string;
-    record: RawRecord;
-}
-
-// @public (undocumented)
-export interface QuarantineInput extends QuarantineDraftInput {
-    // (undocumented)
-    id: string;
-    // (undocumented)
-    ts: string;
-}
 
 // @public (undocumented)
 export function quoteShellArg(value: string): string;
 
 // @public (undocumented)
 export type RawRecord = Record<string, unknown>;
-
-// @public
-export function reconcile(entries: Entry[], config: ReconcilerConfig, ctx: ReconcilerRuleCtx): Entry[];
 
 // @public (undocumented)
 export interface ReconcilerConfig {
@@ -242,9 +191,6 @@ export interface ReconcilerRuleCtx {
     // (undocumented)
     records?: RawRecord[];
 }
-
-// @public
-export function runPass1<S = unknown>(records: RawRecord[], params: Pass1Params<S>): Entry[];
 
 // @public
 export function selectSchemaVersion(agent: string, sourceVersion: string | number | undefined): string | undefined;

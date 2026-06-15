@@ -1,60 +1,43 @@
 import type { ToolKind } from "@agent-trail/types";
+import {
+  fileListTool,
+  fileReadTool,
+  fileSearchTool,
+  fileWriteTool,
+  otherTool,
+  replacementEditTool,
+  shellCommandTool,
+  subagentInvokeTool,
+} from "../shared/tool-normalizer.js";
 import { numberValue, type Raw, stringValue } from "./source.js";
 
 export function mapTool(toolName: string, args: Raw): { tool: ToolKind; args: Raw } {
   switch (toolName) {
     case "read": {
-      const path =
-        stringValue(args.filePath) ?? stringValue(args.file_path) ?? stringValue(args.path);
-      const offset = numberValue(args.offset);
-      const limit = numberValue(args.limit);
-      if (path === undefined) return { tool: "other", args: { name: toolName, args } };
-      return {
-        tool: "file_read",
-        args: {
-          path,
-          ...(offset !== undefined && limit !== undefined
-            ? { range: [offset, offset + limit] }
-            : {}),
-        },
-      };
+      return asOpenCodeTool(
+        fileReadTool(args, ["filePath", "file_path", "path"]) ?? otherTool(toolName, args),
+      );
     }
     case "write": {
-      const path = stringValue(args.filePath) ?? stringValue(args.path);
-      const content = stringValue(args.content);
-      if (path === undefined || content === undefined)
-        return { tool: "other", args: { name: toolName, args } };
-      return {
-        tool: "file_write",
-        args: { path, content },
-      };
+      return asOpenCodeTool(fileWriteTool(args, ["filePath", "path"]) ?? otherTool(toolName, args));
     }
     case "edit": {
       const path = stringValue(args.filePath) ?? stringValue(args.path);
-      if (path === undefined) return { tool: "other", args: { name: toolName, args } };
       const oldString = stringValue(args.oldString) ?? stringValue(args.old_string);
       const newString = stringValue(args.newString) ?? stringValue(args.new_string);
-      if (oldString === undefined && newString === undefined) {
-        return { tool: "other", args: { name: toolName, args } };
-      }
-      return {
-        tool: "file_edit",
-        args: { path, old: oldString ?? "", new: newString ?? "" },
-      };
+      return asOpenCodeTool(
+        replacementEditTool({ path, oldText: oldString, newText: newString }) ??
+          otherTool(toolName, args),
+      );
     }
     case "bash": {
-      return {
-        tool: "shell_command",
-        args: {
-          ...(stringValue(args.command) !== undefined
-            ? { command: stringValue(args.command) }
-            : {}),
-          ...(stringValue(args.workdir) !== undefined ? { cwd: stringValue(args.workdir) } : {}),
-          ...(numberValue(args.timeout) !== undefined
-            ? { timeout: numberValue(args.timeout) }
-            : {}),
-        },
-      };
+      return asOpenCodeTool(
+        shellCommandTool({
+          command: stringValue(args.command) ?? "",
+          cwd: stringValue(args.workdir),
+          timeout: numberValue(args.timeout),
+        }),
+      );
     }
     case "background_output": {
       const commandId =
@@ -65,26 +48,20 @@ export function mapTool(toolName: string, args: Raw): { tool: ToolKind; args: Ra
       };
     }
     case "grep":
-      return {
-        tool: "file_search",
-        args: {
+      return asOpenCodeTool(
+        fileSearchTool({
           query: stringValue(args.pattern) ?? "",
-          ...(stringValue(args.path) !== undefined ? { path: stringValue(args.path) } : {}),
-          ...(stringValue(args.include) !== undefined ? { glob: stringValue(args.include) } : {}),
-        },
-      };
+          path: stringValue(args.path),
+          glob: stringValue(args.include),
+        }),
+      );
     case "glob": {
-      return {
-        tool: "file_search",
-        args: {
-          query: stringValue(args.pattern) ?? "",
-          ...(stringValue(args.path) !== undefined ? { path: stringValue(args.path) } : {}),
-        },
-      };
+      return asOpenCodeTool(
+        fileSearchTool({ query: stringValue(args.pattern) ?? "", path: stringValue(args.path) }),
+      );
     }
     case "list": {
-      const path = stringValue(args.path) ?? ".";
-      return { tool: "file_list", args: { path } };
+      return asOpenCodeTool(fileListTool(stringValue(args.path)));
     }
     case "webfetch": {
       const url = stringValue(args.url)?.trim();
@@ -97,25 +74,29 @@ export function mapTool(toolName: string, args: Raw): { tool: ToolKind; args: Ra
       };
     }
     case "task": {
-      return {
-        tool: "subagent_invoke",
-        args: {
+      return asOpenCodeTool(
+        subagentInvokeTool({
           task: stringValue(args.prompt) ?? stringValue(args.description) ?? "",
-          ...(stringValue(args.subagent_type) !== undefined
-            ? { agent_type: stringValue(args.subagent_type) }
-            : {}),
-        },
-      };
+          agentType: stringValue(args.subagent_type),
+        }),
+      );
     }
     default:
       if (/^[a-z0-9-]+_[a-z0-9][a-z0-9_-]*$/i.test(toolName)) {
         const [server, ...toolParts] = toolName.split("_");
-        if (server === undefined) return { tool: "other", args: { name: toolName, args } };
+        if (server === undefined) return asOpenCodeTool(otherTool(toolName, args));
         return {
           tool: "mcp_call",
           args: { server, tool: toolParts.join("-"), args },
         };
       }
-      return { tool: "other", args: { name: toolName, args } };
+      return asOpenCodeTool(otherTool(toolName, args));
   }
+}
+
+function asOpenCodeTool(tool: { tool: string; args: Record<string, unknown> } | undefined): {
+  tool: ToolKind;
+  args: Raw;
+} {
+  return (tool ?? otherTool(undefined, {})) as { tool: ToolKind; args: Raw };
 }

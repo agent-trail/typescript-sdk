@@ -1,19 +1,10 @@
 export { defineMapping } from "./mapping/define-mapping.js";
-export { dispatch } from "./mapping/dispatch.js";
 export {
   canonicalizeIdentityString,
   deriveSessionUid,
   deriveSynthesizedEntryId,
 } from "./mapping/ids.js";
-export { matchesPattern } from "./mapping/match.js";
 export { type Adapter, defineAdapter } from "./pipeline/define-adapter.js";
-export { type Pass1Params, runPass1 } from "./pipeline/engine.js";
-export {
-  type QuarantineDraftInput,
-  type QuarantineInput,
-  quarantine,
-  quarantineDraft,
-} from "./pipeline/quarantine.js";
 export { commandFrom, filePathFrom } from "./primitives/args.js";
 export { coerceInt } from "./primitives/coerce.js";
 export { isObject, jsonObjectValue, stringValue } from "./primitives/guards.js";
@@ -36,7 +27,6 @@ export {
   type SqliteReaderOptions,
 } from "./readers/sqlite-reader.js";
 export type { RawRecord, SourcePointer, SourceReader, SourceSnapshot } from "./readers/types.js";
-export { reconcile } from "./reconciler/index.js";
 export { selectSchemaVersion } from "./source-schemas/select.js";
 export { validateSourceRecord } from "./source-schemas/validate.js";
 export type {

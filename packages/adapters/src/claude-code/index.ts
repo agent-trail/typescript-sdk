@@ -19,8 +19,12 @@ import {
   canonicalizeIdentityString,
   deriveSessionUid,
 } from "../session-uid.js";
-import { DISCOVERY_CONCURRENCY_LIMIT, mapConcurrent } from "../shared/concurrency.js";
-import { readJsonlHeadObjects } from "../shared/jsonl-head.js";
+import {
+  inspectLocalJsonlSourceHealth,
+  newestLocalJsonlSourceVersion,
+  scanLocalJsonlProjectRoot,
+  scanLocalJsonlSessionDir,
+} from "../shared/local-jsonl-sessions.js";
 import { sanitizeTrailFile } from "../trail-sanitizer.js";
 import { parseClaudeCodeSnapshotEntries } from "./kit.js";
 import { buildHeader } from "./parser.js";
@@ -38,150 +42,26 @@ async function dirExists(path: string): Promise<boolean> {
   }
 }
 
-async function readFirstJsonlLine(path: string): Promise<Record<string, unknown> | undefined> {
-  const text = await readFile(path, "utf8");
-  const newlineAt = text.indexOf("\n");
-  const line = newlineAt === -1 ? text : text.slice(0, newlineAt);
-  if (line.length === 0) return undefined;
-  return JSON.parse(line) as Record<string, unknown>;
-}
-
-// Claude Code session files do not always put cwd on the first line — early
-// queue-operation / hook-attachment records appear before the first user
-// envelope. Scan a small head window to find the first record that carries it.
-const HEAD_SCAN_BYTES = 16_384;
-
-async function readCwdFromHead(path: string): Promise<string | undefined> {
-  for (const record of await readJsonlHeadObjects(path, HEAD_SCAN_BYTES)) {
-    const cwd = record.cwd;
-    if (typeof cwd === "string" && cwd.length > 0) {
-      return cwd;
-    }
-  }
-  return undefined;
-}
-
-async function buildSessionRef(filePath: string, id: string): Promise<SessionRef> {
-  const ref: SessionRef = { id, adapter: "claude-code", path: filePath };
-  try {
-    const s = await stat(filePath);
-    ref.modifiedAt = new Date(s.mtimeMs).toISOString();
-  } catch {
-    // leave modifiedAt undefined
-  }
-  try {
-    const cwd = await readCwdFromHead(filePath);
-    if (cwd !== undefined) ref.cwd = cwd;
-  } catch {
-    // leave cwd undefined
-  }
-  return ref;
-}
-
-async function safeSessionFilePath(dir: string, name: string): Promise<string | undefined> {
-  if (!name.endsWith(".jsonl")) return undefined;
-  const file = join(dir, name);
-  const fileStat = await lstat(file).catch(() => undefined);
-  if (fileStat === undefined || !fileStat.isFile() || fileStat.isSymbolicLink()) return undefined;
-  const realDir = await realpath(dir).catch(() => undefined);
-  const realFile = await realpath(file).catch(() => undefined);
-  if (realDir === undefined || realFile === undefined) return undefined;
-  const rel = relative(realDir, realFile);
-  if (rel.length === 0 || rel.startsWith("..") || isAbsolute(rel)) return undefined;
-  return file;
-}
-
-async function scanProjectDir(dir: string): Promise<SessionRef[]> {
-  if (!(await dirExists(dir))) return [];
-  const entries = await readdir(dir);
-  const files = (
-    await mapConcurrent(entries, DISCOVERY_CONCURRENCY_LIMIT, (name) =>
-      safeSessionFilePath(dir, name),
-    )
-  ).filter((file): file is string => file !== undefined);
-  return mapConcurrent(files, DISCOVERY_CONCURRENCY_LIMIT, (file) =>
-    buildSessionRef(file, basename(file, ".jsonl")),
-  );
-}
-
 async function inspectSourceHealth(
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<AdapterSourceHealth> {
   const configDir = claudeCodeConfigDir(env);
   if (configDir === undefined) {
-    return {
+    return inspectLocalJsonlSourceHealth({
       adapter: "claude-code",
-      path: null,
-      present: false,
-      readable: false,
-      sessionCount: 0,
-      sourceVersion: null,
-      warnings: ["home directory not found"],
-    };
+      root: null,
+      scanRoot: async () => [],
+      sourceVersion: async () => null,
+    });
   }
 
   const root = claudeCodeProjectsRoot(configDir);
-  const rootStat = await stat(root).catch(() => undefined);
-  if (rootStat === undefined || !rootStat.isDirectory()) {
-    return {
-      adapter: "claude-code",
-      path: root,
-      present: false,
-      readable: false,
-      sessionCount: 0,
-      sourceVersion: null,
-      warnings: ["source path not found"],
-    };
-  }
-
-  const entriesOrError = await readdir(root, { withFileTypes: true }).catch(
-    (error: unknown) => error,
-  );
-  if (!Array.isArray(entriesOrError)) {
-    const message =
-      entriesOrError instanceof Error ? entriesOrError.message : String(entriesOrError);
-    return {
-      adapter: "claude-code",
-      path: root,
-      present: true,
-      readable: false,
-      sessionCount: 0,
-      sourceVersion: null,
-      warnings: [`source path unreadable: ${message}`],
-    };
-  }
-  const entries = entriesOrError;
-
-  const warnings: string[] = [];
-  let sessions: SessionRef[] = [];
-  try {
-    const projectDirs = entries.filter((entry) => entry.isDirectory());
-    const perDir = await mapConcurrent(projectDirs, DISCOVERY_CONCURRENCY_LIMIT, (entry) =>
-      scanProjectDir(join(root, entry.name)),
-    );
-    sessions = perDir.flat();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    warnings.push(`session scan failed: ${message}`);
-  }
-
-  let sourceVersion: string | null = null;
-  try {
-    sourceVersion = await createClaudeCodeAdapter({ env }).sourceVersion();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    warnings.push(`source version check failed: ${message}`);
-  }
-
-  return {
+  return inspectLocalJsonlSourceHealth({
     adapter: "claude-code",
-    path: root,
-    present: true,
-    readable: true,
-    sessionCount: sessions.length,
-    sourceVersion,
-    warnings,
-  };
+    root,
+    scanRoot: () => scanLocalJsonlProjectRoot({ adapter: "claude-code", root }),
+    sourceVersion: () => createClaudeCodeAdapter({ env }).sourceVersion(),
+  });
 }
 
 type ForkFrom = NonNullable<Header["fork_from"]>;
@@ -408,16 +288,10 @@ export function createClaudeCodeAdapter(options: ClaudeCodeAdapterOptions = {}):
       if (configDir === undefined) return [];
       if (opts?.allCwds === true) {
         const root = claudeCodeProjectsRoot(configDir);
-        if (!(await dirExists(root))) return [];
-        const entries = await readdir(root, { withFileTypes: true });
-        const projectDirs = entries.filter((entry) => entry.isDirectory());
-        const perDir = await mapConcurrent(projectDirs, DISCOVERY_CONCURRENCY_LIMIT, (entry) =>
-          scanProjectDir(join(root, entry.name)),
-        );
-        return perDir.flat();
+        return scanLocalJsonlProjectRoot({ adapter: "claude-code", root });
       }
       const dir = claudeCodeProjectDir({ configDir, cwd: opts?.cwd ?? process.cwd() });
-      return scanProjectDir(dir);
+      return scanLocalJsonlSessionDir({ adapter: "claude-code", dir });
     },
     async parseSession(ref: SessionRef): Promise<TrailFile> {
       if (ref.path === undefined) {
@@ -447,26 +321,10 @@ export function createClaudeCodeAdapter(options: ClaudeCodeAdapterOptions = {}):
       const configDir = claudeCodeConfigDir(env);
       if (configDir === undefined) return null;
       const dir = claudeCodeProjectDir({ configDir, cwd: process.cwd() });
-      if (!(await dirExists(dir))) return null;
-      const entries = await readdir(dir);
-      const jsonlFiles = (
-        await mapConcurrent(entries, DISCOVERY_CONCURRENCY_LIMIT, (name) =>
-          safeSessionFilePath(dir, name),
-        )
-      ).filter((file): file is string => file !== undefined);
-      if (jsonlFiles.length === 0) return null;
-      const withMtime = await Promise.all(
-        jsonlFiles.map(async (path) => {
-          const s = await lstat(path);
-          return { path, mtime: s.mtimeMs };
-        }),
-      );
-      withMtime.sort((a, b) => b.mtime - a.mtime);
-      const newest = withMtime[0];
-      if (newest === undefined) return null;
-      const first = await readFirstJsonlLine(newest.path);
-      if (first === undefined) return null;
-      return typeof first.version === "string" ? first.version : null;
+      return newestLocalJsonlSourceVersion({
+        dir,
+        versionFrom: (record) => (typeof record.version === "string" ? record.version : null),
+      });
     },
     sourceHealth: () => inspectSourceHealth(env),
   };

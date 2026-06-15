@@ -12,13 +12,11 @@
     "threshold": 0,
     "ignore": [
       "packages/types/src/generated.ts",
-      "**/*.test.ts",
-      "packages/adapter-kit/src/**",
-      "packages/adapters/src/**"
+      "**/*.test.ts"
     ]
   },
   "health": {
-    "ignore": ["packages/adapter-kit/src/**", "packages/adapters/src/**"]
+    "ignore": []
   },
   "production": false
 }

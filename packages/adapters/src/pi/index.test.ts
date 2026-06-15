@@ -4,8 +4,9 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createPiAdapter, validateAdapterTrail } from "../index.js";
+import { createPiAdapter } from "../index.js";
 import { ID_PATTERN } from "../test-helpers.js";
+import { validateAdapterTrail } from "../trail-file.js";
 import { cleanGitEnv } from "../vcs.js";
 // Adapter surface tests assert on the shape returned by parseSession. Entry ids
 // are an internal detail of the kit engine, so tests locate entries by type and

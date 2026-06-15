@@ -2,15 +2,9 @@
 // biome-ignore-all lint/style/noNonNullAssertion: ported oracle fixture tests assert fixed fixture shape.
 // @ts-nocheck
 import { expect, test } from "bun:test";
-import {
-  buildTrailEnvelope,
-  type DetectOptions,
-  type SessionRef,
-  type TrailAdapter,
-  type TrailFile,
-  trailRecords,
-  validateAdapterTrail,
-} from "./index.js";
+import { buildTrailEnvelope } from "./envelope.js";
+import type { DetectOptions, SessionRef, TrailAdapter, TrailFile } from "./index.js";
+import { trailRecords, validateAdapterTrail } from "./trail-file.js";
 
 const noOpAdapter = {
   name: "no-op",
@@ -160,7 +154,7 @@ test("validateAdapterTrail surfaces schema errors for an invalid header", async 
   expect(diagnostics.some((d) => d.severity === "error")).toBe(true);
 });
 
-test("validateAdapterTrail is exported and callable", async () => {
+test("validateAdapterTrail is available to package-internal tests", async () => {
   const result = await validateAdapterTrail({
     groups: [
       {

@@ -5,8 +5,9 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createCodexAdapter, validateAdapterTrail } from "../index.js";
+import { createCodexAdapter } from "../index.js";
 import { CODEX_SESSION_UID_NAMESPACE, deriveSessionUid } from "../session-uid.js";
+import { validateAdapterTrail } from "../trail-file.js";
 import { mapTool, patchFiles } from "./parser.js";
 import { codexHomeDir, codexSessionsDir } from "./paths.js";
 

@@ -12,10 +12,10 @@ import type { SessionsClient, SessionsOptions } from "./types.js";
  */
 export function createSessionsClient(options: SessionsOptions): SessionsClient {
   return {
-    discover: (operationOptions = {}) => discoverSessions({ ...options, ...operationOptions }),
-    list: (operationOptions = {}) => listSessions({ ...options, ...operationOptions }),
-    load: (operationOptions) => loadSession({ ...options, ...operationOptions }),
-    share: (operationOptions) => shareSession({ ...options, ...operationOptions }),
-    export: (operationOptions) => exportSession({ ...options, ...operationOptions }),
+    discover: (operationOptions = {}) => discoverSessions({ ...operationOptions, ...options }),
+    list: (operationOptions = {}) => listSessions({ ...operationOptions, ...options }),
+    load: (operationOptions) => loadSession({ ...operationOptions, ...options }),
+    share: (operationOptions) => shareSession({ ...operationOptions, ...options }),
+    export: (operationOptions) => exportSession({ ...operationOptions, ...options }),
   };
 }

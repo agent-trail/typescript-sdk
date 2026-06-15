@@ -36,6 +36,7 @@
     "@agent-trail/catalog": "workspace:*",
     "@agent-trail/core": "workspace:*",
     "@agent-trail/redact": "workspace:*",
-    "@agent-trail/store": "workspace:*"
+    "@agent-trail/store": "workspace:*",
+    "@agent-trail/types": "workspace:*"
   }
 }

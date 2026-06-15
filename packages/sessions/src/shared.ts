@@ -97,11 +97,26 @@ export async function findGeneratedTrail(
   const row = await findSourceRow(options);
   if (row === undefined) return { status: "source_not_found" };
   if (row.content_hash === null) return { status: "no_generated_trail" };
+  if (!(await linkedObjectMatchesSource(options, row.content_hash, row.path))) {
+    return { status: "no_generated_trail" };
+  }
   return {
     status: "found",
     contentHash: row.content_hash,
     path: objectPath(resolveStoreRoot(options.storeRoot), row.content_hash),
   };
+}
+
+async function linkedObjectMatchesSource(
+  options: SessionsOptions,
+  contentHash: string,
+  sourcePath: string | null,
+): Promise<boolean> {
+  const object = await options.catalogDb.get<{ source_path: string | null }>(
+    "SELECT source_path FROM trail_objects WHERE content_hash = ?",
+    [contentHash],
+  );
+  return object?.source_path === sourcePath;
 }
 
 export function trailFileJsonl(trail: TrailFile): string {

@@ -7,8 +7,9 @@ import { join } from "node:path";
 import type { SessionRef, TrailAdapter, TrailFile } from "@agent-trail/adapters";
 import type { CatalogDb } from "@agent-trail/catalog";
 import { listCatalogEntries } from "@agent-trail/catalog";
+import { parseTrailJsonl, stampContentHashes } from "@agent-trail/core";
 import { BunCatalogDb } from "../../../catalog/src/tests/helpers.ts";
-import { objectPath } from "../../../store/src/index.ts";
+import { objectPath, registerTrail } from "../../../store/src/index.ts";
 import {
   createSessionsClient,
   discoverSessions,
@@ -224,6 +225,54 @@ sessionsTest("export ignores mutable catalog object paths", async (harness) => {
   expect(result.jsonl).toContain("sk-live-secret-1234567890");
 });
 
+sessionsTest(
+  "export refuses catalog links retargeted to another source object",
+  async (harness) => {
+    const client = createSessionsClient({
+      catalogDb: harness.catalogDb,
+      storeRoot: harness.storeRoot,
+      adapters: [harness.adapter],
+    });
+    await client.discover();
+    await client.load({ adapter: "test-agent", sourceId: SESSION_ID });
+
+    const otherInput = join(harness.storeRoot, "other.trail.jsonl");
+    await writeFile(otherInput, await otherStampedJsonl(), "utf8");
+    const other = await registerTrail(otherInput, {
+      catalogDb: harness.catalogDb,
+      storeRoot: harness.storeRoot,
+      sourcePath: "/tmp/source/other-session.jsonl",
+    });
+    if (other.contentHash === null) throw new Error("other register failed");
+    await harness.catalogDb.exec(
+      "UPDATE source_trail_links SET content_hash = ? WHERE agent_name = ? AND source_id = ?",
+      [other.contentHash, "test-agent", SESSION_ID],
+    );
+
+    expect(
+      await exportSession({
+        catalogDb: harness.catalogDb,
+        storeRoot: harness.storeRoot,
+        adapter: "test-agent",
+        sourceId: SESSION_ID,
+      }),
+    ).toMatchObject({ status: "no_generated_trail" });
+  },
+);
+
+sessionsTest("client operation objects cannot override bound dependencies", async (harness) => {
+  const client = createSessionsClient({
+    catalogDb: harness.catalogDb,
+    adapters: [fakeAdapter([])],
+  });
+
+  expect(
+    await (client.discover as (opts: unknown) => ReturnType<typeof client.discover>)({
+      adapters: [harness.adapter],
+    }),
+  ).toMatchObject({ sessions: [] });
+});
+
 sessionsTest("export can write raw finalized bytes to a target path", async (harness) => {
   const client = createSessionsClient({
     catalogDb: harness.catalogDb,
@@ -373,4 +422,28 @@ function trailFileWithEnvelope(): TrailFile {
     },
     ...trailFile(),
   };
+}
+
+async function otherStampedJsonl(): Promise<string> {
+  const records = [
+    {
+      type: "session",
+      schema_version: "0.1.0",
+      id: "66666666-6666-4666-8666-666666666666",
+      session_uid: "77777777-7777-4777-8777-777777777777",
+      ts: SESSION_TS,
+      agent: { name: "codex", version: "1.0.0" },
+      cwd: "/workspace/other",
+      name: "Other Session",
+    },
+    {
+      type: "user_message",
+      id: "88888888-8888-4888-8888-888888888888",
+      ts: "2026-05-17T14:00:01.000Z",
+      payload: { text: "other secret" },
+    },
+  ];
+  return stampContentHashes(
+    await parseTrailJsonl(records.map((record) => JSON.stringify(record)).join("\n")),
+  ).jsonl;
 }

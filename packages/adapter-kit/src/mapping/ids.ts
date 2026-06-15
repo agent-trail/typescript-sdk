@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { deriveSeededUuidV5 } from "@agent-trail/core/identity";
 
 /**
  * Deterministic id derivation shared by all adapters (spec §9.5).
@@ -24,33 +24,5 @@ import { createHash } from "node:crypto";
  * (\x1f) so that distinct part sequences cannot alias each other.
  */
 export function deriveSynthesizedEntryId(namespace: string, seedParts: readonly string[]): string {
-  return deriveUuidV5(namespace, seedParts.join("\x1f"));
-}
-
-function deriveUuidV5(namespace: string, name: string): string {
-  const namespaceBytes = parseUuidBytes(namespace);
-  const hash = createHash("sha1").update(namespaceBytes).update(name, "utf8").digest();
-  const bytes = Uint8Array.prototype.slice.call(hash, 0, 16);
-  // Version 5 in the top nibble of byte 6.
-  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x50;
-  // RFC 4122 variant (10xx) in the top bits of byte 8.
-  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
-  return formatUuid(bytes);
-}
-
-function parseUuidBytes(uuid: string): Uint8Array {
-  const hex = uuid.replace(/-/g, "");
-  if (hex.length !== 32 || /[^0-9a-fA-F]/.test(hex)) {
-    throw new TypeError(`Invalid namespace UUID: ${uuid}`);
-  }
-  const bytes = new Uint8Array(16);
-  for (let i = 0; i < 16; i++) {
-    bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-  }
-  return bytes;
-}
-
-function formatUuid(bytes: Uint8Array): string {
-  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+  return deriveSeededUuidV5(namespace, seedParts);
 }

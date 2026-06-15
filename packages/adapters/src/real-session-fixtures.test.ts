@@ -393,27 +393,39 @@ async function normalizedTrailRecords(records: object[]): Promise<object[]> {
 }
 
 function scrubMaterializedOpenCodePaths(value: unknown): boolean {
+  if (Array.isArray(value)) return scrubMaterializedArrayPaths(value);
+  const object = objectValue(value);
+  return object === undefined ? false : scrubMaterializedObjectPaths(object);
+}
+
+function scrubMaterializedArrayPaths(value: unknown[]): boolean {
   let scrubbed = false;
-  if (Array.isArray(value)) {
-    for (const item of value) scrubbed = scrubMaterializedOpenCodePaths(item) || scrubbed;
-    return scrubbed;
-  }
-  if (value !== null && typeof value === "object") {
-    for (const [key, child] of Object.entries(value)) {
-      if (
-        key === "path" &&
-        typeof child === "string" &&
-        (child.includes("agent-trail-opencode-data-") ||
-          child.includes("agent-trail-opencode-fixture-"))
-      ) {
-        (value as Record<string, unknown>)[key] = "[REDACTED_PATH]";
-        scrubbed = true;
-      } else {
-        scrubbed = scrubMaterializedOpenCodePaths(child) || scrubbed;
-      }
-    }
+  for (const item of value) {
+    scrubbed = scrubMaterializedOpenCodePaths(item) || scrubbed;
   }
   return scrubbed;
+}
+
+function scrubMaterializedObjectPaths(value: Record<string, unknown>): boolean {
+  let scrubbed = false;
+  for (const [key, child] of Object.entries(value)) {
+    if (isMaterializedOpenCodePath(key, child)) {
+      value[key] = "[REDACTED_PATH]";
+      scrubbed = true;
+      continue;
+    }
+    scrubbed = scrubMaterializedOpenCodePaths(child) || scrubbed;
+  }
+  return scrubbed;
+}
+
+function isMaterializedOpenCodePath(key: string, value: unknown): value is string {
+  return (
+    key === "path" &&
+    typeof value === "string" &&
+    (value.includes("agent-trail-opencode-data-") ||
+      value.includes("agent-trail-opencode-fixture-"))
+  );
 }
 
 function jsonl(records: object[]): string {
@@ -430,57 +442,75 @@ async function materializeFixtureSource(fixture: Fixture, sourcePath: string): P
   let sessionPath: string | undefined;
   for (const record of records) {
     const data = objectValue(record.data) ?? record;
-    switch (record.type) {
-      case "session": {
-        const id = stringValue(data.id);
-        const projectID = stringValue(data.projectID);
-        if (id === undefined || projectID === undefined) {
-          throw new Error(`${sourcePath} has invalid OpenCode session fixture record`);
-        }
-        sessionPath = join(isolatedOpenCodeDataDir, "storage", "session", projectID, `${id}.json`);
-        await writeFixtureJson(sessionPath, data);
-        break;
-      }
-      case "message": {
-        const id = stringValue(data.id);
-        const sessionID = stringValue(data.sessionID);
-        if (id === undefined || sessionID === undefined) {
-          throw new Error(`${sourcePath} has invalid OpenCode message fixture record`);
-        }
-        await writeFixtureJson(
-          join(isolatedOpenCodeDataDir, "storage", "message", sessionID, `${id}.json`),
-          data,
-        );
-        break;
-      }
-      case "part": {
-        const id = stringValue(data.id);
-        const messageID = stringValue(data.messageID);
-        if (id === undefined || messageID === undefined) {
-          throw new Error(`${sourcePath} has invalid OpenCode part fixture record`);
-        }
-        await writeFixtureJson(
-          join(isolatedOpenCodeDataDir, "storage", "part", messageID, `${id}.json`),
-          data,
-        );
-        break;
-      }
-      case "todo": {
-        const sessionID = stringValue(data.sessionID);
-        const todos = Array.isArray(data.todos) ? data.todos : [data];
-        if (sessionID === undefined) {
-          throw new Error(`${sourcePath} has invalid OpenCode todo fixture record`);
-        }
-        await writeFixtureJson(
-          join(isolatedOpenCodeDataDir, "storage", "todo", `${sessionID}.json`),
-          todos,
-        );
-        break;
-      }
-    }
+    sessionPath = (await materializeOpenCodeRecord(record.type, data, sourcePath)) ?? sessionPath;
   }
   if (sessionPath === undefined) throw new Error(`${sourcePath} has no OpenCode session record`);
   return sessionPath;
+}
+
+async function materializeOpenCodeRecord(
+  type: unknown,
+  data: Record<string, unknown>,
+  sourcePath: string,
+): Promise<string | undefined> {
+  if (type === "session") return writeOpenCodeSessionRecord(data, sourcePath);
+  if (type === "message") return writeOpenCodeMessageRecord(data, sourcePath);
+  if (type === "part") return writeOpenCodePartRecord(data, sourcePath);
+  if (type === "todo") return writeOpenCodeTodoRecord(data, sourcePath);
+  return undefined;
+}
+
+async function writeOpenCodeSessionRecord(
+  data: Record<string, unknown>,
+  sourcePath: string,
+): Promise<string> {
+  const id = requiredString(data.id, sourcePath, "session");
+  const projectID = requiredString(data.projectID, sourcePath, "session");
+  const path = join(isolatedOpenCodeDataDir, "storage", "session", projectID, `${id}.json`);
+  await writeFixtureJson(path, data);
+  return path;
+}
+
+async function writeOpenCodeMessageRecord(
+  data: Record<string, unknown>,
+  sourcePath: string,
+): Promise<undefined> {
+  const id = requiredString(data.id, sourcePath, "message");
+  const sessionID = requiredString(data.sessionID, sourcePath, "message");
+  await writeFixtureJson(
+    join(isolatedOpenCodeDataDir, "storage", "message", sessionID, `${id}.json`),
+    data,
+  );
+}
+
+async function writeOpenCodePartRecord(
+  data: Record<string, unknown>,
+  sourcePath: string,
+): Promise<undefined> {
+  const id = requiredString(data.id, sourcePath, "part");
+  const messageID = requiredString(data.messageID, sourcePath, "part");
+  await writeFixtureJson(
+    join(isolatedOpenCodeDataDir, "storage", "part", messageID, `${id}.json`),
+    data,
+  );
+}
+
+async function writeOpenCodeTodoRecord(
+  data: Record<string, unknown>,
+  sourcePath: string,
+): Promise<undefined> {
+  const sessionID = requiredString(data.sessionID, sourcePath, "todo");
+  const todos = Array.isArray(data.todos) ? data.todos : [data];
+  await writeFixtureJson(
+    join(isolatedOpenCodeDataDir, "storage", "todo", `${sessionID}.json`),
+    todos,
+  );
+}
+
+function requiredString(value: unknown, sourcePath: string, recordType: string): string {
+  const string = stringValue(value);
+  if (string !== undefined) return string;
+  throw new Error(`${sourcePath} has invalid OpenCode ${recordType} fixture record`);
 }
 
 async function writeFixtureJson(path: string, value: unknown): Promise<void> {
@@ -544,30 +574,10 @@ function assertNoSensitiveValue(
   key = "",
   inSensitiveContext = false,
 ): void {
-  const keyIsSensitive =
-    SENSITIVE_VALUE_KEYS.has(key) &&
-    (key !== "data" || typeof value === "string" || Array.isArray(value));
+  const keyIsSensitive = sensitiveFixtureKey(key, value);
   const sensitiveContext = inSensitiveContext || keyIsSensitive;
   if (typeof value === "string") {
-    if (SECRET_OR_LOCAL_PATH.test(value)) {
-      throw new Error(`${filePath}:${lineNumber} has unredacted local path/secret at ${key}`);
-    }
-    if (PROJECT_LEAK.test(value)) {
-      throw new Error(`${filePath}:${lineNumber} has unredacted project identity at ${key}`);
-    }
-    if (
-      sensitiveContext &&
-      !SAFE_METADATA_KEYS_IN_SENSITIVE_CONTEXT.has(key) &&
-      value.length > 0 &&
-      !(key === "value" && /^(?:claude|gpt-|github-copilot|openai|anthropic)/.test(value)) &&
-      !(key === "patch" && REDACTED_PATCH.test(value)) &&
-      !REDACTED_GIT_COMMIT_COMMAND.test(value) &&
-      !REDACTED_GIT_COMMIT_ARGUMENTS.test(value) &&
-      !REDACTED_GIT_COMMIT_OUTPUT.test(value) &&
-      !REDACTED_VALUE.test(value)
-    ) {
-      throw new Error(`${filePath}:${lineNumber} has unredacted sensitive value at ${key}`);
-    }
+    assertNoSensitiveString(value, { filePath, lineNumber, key, sensitiveContext });
     return;
   }
   if (Array.isArray(value)) {
@@ -581,4 +591,63 @@ function assertNoSensitiveValue(
       assertNoSensitiveValue(childValue, filePath, lineNumber, childKey, sensitiveContext);
     }
   }
+}
+
+function sensitiveFixtureKey(key: string, value: unknown): boolean {
+  return SENSITIVE_VALUE_KEYS.has(key) && (key !== "data" || isStringOrArray(value));
+}
+
+function isStringOrArray(value: unknown): boolean {
+  return typeof value === "string" || Array.isArray(value);
+}
+
+type SensitiveStringContext = {
+  filePath: string;
+  key: string;
+  lineNumber: number;
+  sensitiveContext: boolean;
+};
+
+function assertNoSensitiveString(value: string, context: SensitiveStringContext): void {
+  if (SECRET_OR_LOCAL_PATH.test(value)) {
+    throw new Error(
+      `${context.filePath}:${context.lineNumber} has unredacted local path/secret at ${context.key}`,
+    );
+  }
+  if (PROJECT_LEAK.test(value)) {
+    throw new Error(
+      `${context.filePath}:${context.lineNumber} has unredacted project identity at ${context.key}`,
+    );
+  }
+  if (sensitiveStringNeedsRedaction(value, context)) {
+    throw new Error(
+      `${context.filePath}:${context.lineNumber} has unredacted sensitive value at ${context.key}`,
+    );
+  }
+}
+
+function sensitiveStringNeedsRedaction(value: string, context: SensitiveStringContext): boolean {
+  return (
+    context.sensitiveContext &&
+    !safeSensitiveMetadataValue(value, context.key) &&
+    value.length > 0 &&
+    !redactedSensitiveFixtureValue(context.key, value)
+  );
+}
+
+function safeSensitiveMetadataValue(value: string, key: string): boolean {
+  return (
+    SAFE_METADATA_KEYS_IN_SENSITIVE_CONTEXT.has(key) ||
+    (key === "value" && /^(?:claude|gpt-|github-copilot|openai|anthropic)/.test(value))
+  );
+}
+
+function redactedSensitiveFixtureValue(key: string, value: string): boolean {
+  return (
+    (key === "patch" && REDACTED_PATCH.test(value)) ||
+    REDACTED_GIT_COMMIT_COMMAND.test(value) ||
+    REDACTED_GIT_COMMIT_ARGUMENTS.test(value) ||
+    REDACTED_GIT_COMMIT_OUTPUT.test(value) ||
+    REDACTED_VALUE.test(value)
+  );
 }

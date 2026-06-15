@@ -30,79 +30,118 @@ type ShellCommandShape = {
   segments: string[][];
 };
 
+type ShellParserState = {
+  current: string[];
+  escaped: boolean;
+  hasUnsafeSeparator: boolean;
+  quote: "'" | '"' | undefined;
+  segments: string[][];
+  token: string;
+};
+
 function shellCommandShape(command: string): ShellCommandShape {
-  const segments: string[][] = [];
-  let hasUnsafeSeparator = false;
-  let current: string[] = [];
-  let token = "";
-  let quote: "'" | '"' | undefined;
-  let escaped = false;
-
-  const pushToken = (): void => {
-    if (token.length === 0) return;
-    current.push(token);
-    token = "";
+  const state: ShellParserState = {
+    current: [],
+    escaped: false,
+    hasUnsafeSeparator: false,
+    quote: undefined,
+    segments: [],
+    token: "",
   };
-  const endSegment = (): void => {
-    pushToken();
-    if (current.length === 0) return;
-    segments.push(current);
-    current = [];
-  };
-
   for (let index = 0; index < command.length; index += 1) {
-    const char = command[index];
-    if (char === undefined) continue;
-    const next = command[index + 1];
-
-    if (escaped) {
-      token += char;
-      escaped = false;
-      continue;
-    }
-    if (char === "\\") {
-      escaped = true;
-      continue;
-    }
-    if (quote !== undefined) {
-      if (char === quote) {
-        quote = undefined;
-      } else {
-        token += char;
-      }
-      continue;
-    }
-    if (char === "'" || char === '"') {
-      quote = char;
-      continue;
-    }
-    if (char === "\n" || char === "\r") {
-      endSegment();
-      if (char === "\r" && next === "\n") {
-        index += 1;
-      }
-      continue;
-    }
-    if (/\s/.test(char)) {
-      pushToken();
-      continue;
-    }
-    if (char === ";" || char === "(" || char === ")" || char === "|" || char === "&") {
-      const isAndAnd = char === "&" && next === "&";
-      const isOrOr = char === "|" && next === "|";
-      if (char === "|" || char === "(" || char === ")" || (char === "&" && !isAndAnd)) {
-        hasUnsafeSeparator = true;
-      }
-      endSegment();
-      if (isAndAnd || isOrOr) {
-        index += 1;
-      }
-      continue;
-    }
-    token += char;
+    index = parseShellCommandChar(state, command, index);
   }
-  endSegment();
-  return { hasUnsafeSeparator, segments };
+  endShellSegment(state);
+  return { hasUnsafeSeparator: state.hasUnsafeSeparator, segments: state.segments };
+}
+
+function parseShellCommandChar(state: ShellParserState, command: string, index: number): number {
+  const char = command[index];
+  if (char === undefined) return index;
+  if (consumeEscapedChar(state, char)) return index;
+  if (startEscape(state, char)) return index;
+  if (consumeQuotedChar(state, char)) return index;
+  if (startQuote(state, char)) return index;
+  if (isLineBreak(char)) return endLineSegment(state, command, index);
+  if (/\s/.test(char)) {
+    pushShellToken(state);
+    return index;
+  }
+  if (isShellSeparator(char)) return endSeparatorSegment(state, command, index);
+  state.token += char;
+  return index;
+}
+
+function pushShellToken(state: ShellParserState): void {
+  if (state.token.length === 0) return;
+  state.current.push(state.token);
+  state.token = "";
+}
+
+function endShellSegment(state: ShellParserState): void {
+  pushShellToken(state);
+  if (state.current.length === 0) return;
+  state.segments.push(state.current);
+  state.current = [];
+}
+
+function consumeEscapedChar(state: ShellParserState, char: string): boolean {
+  if (!state.escaped) return false;
+  state.token += char;
+  state.escaped = false;
+  return true;
+}
+
+function startEscape(state: ShellParserState, char: string): boolean {
+  if (char !== "\\") return false;
+  state.escaped = true;
+  return true;
+}
+
+function consumeQuotedChar(state: ShellParserState, char: string): boolean {
+  if (state.quote === undefined) return false;
+  if (char === state.quote) {
+    state.quote = undefined;
+  } else {
+    state.token += char;
+  }
+  return true;
+}
+
+function startQuote(state: ShellParserState, char: string): boolean {
+  if (char !== "'" && char !== '"') return false;
+  state.quote = char;
+  return true;
+}
+
+function isLineBreak(char: string): boolean {
+  return char === "\n" || char === "\r";
+}
+
+function endLineSegment(state: ShellParserState, command: string, index: number): number {
+  endShellSegment(state);
+  return command[index] === "\r" && command[index + 1] === "\n" ? index + 1 : index;
+}
+
+function isShellSeparator(char: string): boolean {
+  return char === ";" || char === "(" || char === ")" || char === "|" || char === "&";
+}
+
+function endSeparatorSegment(state: ShellParserState, command: string, index: number): number {
+  const char = command[index];
+  const next = command[index + 1];
+  state.hasUnsafeSeparator ||= unsafeShellSeparator(char, next);
+  endShellSegment(state);
+  return compoundShellSeparator(char, next) ? index + 1 : index;
+}
+
+function compoundShellSeparator(char: string | undefined, next: string | undefined): boolean {
+  return (char === "&" && next === "&") || (char === "|" && next === "|");
+}
+
+function unsafeShellSeparator(char: string | undefined, next: string | undefined): boolean {
+  if (char === "|" || char === "(" || char === ")") return true;
+  return char === "&" && !compoundShellSeparator(char, next);
 }
 
 function gitSubcommandIndex(tokens: string[], gitIndex: number): number | undefined {
@@ -110,30 +149,32 @@ function gitSubcommandIndex(tokens: string[], gitIndex: number): number | undefi
   while (index < tokens.length) {
     const token = tokens[index];
     if (token === undefined) return undefined;
-    if (
-      token === "-C" ||
-      token === "-c" ||
-      token === "--git-dir" ||
-      token === "--work-tree" ||
-      token === "--namespace"
-    ) {
+    if (gitOptionConsumesValue(token)) {
       index += 2;
       continue;
     }
-    if (
-      token === "--no-pager" ||
-      token === "--bare" ||
-      token.startsWith("-c") ||
-      token.startsWith("--git-dir=") ||
-      token.startsWith("--work-tree=") ||
-      token.startsWith("--namespace=")
-    ) {
+    if (gitFlagBeforeSubcommand(token)) {
       index += 1;
       continue;
     }
     return index;
   }
   return undefined;
+}
+
+function gitOptionConsumesValue(token: string): boolean {
+  return ["-C", "-c", "--git-dir", "--work-tree", "--namespace"].includes(token);
+}
+
+function gitFlagBeforeSubcommand(token: string): boolean {
+  return (
+    token === "--no-pager" ||
+    token === "--bare" ||
+    token.startsWith("-c") ||
+    token.startsWith("--git-dir=") ||
+    token.startsWith("--work-tree=") ||
+    token.startsWith("--namespace=")
+  );
 }
 
 type GitCommandInfo = {
@@ -175,15 +216,19 @@ function eligibleGitCommitInvocationCount(command: string): number {
   if (shape.hasUnsafeSeparator) return 0;
   let count = 0;
   for (const segment of shape.segments) {
-    const git = gitCommandInfo(segment);
-    if (git === undefined && isSafeWrapperSegment(segment)) continue;
-    if (git?.subcommand !== "add" && git?.subcommand !== "commit") return 0;
-    if (git.subcommand === "commit") {
-      if (hasQuietFlag(git.args)) return 0;
-      count += 1;
-    }
+    const commitCount = eligibleSegmentCommitCount(segment);
+    if (commitCount === undefined) return 0;
+    count += commitCount;
   }
   return count;
+}
+
+function eligibleSegmentCommitCount(segment: string[]): number | undefined {
+  const git = gitCommandInfo(segment);
+  if (git === undefined) return isSafeWrapperSegment(segment) ? 0 : undefined;
+  if (git.subcommand === "add") return 0;
+  if (git.subcommand !== "commit" || hasQuietFlag(git.args)) return undefined;
+  return 1;
 }
 
 export function extractGitCommitEvents(input: ExtractGitCommitEventsInput): GitCommitEventData[] {
@@ -234,83 +279,145 @@ function sourceForCommit(result: Entry): Entry["source"] {
   };
 }
 
-export function synthesizeVcsCommitEvents(
-  entries: Entry[],
-  options: SynthesizeVcsCommitEventsOptions,
-): Entry[] {
-  type SeenCall = Entry | "ambiguous";
-  const callsById = new Map<string, Entry>();
-  const callsByNativeId = new Map<string, SeenCall>();
+type SeenCall = Entry | "ambiguous";
 
-  const out: Entry[] = [];
-  let reparentNextChild:
+type VcsCommitSynthesisState = {
+  callsById: Map<string, Entry>;
+  callsByNativeId: Map<string, SeenCall>;
+  out: Entry[];
+  reparentNextChild:
     | {
         parentId: string;
         replacementParentId: string;
       }
     | undefined;
-  for (const entry of entries) {
-    let current = entry;
-    if (reparentNextChild !== undefined) {
-      if (current.parent_id === reparentNextChild.parentId) {
-        current = { ...current, parent_id: reparentNextChild.replacementParentId } as Entry;
-      }
-      reparentNextChild = undefined;
-    }
+};
 
-    out.push(current);
-    const currentCommand = commandFromToolCall(current);
-    if (currentCommand !== undefined) {
-      callsById.set(current.id, current);
-      const nativeCallId = current.semantic?.call_id;
-      if (nativeCallId !== undefined) {
-        callsByNativeId.set(
-          nativeCallId,
-          callsByNativeId.has(nativeCallId) ? "ambiguous" : current,
-        );
-      }
-      continue;
-    }
-    if (current.type !== "tool_result") continue;
-    const payload = objectPayload(current);
-    if (payload.ok !== true || typeof payload.output !== "string") continue;
-    const forId = typeof payload.for_id === "string" ? payload.for_id : undefined;
-    const nativeCallId = current.semantic?.call_id;
-    const nativeCallMatch =
-      nativeCallId !== undefined ? callsByNativeId.get(nativeCallId) : undefined;
-    const callByNativeId = nativeCallMatch !== "ambiguous" ? nativeCallMatch : undefined;
-    const call = (forId !== undefined ? callsById.get(forId) : undefined) ?? callByNativeId;
-    if (call === undefined) continue;
-    const command = commandFromToolCall(call);
-    if (command === undefined) continue;
-    const commits = extractGitCommitEvents({
-      command,
-      output: payload.output,
-      toolCallId: call.id,
-      repo: options.repo,
-    });
-    let parentId = current.id;
-    for (const [index, commit] of commits.entries()) {
-      const commitEntry = {
-        type: "system_event",
-        id: deriveSynthesizedEntryId(options.idNamespace, [
-          "vcs_commit",
-          current.id,
-          commit.sha,
-          String(index),
-        ]),
-        ts: current.ts,
-        payload: { kind: "vcs_commit", data: commit },
-        parent_id: parentId,
-        ...(nativeCallId !== undefined ? { semantic: { call_id: nativeCallId } } : {}),
-        source: sourceForCommit(current),
-      } as Entry;
-      out.push(commitEntry);
-      parentId = commitEntry.id;
-    }
-    if (commits.length > 0) {
-      reparentNextChild = { parentId: current.id, replacementParentId: parentId };
-    }
+export function synthesizeVcsCommitEvents(
+  entries: Entry[],
+  options: SynthesizeVcsCommitEventsOptions,
+): Entry[] {
+  const state: VcsCommitSynthesisState = {
+    callsById: new Map(),
+    callsByNativeId: new Map(),
+    out: [],
+    reparentNextChild: undefined,
+  };
+  for (const entry of entries) {
+    processVcsCommitEntry(reparentedEntry(state, entry), state, options);
   }
-  return out;
+  return state.out;
+}
+
+function reparentedEntry(state: VcsCommitSynthesisState, entry: Entry): Entry {
+  const pending = state.reparentNextChild;
+  state.reparentNextChild = undefined;
+  if (pending === undefined || entry.parent_id !== pending.parentId) return entry;
+  return { ...entry, parent_id: pending.replacementParentId } as Entry;
+}
+
+function processVcsCommitEntry(
+  current: Entry,
+  state: VcsCommitSynthesisState,
+  options: SynthesizeVcsCommitEventsOptions,
+): void {
+  state.out.push(current);
+  if (rememberShellToolCall(state, current)) return;
+  const result = successfulShellResult(current);
+  if (result === undefined) return;
+  const call = matchingShellToolCall(state, result);
+  const command = call === undefined ? undefined : commandFromToolCall(call);
+  if (call === undefined || command === undefined) return;
+  appendCommitEntries(state, current, call, command, result.output, options);
+}
+
+function rememberShellToolCall(state: VcsCommitSynthesisState, entry: Entry): boolean {
+  if (commandFromToolCall(entry) === undefined) return false;
+  state.callsById.set(entry.id, entry);
+  const nativeCallId = entry.semantic?.call_id;
+  if (nativeCallId !== undefined) {
+    state.callsByNativeId.set(
+      nativeCallId,
+      state.callsByNativeId.has(nativeCallId) ? "ambiguous" : entry,
+    );
+  }
+  return true;
+}
+
+function successfulShellResult(
+  entry: Entry,
+): { forId?: string; nativeCallId?: string; output: string } | undefined {
+  if (entry.type !== "tool_result") return undefined;
+  const payload = objectPayload(entry);
+  if (payload.ok !== true || typeof payload.output !== "string") return undefined;
+  return {
+    ...(typeof payload.for_id === "string" ? { forId: payload.for_id } : {}),
+    ...(entry.semantic?.call_id !== undefined ? { nativeCallId: entry.semantic.call_id } : {}),
+    output: payload.output,
+  };
+}
+
+function matchingShellToolCall(
+  state: VcsCommitSynthesisState,
+  result: { forId?: string; nativeCallId?: string },
+): Entry | undefined {
+  const byForId = result.forId === undefined ? undefined : state.callsById.get(result.forId);
+  const nativeMatch =
+    result.nativeCallId === undefined ? undefined : state.callsByNativeId.get(result.nativeCallId);
+  const byNativeId = nativeMatch === "ambiguous" ? undefined : nativeMatch;
+  return byForId ?? byNativeId;
+}
+
+function appendCommitEntries(
+  state: VcsCommitSynthesisState,
+  result: Entry,
+  call: Entry,
+  command: string,
+  output: string,
+  options: SynthesizeVcsCommitEventsOptions,
+): void {
+  const commits = extractGitCommitEvents({
+    command,
+    output,
+    toolCallId: call.id,
+    repo: options.repo,
+  });
+  const finalParentId = appendCommitEntryChain(state.out, result, commits, options.idNamespace);
+  if (finalParentId !== undefined) {
+    state.reparentNextChild = { parentId: result.id, replacementParentId: finalParentId };
+  }
+}
+
+function appendCommitEntryChain(
+  out: Entry[],
+  result: Entry,
+  commits: GitCommitEventData[],
+  idNamespace: string,
+): string | undefined {
+  let parentId = result.id;
+  for (const [index, commit] of commits.entries()) {
+    const commitEntry = vcsCommitEntry(result, parentId, commit, index, idNamespace);
+    out.push(commitEntry);
+    parentId = commitEntry.id;
+  }
+  return commits.length > 0 ? parentId : undefined;
+}
+
+function vcsCommitEntry(
+  result: Entry,
+  parentId: string,
+  commit: GitCommitEventData,
+  index: number,
+  idNamespace: string,
+): Entry {
+  const nativeCallId = result.semantic?.call_id;
+  return {
+    type: "system_event",
+    id: deriveSynthesizedEntryId(idNamespace, ["vcs_commit", result.id, commit.sha, String(index)]),
+    ts: result.ts,
+    payload: { kind: "vcs_commit", data: commit },
+    parent_id: parentId,
+    ...(nativeCallId !== undefined ? { semantic: { call_id: nativeCallId } } : {}),
+    source: sourceForCommit(result),
+  } as Entry;
 }

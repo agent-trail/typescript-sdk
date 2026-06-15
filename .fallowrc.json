@@ -2,6 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
   "entry": ["scripts/check-api.ts", "scripts/check-exports.ts", "src/index.ts"],
   "ignorePatterns": ["dist/**", "coverage/**", "node_modules/**"],
+  "ignoreDependencies": ["@agent-trail/schema", "@agent-trail/types"],
   "rules": {
     "unresolved-imports": "error",
     "unused-files": "error",
@@ -10,10 +11,22 @@
   },
   "duplicates": {
     "threshold": 0,
-    "ignore": ["packages/types/src/generated.ts", "**/*.test.ts", "packages/adapters/src/**"]
+    "ignore": [
+      "packages/types/src/generated.ts",
+      "**/*.test.ts",
+      "packages/adapters/src/claude-code/**",
+      "packages/adapters/src/codex/**",
+      "packages/adapters/src/pi/**",
+      "packages/adapters/src/opencode/**"
+    ]
   },
   "health": {
-    "ignore": ["packages/adapters/src/**"]
+    "ignore": [
+      "packages/adapters/src/claude-code/**",
+      "packages/adapters/src/codex/**",
+      "packages/adapters/src/pi/**",
+      "packages/adapters/src/opencode/**"
+    ]
   },
   "production": false
 }

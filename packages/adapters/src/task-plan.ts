@@ -111,22 +111,31 @@ export function dropTaskPlanAckResults(
 
 function isDroppableTaskPlanAckResult(entry: Entry, taskPlanCallIds: Set<string>): boolean {
   if (entry.type !== "tool_result") return false;
+  if (!hasTaskPlanCallId(entry, taskPlanCallIds)) return false;
+  const payload = taskPlanAckPayload(entry);
+  if (payload === undefined) return false;
+  return isKnownTaskPlanAckOutput(entry.source?.original_type, payload.output);
+}
+
+function hasTaskPlanCallId(entry: Entry, taskPlanCallIds: Set<string>): boolean {
   const callId = entry.semantic?.call_id;
-  if (!isNonEmptyString(callId) || !taskPlanCallIds.has(callId)) return false;
+  return isNonEmptyString(callId) && taskPlanCallIds.has(callId);
+}
 
+function taskPlanAckPayload(entry: Entry): { output: string } | undefined {
   const payload = entry.payload as { for_id?: unknown; ok?: unknown; output?: unknown };
-  if (typeof payload.for_id === "string") return false;
-  if (payload.ok === false) return false;
-  const output = typeof payload.output === "string" ? payload.output.trim() : "";
+  if (typeof payload.for_id === "string" || payload.ok === false) return undefined;
+  return { output: typeof payload.output === "string" ? payload.output.trim() : "" };
+}
 
-  switch (entry.source?.original_type) {
-    case "response_item.function_call_output":
-      return CODEX_UPDATE_PLAN_ACK_OUTPUTS.has(output);
-    case "tool_result":
-      return CLAUDE_TODO_WRITE_ACK_OUTPUTS.has(output);
-    default:
-      return false;
+function isKnownTaskPlanAckOutput(originalType: string | undefined, output: string): boolean {
+  if (originalType === "response_item.function_call_output") {
+    return CODEX_UPDATE_PLAN_ACK_OUTPUTS.has(output);
   }
+  if (originalType === "tool_result") {
+    return CLAUDE_TODO_WRITE_ACK_OUTPUTS.has(output);
+  }
+  return false;
 }
 
 function promoteDroppedSourceEnvelopes(

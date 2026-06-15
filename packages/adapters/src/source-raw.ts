@@ -91,21 +91,30 @@ export function enforceSourceRawSize(
 
 function resolveHardCap(provided: number | null | undefined): number | null {
   if (provided !== undefined) {
-    if (provided === null) return null;
-    if (Number.isFinite(provided) && provided > 0) return provided;
-    return SOURCE_RAW_HARD_CAP_BYTES;
+    return configuredHardCap(provided);
   }
-  const env = process.env.AGENT_TRAIL_SOURCE_RAW_HARD_CAP;
-  if (env === "disabled" || env === "off" || env === "none") {
-    return null;
-  }
+  return envHardCap(process.env.AGENT_TRAIL_SOURCE_RAW_HARD_CAP);
+}
+
+function configuredHardCap(value: number | null): number | null {
+  if (value === null) return null;
+  return positiveFiniteNumber(value) ?? SOURCE_RAW_HARD_CAP_BYTES;
+}
+
+function envHardCap(env: string | undefined): number | null {
+  if (envDisabled(env)) return null;
   if (env !== undefined && env !== "") {
-    const n = Number(env);
-    if (Number.isFinite(n) && n > 0) {
-      return n;
-    }
+    return positiveFiniteNumber(Number(env)) ?? SOURCE_RAW_HARD_CAP_BYTES;
   }
   return SOURCE_RAW_HARD_CAP_BYTES;
+}
+
+function envDisabled(value: string | undefined): boolean {
+  return value === "disabled" || value === "off" || value === "none";
+}
+
+function positiveFiniteNumber(value: number): number | undefined {
+  return Number.isFinite(value) && value > 0 ? value : undefined;
 }
 
 function byteLengthOf(value: unknown): number {

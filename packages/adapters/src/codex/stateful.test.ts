@@ -18,6 +18,17 @@ const thinkingTexts = (es: Entry[]): string[] =>
 
 const normalize = (t: string) => t.replace(/\s+/g, " ").trim();
 
+function agentMessageUsage(entries: Entry[]): Record<string, number> {
+  const agent = entries.find((entry) => entry.type === "agent_message");
+  const usage = (agent?.payload as { usage?: Record<string, number> }).usage;
+  if (usage === undefined) throw new Error("expected agent_message usage");
+  return usage;
+}
+
+function hasUsageCarrier(entries: Entry[]): boolean {
+  return entries.some((entry) => (entry.payload as { kind?: string }).kind === "x-codex/_usage");
+}
+
 const baseSession = {
   timestamp: "2026-05-28T00:00:00.000Z",
   type: "session_meta",
@@ -72,21 +83,20 @@ describe("codex v2 stateful behaviors", () => {
 
   test("token rollup: usage lands on the preceding agent_message", async () => {
     const all = await entries("token-usage.jsonl");
-    const agent = all.find((e) => e.type === "agent_message");
-    const usage = (agent?.payload as { usage?: Record<string, number> }).usage;
-    expect(usage).toBeDefined();
-    expect(usage?.input_tokens).toBe(40);
-    expect(usage?.output_tokens).toBe(40);
-    expect(usage?.cache_read_tokens).toBe(80);
-    expect(usage?.reasoning_tokens).toBe(12);
-    expect(usage?.total_tokens).toBe(160);
-    expect(usage?.input_tokens_cumulative).toBe(400);
-    expect(usage?.output_tokens_cumulative).toBe(400);
-    expect(usage?.total_tokens_cumulative).toBe(1600);
-    expect(usage?.context_input_tokens).toBe(120);
-    expect(usage?.context_window_tokens).toBe(200000);
+    expect(agentMessageUsage(all)).toEqual({
+      input_tokens: 40,
+      output_tokens: 40,
+      cache_read_tokens: 80,
+      reasoning_tokens: 12,
+      total_tokens: 160,
+      input_tokens_cumulative: 400,
+      output_tokens_cumulative: 400,
+      total_tokens_cumulative: 1600,
+      context_input_tokens: 120,
+      context_window_tokens: 200000,
+    });
     // The carrier itself is dropped from output.
-    expect(all.some((e) => (e.payload as { kind?: string }).kind === "x-codex/_usage")).toBe(false);
+    expect(hasUsageCarrier(all)).toBe(false);
   });
 
   test("model replay: initial turn_context model stamps later agent_message", async () => {

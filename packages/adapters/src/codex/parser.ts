@@ -202,27 +202,44 @@ function redactedHeaders(headers: Record<string, unknown>): Record<string, strin
   return Object.fromEntries(Object.keys(headers).map((key) => [key, "[REDACTED_HEADER]"]));
 }
 
-export function mapTool(rawName: string | undefined, rawArgs: unknown): ToolMapping {
-  const args = isObject(rawArgs) ? rawArgs : {};
+function mcpToolMapping(
+  rawName: string | undefined,
+  args: Record<string, unknown>,
+): ToolMapping | undefined {
   const mcp = mcpToolFromArgs(rawName, args);
-  if (mcp !== undefined) {
-    const toolArgs = { ...args };
-    const headers = isObject(toolArgs.headers) ? redactedHeaders(toolArgs.headers) : undefined;
-    delete toolArgs.headers;
-    if (mcp.selectorKey !== undefined) {
-      delete toolArgs.namespace;
-      delete toolArgs[mcp.selectorKey];
-    }
-    return {
-      tool: "mcp_call",
-      args: {
-        server: mcp.server,
-        tool: mcp.tool,
-        args: toolArgs,
-        ...(headers !== undefined ? { headers } : {}),
-      },
-    };
+  if (mcp === undefined) return undefined;
+  const toolArgs = { ...args };
+  const headers = isObject(toolArgs.headers) ? redactedHeaders(toolArgs.headers) : undefined;
+  delete toolArgs.headers;
+  if (mcp.selectorKey !== undefined) {
+    delete toolArgs.namespace;
+    delete toolArgs[mcp.selectorKey];
   }
+  return {
+    tool: "mcp_call",
+    args: {
+      server: mcp.server,
+      tool: mcp.tool,
+      args: toolArgs,
+      ...(headers !== undefined ? { headers } : {}),
+    },
+  };
+}
+
+function isShellTool(rawName: string | undefined): boolean {
+  return (
+    rawName === "exec_command" ||
+    rawName === "shell_command" ||
+    rawName === "shell" ||
+    rawName === "container.exec"
+  );
+}
+
+function shellToolMapping(
+  rawName: string | undefined,
+  args: Record<string, unknown>,
+): ToolMapping | undefined {
+  if (!isShellTool(rawName)) return undefined;
   // `exec_command` is the canonical interactive-shell tool in real Codex
   // rollouts (codex-tui 0.128+, Codex Desktop 0.133+). Args carry `cmd`
   // plus `workdir` and a forward-compat set of permission / timing fields
@@ -230,56 +247,79 @@ export function mapTool(rawName: string | undefined, rawArgs: unknown): ToolMapp
   // `sandbox_permissions`, `prefix_rule`, `login`, `tty`); ignore extras.
   // `shell` / `container.exec` are kept as defensive fallbacks for older
   // session shapes.
-  if (
-    rawName === "exec_command" ||
-    rawName === "shell_command" ||
-    rawName === "shell" ||
-    rawName === "container.exec"
-  ) {
-    const cmdString = shellCommandFromArgs(args);
-    if (cmdString !== undefined) {
-      const shellArgs: Record<string, unknown> = { command: cmdString };
-      const cwd = stringValue(args.workdir) ?? stringValue(args.cwd);
-      if (cwd !== undefined) shellArgs.cwd = cwd;
-      return { tool: "shell_command", args: shellArgs };
-    }
-    return { tool: "other", args: { name: rawName, args } };
-  }
-  if (rawName === "write_stdin") {
-    const input = stringValue(args.chars);
-    const commandId = opaqueIdString(args.command_id);
-    const sessionId = opaqueIdString(args.session_id);
-    if (input !== undefined && input.length > 0) {
-      return {
-        tool: "shell_input",
-        args: {
-          input,
-          ...(commandId !== undefined ? { command_id: commandId } : {}),
-          ...(sessionId !== undefined ? { session_id: sessionId } : {}),
-        },
-      };
-    }
-    const outputCommandId = commandId ?? sessionId;
+  const cmdString = shellCommandFromArgs(args);
+  if (cmdString === undefined) return { tool: "other", args: { name: rawName, args } };
+  const shellArgs: Record<string, unknown> = { command: cmdString };
+  const cwd = stringValue(args.workdir) ?? stringValue(args.cwd);
+  if (cwd !== undefined) shellArgs.cwd = cwd;
+  return { tool: "shell_command", args: shellArgs };
+}
+
+function stdinToolMapping(
+  rawName: string | undefined,
+  args: Record<string, unknown>,
+): ToolMapping | undefined {
+  if (rawName !== "write_stdin") return undefined;
+  const input = stringValue(args.chars);
+  const commandId = opaqueIdString(args.command_id);
+  const sessionId = opaqueIdString(args.session_id);
+  if (input !== undefined && input.length > 0) {
     return {
-      tool: "shell_output",
-      args: { ...(outputCommandId !== undefined ? { command_id: outputCommandId } : {}) },
+      tool: "shell_input",
+      args: {
+        input,
+        ...(commandId !== undefined ? { command_id: commandId } : {}),
+        ...(sessionId !== undefined ? { session_id: sessionId } : {}),
+      },
     };
   }
-  if (rawName === "tool_search") {
-    const searchArgs = toolSearchArgs(args);
-    if (searchArgs !== undefined) return { tool: "tool_search", args: searchArgs };
-  }
-  if (rawName === "spawn_agent") {
-    const task = stringValue(args.message) ?? stringValue(args.task) ?? "";
-    const invokeArgs: Record<string, unknown> = { task };
-    const agentType = stringValue(args.agent_type);
-    if (agentType !== undefined) invokeArgs.agent_type = agentType;
-    return { tool: "subagent_invoke", args: invokeArgs };
-  }
-  if (rawName === "read") {
-    const path = stringValue(args.path);
-    if (path !== undefined) return { tool: "file_read", args: { path } };
-  }
+  const outputCommandId = commandId ?? sessionId;
+  return {
+    tool: "shell_output",
+    args: { ...(outputCommandId !== undefined ? { command_id: outputCommandId } : {}) },
+  };
+}
+
+function toolSearchMapping(
+  rawName: string | undefined,
+  args: Record<string, unknown>,
+): ToolMapping | undefined {
+  if (rawName !== "tool_search") return undefined;
+  const searchArgs = toolSearchArgs(args);
+  return searchArgs === undefined ? undefined : { tool: "tool_search", args: searchArgs };
+}
+
+function subagentMapping(
+  rawName: string | undefined,
+  args: Record<string, unknown>,
+): ToolMapping | undefined {
+  if (rawName !== "spawn_agent") return undefined;
+  const task = stringValue(args.message) ?? stringValue(args.task) ?? "";
+  const invokeArgs: Record<string, unknown> = { task };
+  const agentType = stringValue(args.agent_type);
+  if (agentType !== undefined) invokeArgs.agent_type = agentType;
+  return { tool: "subagent_invoke", args: invokeArgs };
+}
+
+function fileReadMapping(
+  rawName: string | undefined,
+  args: Record<string, unknown>,
+): ToolMapping | undefined {
+  if (rawName !== "read") return undefined;
+  const path = stringValue(args.path);
+  return path === undefined ? undefined : { tool: "file_read", args: { path } };
+}
+
+export function mapTool(rawName: string | undefined, rawArgs: unknown): ToolMapping {
+  const args = isObject(rawArgs) ? rawArgs : {};
+  const mapping =
+    mcpToolMapping(rawName, args) ??
+    shellToolMapping(rawName, args) ??
+    stdinToolMapping(rawName, args) ??
+    toolSearchMapping(rawName, args) ??
+    subagentMapping(rawName, args) ??
+    fileReadMapping(rawName, args);
+  if (mapping !== undefined) return mapping;
   return { tool: "other", args: { name: rawName ?? "unknown", args } };
 }
 
@@ -290,6 +330,7 @@ export function mapTool(rawName: string | undefined, rawArgs: unknown): ToolMapp
 //   *** End Patch
 // Three verbs cover create / modify / delete: Update, Add, Delete.
 const PATCH_FILE_MARKER = /^\*\*\* (Update|Add|Delete) File: (.+)$/gm;
+type PatchAction = "Update" | "Add" | "Delete";
 
 export type PatchFile = {
   path: string;
@@ -320,33 +361,53 @@ function normalizePatchBody(action: "Update" | "Add" | "Delete", body: string): 
   return [`@@ -1,${oldCount} +1,${newCount} @@`, diffBody].join("\n");
 }
 
+function patchAction(value: string | undefined): PatchAction | undefined {
+  return value === "Update" || value === "Add" || value === "Delete" ? value : undefined;
+}
+
+function patchFileFromMatch(
+  match: RegExpMatchArray,
+): { action: PatchAction; path: string } | undefined {
+  const action = patchAction(match[1]);
+  const path = match[2]?.trim();
+  if (action === undefined || path === undefined || path.length === 0) return undefined;
+  return { action, path };
+}
+
+function patchBody(input: string, matches: RegExpMatchArray[], index: number): string {
+  const match = matches[index] as RegExpMatchArray;
+  const matchIndex = match.index;
+  if (matchIndex === undefined) return "";
+  const start = matchIndex + match[0].length;
+  const end = matches[index + 1]?.index ?? endPatchIndex(input, start);
+  return input.slice(start, end === -1 ? undefined : end).trim();
+}
+
+function patchMoveTarget(body: string, fallbackPath: string): string {
+  const moveTo = body.match(/^\*\*\* Move to: (.+)$/m)?.[1]?.trim();
+  return moveTo && moveTo.length > 0 ? moveTo : fallbackPath;
+}
+
+function patchDiff(action: PatchAction, path: string, newPath: string, body: string): string {
+  const oldHeader = action === "Add" ? "/dev/null" : `a/${path}`;
+  const newHeader = action === "Delete" ? "/dev/null" : `b/${newPath}`;
+  const diffBody = normalizePatchBody(action, body);
+  return [`--- ${oldHeader}`, `+++ ${newHeader}`, diffBody]
+    .filter((part) => part.length > 0)
+    .join("\n");
+}
+
 export function patchFiles(input: string): PatchFile[] {
   const matches = [...input.matchAll(PATCH_FILE_MARKER)];
   const files: PatchFile[] = [];
   for (const [index, match] of matches.entries()) {
-    const action = match[1];
-    const sourcePath = match[2];
-    if (
-      (action !== "Update" && action !== "Add" && action !== "Delete") ||
-      sourcePath === undefined
-    ) {
-      continue;
-    }
-    const path = sourcePath.trim();
-    if (path.length === 0) continue;
-    const start = match.index + match[0].length;
-    const end = matches[index + 1]?.index ?? endPatchIndex(input, start);
-    const body = input.slice(start, end === -1 ? undefined : end).trim();
-    const moveTo = body.match(/^\*\*\* Move to: (.+)$/m)?.[1]?.trim();
-    const newPath = moveTo && moveTo.length > 0 ? moveTo : path;
-    const oldHeader = action === "Add" ? "/dev/null" : `a/${path}`;
-    const newHeader = action === "Delete" ? "/dev/null" : `b/${newPath}`;
-    const diffBody = normalizePatchBody(action, body);
+    const parsed = patchFileFromMatch(match);
+    if (parsed === undefined) continue;
+    const body = patchBody(input, matches, index);
+    const newPath = patchMoveTarget(body, parsed.path);
     files.push({
       path: newPath,
-      diff: [`--- ${oldHeader}`, `+++ ${newHeader}`, diffBody]
-        .filter((part) => part.length > 0)
-        .join("\n"),
+      diff: patchDiff(parsed.action, parsed.path, newPath, body),
     });
   }
   return files;

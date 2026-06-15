@@ -79,6 +79,151 @@ async function parseLifecycleFixture() {
   });
 }
 
+function entriesOf(trail) {
+  return trail.groups[0]!.entries;
+}
+
+function findSystemEventByKind(trail, kind: string) {
+  return entriesOf(trail).find(
+    (entry) => entry.type === "system_event" && (entry.payload as { kind?: string }).kind === kind,
+  );
+}
+
+function assertNoAdapterErrors(diagnostics) {
+  expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+}
+
+function taskPlanPayload(plans, index: number) {
+  const payload = plans[index]?.payload;
+  if (payload === undefined) throw new Error(`expected task_plan_update at ${index}`);
+  return payload;
+}
+
+function requiredItemId(payload, index: number): string {
+  const id = payload.items[index]?.id;
+  if (id === undefined) throw new Error(`expected task plan item id at ${index}`);
+  return id;
+}
+
+function assertNoUpdatePlanToolArtifacts(trail) {
+  expect(
+    entriesOf(trail).some(
+      (entry) =>
+        entry.type === "tool_call" &&
+        (entry.payload as { args?: { name?: unknown } }).args?.name === "update_plan",
+    ),
+  ).toBe(false);
+  expect(entriesOf(trail).some((entry) => entry.type === "tool_result")).toBe(false);
+}
+
+function assertFirstPlanPayload(firstPayload, firstItemId: string, secondItemId: string) {
+  expect(firstPayload.explanation).toBe("checking the plan");
+  expect(firstPayload.items).toEqual([
+    { id: firstItemId, content: "Write failing test", status: "pending" },
+    { id: secondItemId, content: "Implement change", status: "pending" },
+  ]);
+  expect(firstPayload.deltas.map((delta) => delta.kind)).toEqual(["added", "added"]);
+}
+
+function assertSecondPlanPayload(
+  secondPayload,
+  firstPayload,
+  firstItemId: string,
+  secondItemId: string,
+) {
+  expect(secondPayload.items.slice(1).map((item) => item.id)).toEqual(
+    firstPayload.items.map((item) => item.id),
+  );
+  expect(secondPayload.deltas[0]).toEqual({
+    kind: "added",
+    item_id: requiredItemId(secondPayload, 0),
+    to_content: "Check docs",
+    to_status: "pending",
+  });
+  expect(secondPayload.deltas).toContainEqual({
+    kind: "status_changed",
+    item_id: firstItemId,
+    from_status: "pending",
+    to_status: "completed",
+  });
+  expect(secondPayload.deltas).toContainEqual({
+    kind: "content_changed",
+    item_id: firstItemId,
+    from_content: "Write failing test",
+    to_content: "Write  failing\n test",
+  });
+  expect(secondPayload.deltas).toContainEqual({
+    kind: "status_changed",
+    item_id: secondItemId,
+    from_status: "pending",
+    to_status: "in_progress",
+  });
+}
+
+function assertThirdPlanPayload(
+  thirdPayload,
+  insertedItemId: string,
+  firstItemId: string,
+  secondItemId: string,
+) {
+  expect(thirdPayload.items.map((item) => item.id)).toEqual([insertedItemId, firstItemId]);
+  expect(thirdPayload.deltas).toContainEqual({
+    kind: "status_changed",
+    item_id: insertedItemId,
+    from_status: "pending",
+    to_status: "completed",
+  });
+  expect(thirdPayload.deltas).toContainEqual({
+    kind: "content_changed",
+    item_id: firstItemId,
+    from_content: "Write  failing\n test",
+    to_content: "Write failing test",
+  });
+  expect(thirdPayload.deltas).toContainEqual({
+    kind: "removed",
+    item_id: secondItemId,
+    from_content: "Implement change",
+    from_status: "in_progress",
+  });
+}
+
+function assertTaskPlanSequence(trail) {
+  const plans = entriesOf(trail).filter((entry) => entry.type === "task_plan_update");
+  expect(plans).toHaveLength(3);
+  assertNoUpdatePlanToolArtifacts(trail);
+  const firstPayload = taskPlanPayload(plans, 0);
+  const secondPayload = taskPlanPayload(plans, 1);
+  const thirdPayload = taskPlanPayload(plans, 2);
+  const firstItemId = requiredItemId(firstPayload, 0);
+  const secondItemId = requiredItemId(firstPayload, 1);
+  assertFirstPlanPayload(firstPayload, firstItemId, secondItemId);
+  assertSecondPlanPayload(secondPayload, firstPayload, firstItemId, secondItemId);
+  assertThirdPlanPayload(thirdPayload, requiredItemId(secondPayload, 0), firstItemId, secondItemId);
+}
+
+function assertCompactEntry(compact) {
+  if (compact === undefined) throw new Error("expected context_compact entry");
+  expect(compact.payload.summary).toBe("Refactored auth module. Tests pass.");
+  expect(compact.payload.trigger).toBe("auto");
+  expect(compact.payload.tokens_before).toBeUndefined();
+  expect(compact.payload.tokens_after).toBeUndefined();
+  expect(compact.payload.replaced_message_ids).toBeUndefined();
+  expect(compact.source.raw.payload.replacement_history).toMatchObject({
+    elided: true,
+    item_count: 2,
+  });
+  expect(typeof compact.source.raw.payload.replacement_history.size_bytes).toBe("number");
+  expect(JSON.stringify(compact.source.raw)).not.toContain("first turn");
+  expect(JSON.stringify(compact.source.raw)).not.toContain("first response");
+  expect(compact.meta["dev.codex.raw_type"]).toBe("compacted");
+}
+
+function assertLifecycleEvent(entry, originalType: string, data) {
+  expect(entry?.semantic?.call_id).toBeUndefined();
+  expect(entry?.source?.original_type).toBe(originalType);
+  expect((entry?.payload as { data?: Record<string, unknown> }).data).toEqual(data);
+}
+
 let prevHome: string | undefined;
 let prevUserProfile: string | undefined;
 let prevCodexHome: string | undefined;
@@ -215,6 +360,56 @@ test("createCodexAdapter env override discovers sessions without mutating proces
   const adapter = createCodexAdapter({ env: { CODEX_HOME: customCodexHome } });
   const refs = await adapter.detectSessions({ cwd: "/factory" });
   expect(refs.map((ref) => ref.id)).toEqual([id]);
+});
+
+test("sourceHealth() reports Codex sessions through the factory env override", async () => {
+  const customCodexHome = mkdtempSync(join(tmpdir(), "codex-adapter-health-"));
+  try {
+    const sessionsDir = codexSessionsDir({ CODEX_HOME: customCodexHome });
+    if (sessionsDir === undefined) throw new Error("expected sessions dir");
+    const dayDir = join(sessionsDir, "2026", "05", "28");
+    mkdirSync(dayDir, { recursive: true });
+    const id = "019d7909-85dd-7881-aa12-95ffc8ca8ba1";
+    const ts = "2026-05-28T01:46:00.000Z";
+    writeFileSync(
+      join(dayDir, `rollout-${ts.replace(/[:.]/g, "-")}-${id}.jsonl`),
+      `${JSON.stringify({
+        timestamp: ts,
+        type: "session_meta",
+        payload: { id, timestamp: ts, cwd: "/factory", cli_version: "0.135.0" },
+      })}\n`,
+    );
+
+    const adapter = createCodexAdapter({ env: { CODEX_HOME: customCodexHome } });
+    await expect(adapter.sourceHealth?.()).resolves.toEqual({
+      adapter: "codex",
+      path: sessionsDir,
+      present: true,
+      readable: true,
+      sessionCount: 1,
+      sourceVersion: "0.135.0",
+      warnings: [],
+    });
+  } finally {
+    rmSync(customCodexHome, { recursive: true, force: true });
+  }
+});
+
+test("sourceHealth() reports a missing Codex sessions root", async () => {
+  const customCodexHome = join(tmpHome, "missing-codex-home");
+  const sessionsDir = codexSessionsDir({ CODEX_HOME: customCodexHome });
+  if (sessionsDir === undefined) throw new Error("expected sessions dir");
+  const adapter = createCodexAdapter({ env: { CODEX_HOME: customCodexHome } });
+
+  await expect(adapter.sourceHealth?.()).resolves.toEqual({
+    adapter: "codex",
+    path: sessionsDir,
+    present: false,
+    readable: false,
+    sessionCount: 0,
+    sourceVersion: null,
+    warnings: ["source path not found"],
+  });
 });
 
 test("createCodexAdapter env override is used for parse-time session index and child lookup", async () => {
@@ -1148,92 +1343,10 @@ test("update_plan function calls emit task_plan_update and drop matching ack out
     path,
   });
 
-  const plans = trail.groups[0]!.entries.filter((entry) => entry.type === "task_plan_update");
-  expect(plans).toHaveLength(3);
-  expect(
-    trail.groups[0]!.entries.some(
-      (entry) =>
-        entry.type === "tool_call" &&
-        (entry.payload as { args?: { name?: unknown } }).args?.name === "update_plan",
-    ),
-  ).toBe(false);
-  expect(trail.groups[0]!.entries.some((entry) => entry.type === "tool_result")).toBe(false);
-
-  const firstPayload = plans[0]?.payload as {
-    explanation?: string;
-    items: Array<{ id: string; content: string; status: string }>;
-    deltas: Array<Record<string, unknown>>;
-  };
-  const secondPayload = plans[1]?.payload as {
-    items: Array<{ id: string; content: string; status: string }>;
-    deltas: Array<Record<string, unknown>>;
-  };
-  const thirdPayload = plans[2]?.payload as {
-    items: Array<{ id: string; content: string; status: string }>;
-    deltas: Array<Record<string, unknown>>;
-  };
-  const firstItemId = firstPayload.items[0]?.id;
-  const secondItemId = firstPayload.items[1]?.id;
-  if (firstItemId === undefined || secondItemId === undefined) {
-    throw new Error("expected two task plan item ids");
-  }
-  expect(firstPayload.explanation).toBe("checking the plan");
-  expect(firstPayload.items).toEqual([
-    { id: firstItemId, content: "Write failing test", status: "pending" },
-    { id: secondItemId, content: "Implement change", status: "pending" },
-  ]);
-  expect(firstPayload.deltas.map((delta) => delta.kind)).toEqual(["added", "added"]);
-  expect(secondPayload.items.slice(1).map((item) => item.id)).toEqual(
-    firstPayload.items.map((item) => item.id),
-  );
-  const insertedItemId = secondPayload.items[0]?.id;
-  if (insertedItemId === undefined) throw new Error("expected inserted task plan item id");
-  expect(secondPayload.deltas[0]).toEqual({
-    kind: "added",
-    item_id: insertedItemId,
-    to_content: "Check docs",
-    to_status: "pending",
-  });
-  expect(secondPayload.deltas).toContainEqual({
-    kind: "status_changed",
-    item_id: firstItemId,
-    from_status: "pending",
-    to_status: "completed",
-  });
-  expect(secondPayload.deltas).toContainEqual({
-    kind: "content_changed",
-    item_id: firstItemId,
-    from_content: "Write failing test",
-    to_content: "Write  failing\n test",
-  });
-  expect(secondPayload.deltas).toContainEqual({
-    kind: "status_changed",
-    item_id: secondItemId,
-    from_status: "pending",
-    to_status: "in_progress",
-  });
-  expect(thirdPayload.items.map((item) => item.id)).toEqual([insertedItemId, firstItemId]);
-  expect(thirdPayload.deltas).toContainEqual({
-    kind: "status_changed",
-    item_id: insertedItemId,
-    from_status: "pending",
-    to_status: "completed",
-  });
-  expect(thirdPayload.deltas).toContainEqual({
-    kind: "content_changed",
-    item_id: firstItemId,
-    from_content: "Write  failing\n test",
-    to_content: "Write failing test",
-  });
-  expect(thirdPayload.deltas).toContainEqual({
-    kind: "removed",
-    item_id: secondItemId,
-    from_content: "Implement change",
-    from_status: "in_progress",
-  });
+  assertTaskPlanSequence(trail);
 
   const diagnostics = await validateAdapterTrail(trail);
-  expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+  assertNoAdapterErrors(diagnostics);
 });
 
 test("update_plan ack dropping keeps failed outputs and colliding non-plan tool results", async () => {
@@ -1690,33 +1803,9 @@ test("mapTool promotes common Codex function calls out of other", () => {
 test("compact fixture emits context_compact from top-level compacted record", async () => {
   const trail = await parseCompactFixture();
   const compact = trail.groups[0]!.entries.find((e) => e.type === "context_compact");
-  expect(compact).toBeDefined();
-  expect((compact?.payload as { summary: string }).summary).toBe(
-    "Refactored auth module. Tests pass.",
-  );
-  expect((compact?.payload as { trigger?: string }).trigger).toBe("auto");
-  // Real Codex `compacted` records do not carry token counts; the schema
-  // optional fields stay absent.
-  expect((compact?.payload as { tokens_before?: number }).tokens_before).toBeUndefined();
-  expect((compact?.payload as { tokens_after?: number }).tokens_after).toBeUndefined();
-  expect(
-    (compact?.payload as { replaced_message_ids?: string[] }).replaced_message_ids,
-  ).toBeUndefined();
-  expect(
-    (compact?.source?.raw as { payload?: { replacement_history?: unknown } } | undefined)?.payload
-      ?.replacement_history,
-  ).toMatchObject({ elided: true, item_count: 2 });
-  expect(
-    typeof (
-      compact?.source?.raw as { payload?: { replacement_history?: { size_bytes?: unknown } } }
-    )?.payload?.replacement_history?.size_bytes,
-  ).toBe("number");
-  expect(JSON.stringify(compact?.source?.raw)).not.toContain("first turn");
-  expect(JSON.stringify(compact?.source?.raw)).not.toContain("first response");
-  expect(compact?.meta?.["dev.codex.raw_type"]).toBe("compacted");
+  assertCompactEntry(compact);
   const diagnostics = await validateAdapterTrail(trail);
-  const errors = diagnostics.filter((d) => d.severity === "error");
-  expect(errors).toEqual([]);
+  assertNoAdapterErrors(diagnostics);
 });
 
 test("parseSession() emits context_compact for empty-message compacted records", async () => {
@@ -2755,35 +2844,29 @@ test("web_search_end emits x-codex/web_search_end system_event with query-based 
 
 test("web and image generation begin/end events emit vendor lifecycle markers", async () => {
   const trail = await parseLifecycleFixture();
-  const byKind = (kind: string) =>
-    trail.groups[0]!.entries.find(
-      (e) => e.type === "system_event" && (e.payload as { kind?: string }).kind === kind,
-    );
-  const webBegin = byKind("x-codex/web_search_begin");
-  const imageBegin = byKind("x-codex/image_generation_begin");
-  const imageEnd = byKind("x-codex/image_generation_end");
-
-  expect(webBegin?.semantic?.call_id).toBeUndefined();
-  expect(webBegin?.source?.original_type).toBe("event_msg.web_search_begin");
-  expect((webBegin?.payload as { data?: Record<string, unknown> }).data).toEqual({
-    call_id: "ws-life",
-  });
-
-  expect(imageBegin?.semantic?.call_id).toBeUndefined();
-  expect(imageBegin?.source?.original_type).toBe("event_msg.image_generation_begin");
-  expect((imageBegin?.payload as { data?: Record<string, unknown> }).data).toEqual({
-    call_id: "img-life",
-  });
-
-  expect(imageEnd?.semantic?.call_id).toBeUndefined();
-  expect(imageEnd?.source?.original_type).toBe("event_msg.image_generation_end");
-  expect((imageEnd?.payload as { data?: Record<string, unknown> }).data).toEqual({
-    call_id: "img-life",
-    status: "completed",
-    revised_prompt: "draw lifecycle",
-    result: "created",
-    saved_path: "/proj/codex-lifecycle/out.png",
-  });
+  assertLifecycleEvent(
+    findSystemEventByKind(trail, "x-codex/web_search_begin"),
+    "event_msg.web_search_begin",
+    {
+      call_id: "ws-life",
+    },
+  );
+  assertLifecycleEvent(
+    findSystemEventByKind(trail, "x-codex/image_generation_begin"),
+    "event_msg.image_generation_begin",
+    { call_id: "img-life" },
+  );
+  assertLifecycleEvent(
+    findSystemEventByKind(trail, "x-codex/image_generation_end"),
+    "event_msg.image_generation_end",
+    {
+      call_id: "img-life",
+      status: "completed",
+      revised_prompt: "draw lifecycle",
+      result: "created",
+      saved_path: "/proj/codex-lifecycle/out.png",
+    },
+  );
 });
 
 test("web_search_call with action.type='search' maps to tool_call{tool:'web_search'}", async () => {

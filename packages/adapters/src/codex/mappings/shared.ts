@@ -12,7 +12,6 @@ import { AGENT_NAME } from "../parser.js";
 import { isObject, sanitizeSourceRaw, stringValue, timestampToIso } from "../source.js";
 
 export type Raw = Record<string, unknown>;
-export type UserQueryOption = { id?: string; label: string; description?: string };
 
 export const RAW_TYPE = "dev.codex.raw_type";
 

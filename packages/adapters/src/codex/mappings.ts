@@ -52,30 +52,40 @@ const compacted = defineMapping<Raw>({
   },
 });
 
+function tokenCountModel(payload: Raw): string | undefined {
+  const info =
+    typeof payload.info === "object" && payload.info !== null ? (payload.info as Raw) : {};
+  return (
+    stringValue(payload.model) ??
+    stringValue(info.model) ??
+    stringValue(info.model_id) ??
+    stringValue(info.modelId)
+  );
+}
+
+function tokenCountCarrier(payload: Raw): Raw | undefined {
+  const usage = codexUsageFromTokenCount(payload);
+  const model = tokenCountModel(payload);
+  if (usage === undefined && model === undefined) return undefined;
+  return {
+    ...(usage !== undefined ? { [USAGE_CARRIER]: usage } : {}),
+    ...(model !== undefined ? { [TOKEN_MODEL_CARRIER]: model } : {}),
+  };
+}
+
 const tokenCount = defineMapping<Raw>({
   match: { type: "event_msg", payload: { type: "token_count" } },
   emit: (record) => {
     if (!emittable(record)) return [];
-    const payload = payloadOf(record);
-    const usage = codexUsageFromTokenCount(payload);
-    const info =
-      typeof payload.info === "object" && payload.info !== null ? (payload.info as Raw) : {};
-    const model =
-      stringValue(payload.model) ??
-      stringValue(info.model) ??
-      stringValue(info.model_id) ??
-      stringValue(info.modelId);
-    if (usage === undefined && model === undefined) return [];
+    const carrier = tokenCountCarrier(payloadOf(record));
+    if (carrier === undefined) return [];
     // Transient carrier folded into the preceding agent_message by
     // codexTokenRollup, then dropped.
     return [
       {
         type: "system_event",
         payload: { kind: USAGE_CARRIER },
-        meta: {
-          ...(usage !== undefined ? { [USAGE_CARRIER]: usage } : {}),
-          ...(model !== undefined ? { [TOKEN_MODEL_CARRIER]: model } : {}),
-        },
+        meta: carrier,
       },
     ];
   },

@@ -19,6 +19,7 @@ import {
   canonicalizeIdentityString,
   deriveSessionUid,
 } from "../session-uid.js";
+import { withLinkedSubagentSessionIds } from "../shared/child-session-links.js";
 import {
   inspectLocalJsonlSourceHealth,
   listSafeJsonlFiles,
@@ -201,19 +202,6 @@ async function isSafeChildDirectory(parentPath: string, dir: string): Promise<bo
   return rel.length > 0 && !rel.startsWith("..") && !isAbsolute(rel);
 }
 
-function withLinkedChildSessionIds(entries: Entry[], linked: Map<string, string>): Entry[] {
-  return entries.map((entry) => {
-    const childId = linked.get(entry.id);
-    if (childId === undefined || entry.type !== "tool_call") return entry;
-    if (entry.payload.tool !== "subagent_invoke") return entry;
-    const args = isObject(entry.payload.args) ? entry.payload.args : {};
-    return {
-      ...entry,
-      payload: { ...entry.payload, args: { ...args, session_id: childId } },
-    } as Entry;
-  });
-}
-
 async function directChildGroups(
   parentGroup: TrailSessionGroup,
   parentPath: string,
@@ -244,7 +232,7 @@ async function directChildGroups(
     linked.set(entry.id, parsed.header.id);
     groups.push(parsed);
   }
-  parentGroup.entries = withLinkedChildSessionIds(parentGroup.entries, linked);
+  parentGroup.entries = withLinkedSubagentSessionIds(parentGroup.entries, linked);
   return groups;
 }
 

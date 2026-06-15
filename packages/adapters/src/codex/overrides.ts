@@ -147,6 +147,141 @@ function thinkingDraft(text: string, rawType: string): TrailEntryDraft {
   };
 }
 
+function resetTurnContextState(state: CodexState, turnId: string | undefined): void {
+  if (turnId === undefined || turnId === state.currentTurnId) return;
+  state.currentTurnId = turnId;
+  state.seen = new Set<string>();
+}
+
+function appendModelChange(drafts: TrailEntryDraft[], state: CodexState, p: Raw): void {
+  const model = stringValue(p.model);
+  if (model === undefined) return;
+  const turnId = stringValue(p.turn_id);
+  if (state.lastModel === undefined) {
+    drafts.push(modelChangeDraft(undefined, model, "initial", turnId));
+  } else if (state.lastModel !== model) {
+    drafts.push(modelChangeDraft(state.lastModel, model, "runtime_inferred", turnId));
+  }
+  state.lastModel = model;
+}
+
+function appendPermissionChange(drafts: TrailEntryDraft[], state: CodexState, p: Raw): void {
+  const permAxis = turnContextPermissionAxis(p);
+  if (Object.keys(permAxis).length === 0) return;
+  const permKey = stableAxisKey(permAxis);
+  const nextMode = permissionModeLabel(p);
+  if (nextMode !== undefined && state.lastPermissionKey === undefined) {
+    drafts.push(
+      modeChangeDraft(
+        "permission",
+        undefined,
+        nextMode,
+        "initial",
+        { ...permAxis, turn_id: p.turn_id },
+        "turn_context.permission",
+      ),
+    );
+  } else if (nextMode !== undefined && state.lastPermissionKey !== permKey) {
+    drafts.push(
+      modeChangeDraft(
+        "permission",
+        state.lastPermissionMode !== nextMode ? state.lastPermissionMode : undefined,
+        nextMode,
+        "runtime_inferred",
+        { ...permAxis, turn_id: p.turn_id },
+        "turn_context.permission",
+      ),
+    );
+  }
+  state.lastPermissionKey = permKey;
+  state.lastPermissionMode = nextMode;
+}
+
+function appendExecutionChange(drafts: TrailEntryDraft[], state: CodexState, p: Raw): void {
+  const executionAxis = turnContextExecutionAxis(p);
+  if (Object.keys(executionAxis).length === 0) return;
+  const executionMode = stringValue(p.sandbox_policy) ?? "execution-policy";
+  const executionKey = stableAxisKey(executionAxis);
+  if (state.lastExecutionKey === undefined) {
+    drafts.push(
+      modeChangeDraft(
+        "execution",
+        undefined,
+        executionMode,
+        "initial",
+        { ...executionAxis, turn_id: p.turn_id },
+        "turn_context.execution",
+      ),
+    );
+  } else if (state.lastExecutionKey !== executionKey) {
+    drafts.push(
+      modeChangeDraft(
+        "execution",
+        state.lastExecutionMode !== executionMode ? state.lastExecutionMode : undefined,
+        executionMode,
+        "runtime_inferred",
+        { ...executionAxis, turn_id: p.turn_id },
+        "turn_context.execution",
+      ),
+    );
+  }
+  state.lastExecutionKey = executionKey;
+  state.lastExecutionMode = executionMode;
+}
+
+function appendCollaborationChange(drafts: TrailEntryDraft[], state: CodexState, p: Raw): void {
+  const collaborationMode = stringValue(p.collaboration_mode);
+  if (collaborationMode === undefined) return;
+  if (state.lastCollaborationMode === undefined) {
+    drafts.push(
+      modeChangeDraft(
+        "collaboration",
+        undefined,
+        collaborationMode,
+        "initial",
+        { collaboration_mode: p.collaboration_mode, turn_id: p.turn_id },
+        "turn_context.collaboration",
+      ),
+    );
+  } else if (state.lastCollaborationMode !== collaborationMode) {
+    drafts.push(
+      modeChangeDraft(
+        "collaboration",
+        state.lastCollaborationMode,
+        collaborationMode,
+        "runtime_inferred",
+        { collaboration_mode: p.collaboration_mode, turn_id: p.turn_id },
+        "turn_context.collaboration",
+      ),
+    );
+  }
+  state.lastCollaborationMode = collaborationMode;
+}
+
+function appendThinkingLevelChange(drafts: TrailEntryDraft[], state: CodexState, p: Raw): void {
+  const effort = stringValue(p.effort);
+  if (effort === undefined) return;
+  const turnId = stringValue(p.turn_id);
+  if (state.lastThinkingLevel === undefined) {
+    drafts.push(thinkingLevelChangeDraft(undefined, effort, "initial", turnId));
+  } else if (state.lastThinkingLevel !== effort) {
+    drafts.push(
+      thinkingLevelChangeDraft(state.lastThinkingLevel, effort, "runtime_inferred", turnId),
+    );
+  }
+  state.lastThinkingLevel = effort;
+}
+
+function appendFlavorChange(drafts: TrailEntryDraft[], state: CodexState, p: Raw): void {
+  const flavorAxis = pickPersonalityAxis(p);
+  if (Object.keys(flavorAxis).length === 0) return;
+  const flavorKey = stableAxisKey(flavorAxis);
+  if (state.lastFlavorKey !== undefined && state.lastFlavorKey !== flavorKey) {
+    drafts.push(turnContextFlavorDraft(flavorAxis));
+  }
+  state.lastFlavorKey = flavorKey;
+}
+
 // turn_context emits no entry of its own beyond synthesized signals: it resets
 // the per-turn reasoning dedup set on a turn_id change, synthesizes a
 // model_change and first-class mode/thinking changes when observed settings
@@ -160,128 +295,14 @@ const turnContext: OverrideDef<Raw, CodexState> = {
     if (!emittable(record)) return [];
     const p = payloadOf(record);
     const turnId = stringValue(p.turn_id);
-    if (turnId !== undefined && turnId !== ctx.state.currentTurnId) {
-      ctx.state.currentTurnId = turnId;
-      ctx.state.seen = new Set<string>();
-    }
     const drafts: TrailEntryDraft[] = [];
-    const model = stringValue(p.model);
-    if (model !== undefined) {
-      if (ctx.state.lastModel === undefined) {
-        drafts.push(modelChangeDraft(undefined, model, "initial", turnId));
-      } else if (ctx.state.lastModel !== model) {
-        drafts.push(modelChangeDraft(ctx.state.lastModel, model, "runtime_inferred", turnId));
-      }
-      ctx.state.lastModel = model;
-    }
-    const permAxis = turnContextPermissionAxis(p);
-    if (Object.keys(permAxis).length > 0) {
-      const permKey = stableAxisKey(permAxis);
-      const nextMode = permissionModeLabel(p);
-      if (nextMode !== undefined) {
-        if (ctx.state.lastPermissionKey === undefined) {
-          drafts.push(
-            modeChangeDraft(
-              "permission",
-              undefined,
-              nextMode,
-              "initial",
-              { ...permAxis, turn_id: p.turn_id },
-              "turn_context.permission",
-            ),
-          );
-        } else if (ctx.state.lastPermissionKey !== permKey) {
-          drafts.push(
-            modeChangeDraft(
-              "permission",
-              ctx.state.lastPermissionMode !== nextMode ? ctx.state.lastPermissionMode : undefined,
-              nextMode,
-              "runtime_inferred",
-              { ...permAxis, turn_id: p.turn_id },
-              "turn_context.permission",
-            ),
-          );
-        }
-      }
-      ctx.state.lastPermissionKey = permKey;
-      ctx.state.lastPermissionMode = nextMode;
-    }
-    const executionAxis = turnContextExecutionAxis(p);
-    if (Object.keys(executionAxis).length > 0) {
-      const executionMode = stringValue(p.sandbox_policy) ?? "execution-policy";
-      const executionKey = stableAxisKey(executionAxis);
-      if (ctx.state.lastExecutionKey === undefined) {
-        drafts.push(
-          modeChangeDraft(
-            "execution",
-            undefined,
-            executionMode,
-            "initial",
-            { ...executionAxis, turn_id: p.turn_id },
-            "turn_context.execution",
-          ),
-        );
-      } else if (ctx.state.lastExecutionKey !== executionKey) {
-        drafts.push(
-          modeChangeDraft(
-            "execution",
-            ctx.state.lastExecutionMode !== executionMode ? ctx.state.lastExecutionMode : undefined,
-            executionMode,
-            "runtime_inferred",
-            { ...executionAxis, turn_id: p.turn_id },
-            "turn_context.execution",
-          ),
-        );
-      }
-      ctx.state.lastExecutionKey = executionKey;
-      ctx.state.lastExecutionMode = executionMode;
-    }
-    const collaborationMode = stringValue(p.collaboration_mode);
-    if (collaborationMode !== undefined) {
-      if (ctx.state.lastCollaborationMode === undefined) {
-        drafts.push(
-          modeChangeDraft(
-            "collaboration",
-            undefined,
-            collaborationMode,
-            "initial",
-            { collaboration_mode: p.collaboration_mode, turn_id: p.turn_id },
-            "turn_context.collaboration",
-          ),
-        );
-      } else if (ctx.state.lastCollaborationMode !== collaborationMode) {
-        drafts.push(
-          modeChangeDraft(
-            "collaboration",
-            ctx.state.lastCollaborationMode,
-            collaborationMode,
-            "runtime_inferred",
-            { collaboration_mode: p.collaboration_mode, turn_id: p.turn_id },
-            "turn_context.collaboration",
-          ),
-        );
-      }
-      ctx.state.lastCollaborationMode = collaborationMode;
-    }
-    const effort = stringValue(p.effort);
-    if (effort !== undefined) {
-      if (ctx.state.lastThinkingLevel === undefined) {
-        drafts.push(thinkingLevelChangeDraft(undefined, effort, "initial", turnId));
-      } else if (ctx.state.lastThinkingLevel !== effort) {
-        drafts.push(
-          thinkingLevelChangeDraft(ctx.state.lastThinkingLevel, effort, "runtime_inferred", turnId),
-        );
-      }
-      ctx.state.lastThinkingLevel = effort;
-    }
-    const flavorAxis = pickPersonalityAxis(p);
-    if (Object.keys(flavorAxis).length > 0) {
-      const flavorKey = stableAxisKey(flavorAxis);
-      if (ctx.state.lastFlavorKey !== undefined && ctx.state.lastFlavorKey !== flavorKey) {
-        drafts.push(turnContextFlavorDraft(flavorAxis));
-      }
-      ctx.state.lastFlavorKey = flavorKey;
-    }
+    resetTurnContextState(ctx.state, turnId);
+    appendModelChange(drafts, ctx.state, p);
+    appendPermissionChange(drafts, ctx.state, p);
+    appendExecutionChange(drafts, ctx.state, p);
+    appendCollaborationChange(drafts, ctx.state, p);
+    appendThinkingLevelChange(drafts, ctx.state, p);
+    appendFlavorChange(drafts, ctx.state, p);
     return drafts;
   },
 };

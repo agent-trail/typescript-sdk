@@ -1,6 +1,7 @@
 import type { MappingDef, TrailEntryDraft } from "@agent-trail/adapter-kit";
 import { defineMapping } from "@agent-trail/adapter-kit";
 import type { ToolKind } from "@agent-trail/types";
+import { userQueryPayloadFromInput } from "../../shared/user-query.js";
 import { isNonEmptyString } from "../../task-plan.js";
 import {
   canonicalCustomToolName,
@@ -18,66 +19,70 @@ import {
   type Raw,
   source,
   taskPlanItemsFromUpdatePlan,
-  type UserQueryOption,
 } from "./shared.js";
 
-function booleanValue(value: unknown): boolean | undefined {
-  return typeof value === "boolean" ? value : undefined;
-}
-
-function optionObjects(value: unknown): UserQueryOption[] | undefined {
-  if (!Array.isArray(value)) return undefined;
-  const options = value
-    .map((option) => {
-      if (typeof option === "string") return { label: option };
-      if (!isObject(option)) return undefined;
-      const label = stringValue(option.label);
-      if (label === undefined) return undefined;
-      const id = stringValue(option.id);
-      const description = stringValue(option.description);
-      return {
-        ...(id !== undefined && isNonEmptyString(id) ? { id } : {}),
-        label,
-        ...(description !== undefined ? { description } : {}),
-      };
-    })
-    .filter((option): option is UserQueryOption => option !== undefined);
-  return options.length === value.length ? options : undefined;
-}
-
-function userQueryQuestion(raw: Raw, fallbackIndex: number): Record<string, unknown> | undefined {
-  const question = stringValue(raw.question);
-  if (question === undefined) return undefined;
-  const id =
-    stringValue(raw.id) ?? (fallbackIndex === 0 ? "question" : `question-${fallbackIndex}`);
-  const out: Record<string, unknown> = { id, question };
-  const header = stringValue(raw.header);
-  if (header !== undefined) out.header = header;
-  const multiSelect = booleanValue(raw.multi_select) ?? booleanValue(raw.multiSelect);
-  if (multiSelect !== undefined) out.multi_select = multiSelect;
-  const isSecret = booleanValue(raw.is_secret) ?? booleanValue(raw.isSecret);
-  if (isSecret !== undefined) out.is_secret = isSecret;
-  const allowOther =
-    booleanValue(raw.allow_other) ??
-    booleanValue(raw.allowOther) ??
-    booleanValue(raw.is_other) ??
-    booleanValue(raw.isOther);
-  if (allowOther !== undefined) out.allow_other = allowOther;
-  const options = optionObjects(raw.options) ?? optionObjects(raw.choices);
-  if (options !== undefined) out.options = options;
-  return out;
-}
-
 function userQueryPayload(args: Raw): { questions: Record<string, unknown>[] } | undefined {
-  if (Array.isArray(args.questions)) {
-    const questions = args.questions
-      .filter(isObject)
-      .map((question, index) => userQueryQuestion(question, index))
-      .filter((question): question is Record<string, unknown> => question !== undefined);
-    if (questions.length > 0) return { questions };
-  }
-  const question = userQueryQuestion(args, 0);
-  return question !== undefined ? { questions: [question] } : undefined;
+  return userQueryPayloadFromInput(args, {
+    fallbackId: (_question, fallbackIndex) =>
+      fallbackIndex === 0 ? "question" : `question-${fallbackIndex}`,
+    includeIsOther: true,
+    stringValue,
+    isNonEmptyString,
+  });
+}
+
+function taskPlanUpdateDraft(
+  parsedArgs: Raw,
+  callId: string | undefined,
+  raw: Raw | undefined,
+): TrailEntryDraft | undefined {
+  const taskPlanItems = taskPlanItemsFromUpdatePlan(parsedArgs);
+  if (taskPlanItems === undefined) return undefined;
+  const explanation = stringValue(parsedArgs.explanation);
+  const taskPlanCallId = isNonEmptyString(callId) ? callId : undefined;
+  return {
+    type: "task_plan_update",
+    payload: {
+      ...(explanation !== undefined ? { explanation } : {}),
+      items: taskPlanItems,
+    },
+    ...(taskPlanCallId !== undefined ? { semantic: { call_id: taskPlanCallId } } : {}),
+    source: source("response_item.function_call", raw),
+    meta: meta("response_item.function_call", taskPlanCallId),
+  };
+}
+
+function userQueryDraft(
+  parsedArgs: Raw,
+  callId: string | undefined,
+  raw: Raw | undefined,
+): TrailEntryDraft | undefined {
+  const payload = userQueryPayload(parsedArgs);
+  if (payload === undefined) return undefined;
+  const queryCallId = isNonEmptyString(callId) ? callId : undefined;
+  return {
+    type: "user_query",
+    payload,
+    ...(queryCallId !== undefined ? { semantic: { call_id: queryCallId } } : {}),
+    source: source("response_item.function_call", raw),
+    meta: meta("response_item.function_call", queryCallId),
+  };
+}
+
+function functionToolCallDraft(
+  name: string | undefined,
+  parsedArgs: Raw,
+  callId: string | undefined,
+  raw: Raw | undefined,
+): TrailEntryDraft {
+  const mapping = mapTool(name, parsedArgs);
+  return {
+    type: "tool_call",
+    payload: { tool: mapping.tool, args: mapping.args },
+    semantic: { tool_kind: mapping.tool },
+    source: source("response_item.function_call", raw),
+    meta: meta("response_item.function_call", callId),
+  };
 }
 
 const functionCall = defineMapping<Raw>({
@@ -90,49 +95,14 @@ const functionCall = defineMapping<Raw>({
     const name = stringValue(p.name);
     const raw =
       parsed.rawUnparseable !== undefined ? { arguments: parsed.rawUnparseable } : undefined;
-    const taskPlanItems =
-      name === "update_plan" ? taskPlanItemsFromUpdatePlan(parsed.args) : undefined;
-    if (taskPlanItems !== undefined) {
-      const explanation = stringValue(parsed.args.explanation);
-      const taskPlanCallId = isNonEmptyString(callId) ? callId : undefined;
-      return [
-        {
-          type: "task_plan_update",
-          payload: {
-            ...(explanation !== undefined ? { explanation } : {}),
-            items: taskPlanItems,
-          },
-          ...(taskPlanCallId !== undefined ? { semantic: { call_id: taskPlanCallId } } : {}),
-          source: source("response_item.function_call", raw),
-          meta: meta("response_item.function_call", taskPlanCallId),
-        } as TrailEntryDraft,
-      ];
-    }
+    const taskPlanDraft =
+      name === "update_plan" ? taskPlanUpdateDraft(parsed.args, callId, raw) : undefined;
+    if (taskPlanDraft !== undefined) return [taskPlanDraft];
     if (name === "request_user_input") {
-      const payload = userQueryPayload(parsed.args);
-      if (payload !== undefined) {
-        const queryCallId = isNonEmptyString(callId) ? callId : undefined;
-        return [
-          {
-            type: "user_query",
-            payload,
-            ...(queryCallId !== undefined ? { semantic: { call_id: queryCallId } } : {}),
-            source: source("response_item.function_call", raw),
-            meta: meta("response_item.function_call", queryCallId),
-          },
-        ];
-      }
+      const draft = userQueryDraft(parsed.args, callId, raw);
+      if (draft !== undefined) return [draft];
     }
-    const mapping = mapTool(name, parsed.args);
-    return [
-      {
-        type: "tool_call",
-        payload: { tool: mapping.tool, args: mapping.args },
-        semantic: { tool_kind: mapping.tool },
-        source: source("response_item.function_call", raw),
-        meta: meta("response_item.function_call", callId),
-      },
-    ];
+    return [functionToolCallDraft(name, parsed.args, callId, raw)];
   },
 });
 

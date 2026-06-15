@@ -2,7 +2,7 @@ import { lstat, readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import type { DetectOptions, SessionRef } from "../index.js";
 import { canonicalizeIdentityString } from "../session-uid.js";
-import { readJsonlHead as readJsonLinesHead } from "../shared/jsonl-head.js";
+import { readJsonlHead as readJsonLinesHead, readJsonlHeadObjects } from "../shared/jsonl-head.js";
 import { isRecord } from "../shared/type-guards.js";
 import { codexSessionsDir } from "./paths.js";
 
@@ -43,62 +43,59 @@ export type HeadMetadata = {
 // the canonical session id at `payload.id`).
 // See `docs/parser-source-matrix.md` Codex row for verification notes.
 export async function readMetadataFromHead(path: string): Promise<HeadMetadata> {
-  const { lines } = await readJsonLinesHead(path, HEAD_SCAN_BYTES);
+  const records = await readJsonlHeadObjects(path, HEAD_SCAN_BYTES);
   let id: string | undefined;
   let cwd: string | undefined;
   let threadSource: string | undefined;
   let parentThreadId: string | undefined;
-  let sawFirst = false;
-  for (const line of lines) {
-    let record: Record<string, unknown>;
-    try {
-      record = JSON.parse(line) as Record<string, unknown>;
-    } catch {
-      // Skip non-JSON lines; continue scanning for cwd on later records.
-      continue;
+
+  const first = records[0];
+  if (first !== undefined) {
+    const firstMeta = firstRecordMetadata(first);
+    id = firstMeta.id;
+    threadSource = firstMeta.threadSource;
+    parentThreadId = firstMeta.parentThreadId;
+  }
+
+  for (const record of records) {
+    cwd ??= cwdFromRecord(record);
+    if (id !== undefined && cwd !== undefined) {
+      return { id, cwd, threadSource, parentThreadId };
     }
-    const payload = record.payload;
-    if (!sawFirst) {
-      sawFirst = true;
-      if (payload !== null && typeof payload === "object") {
-        const payloadRecord = payload as Record<string, unknown>;
-        const payloadId = payloadRecord.id;
-        if (typeof payloadId === "string" && payloadId.length > 0) id = payloadId;
-        if (record.type === "session_meta") {
-          const rawThreadSource = payloadRecord.thread_source;
-          if (typeof rawThreadSource === "string" && rawThreadSource.length > 0) {
-            threadSource = rawThreadSource;
-          }
-          const source = payloadRecord.source;
-          const rawParentThreadId =
-            isRecord(source) &&
-            isRecord(source.subagent) &&
-            isRecord(source.subagent.thread_spawn) &&
-            typeof source.subagent.thread_spawn.parent_thread_id === "string"
-              ? source.subagent.thread_spawn.parent_thread_id
-              : undefined;
-          if (rawParentThreadId !== undefined) parentThreadId = rawParentThreadId;
-        }
-      }
-      if (id === undefined) {
-        const topId = record.id;
-        if (typeof topId === "string" && topId.length > 0) id = topId;
-      }
-    }
-    if (payload !== null && typeof payload === "object") {
-      const payloadRecord = payload as Record<string, unknown>;
-      if (cwd === undefined) {
-        const payloadCwd = payloadRecord.cwd;
-        if (typeof payloadCwd === "string" && payloadCwd.length > 0) cwd = payloadCwd;
-      }
-    }
-    if (cwd === undefined) {
-      const topCwd = record.cwd;
-      if (typeof topCwd === "string" && topCwd.length > 0) cwd = topCwd;
-    }
-    if (id !== undefined && cwd !== undefined) break;
   }
   return { id, cwd, threadSource, parentThreadId };
+}
+
+function firstRecordMetadata(record: Record<string, unknown>): HeadMetadata {
+  const payload = payloadRecord(record);
+  const id = stringField(payload, "id") ?? stringField(record, "id");
+  if (record.type !== "session_meta" || payload === undefined) return { id };
+  return {
+    id,
+    threadSource: stringField(payload, "thread_source"),
+    parentThreadId: parentThreadIdFromPayload(payload),
+  };
+}
+
+function cwdFromRecord(record: Record<string, unknown>): string | undefined {
+  return stringField(payloadRecord(record), "cwd") ?? stringField(record, "cwd");
+}
+
+function parentThreadIdFromPayload(payload: Record<string, unknown>): string | undefined {
+  const source = payload.source;
+  if (!isRecord(source) || !isRecord(source.subagent) || !isRecord(source.subagent.thread_spawn)) {
+    return undefined;
+  }
+  return stringField(source.subagent.thread_spawn, "parent_thread_id");
+}
+
+function payloadRecord(record: Record<string, unknown>): Record<string, unknown> | undefined {
+  return isRecord(record.payload) ? record.payload : undefined;
+}
+
+function stringField(record: Record<string, unknown> | undefined, key: string): string | undefined {
+  const value = record?.[key];
+  return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
 async function readSessionVersionFromHead(path: string): Promise<string | undefined> {
@@ -127,32 +124,37 @@ export async function walkRolloutFiles(root: string): Promise<string[]> {
   while (stack.length > 0) {
     const dir = stack.pop();
     if (dir === undefined) break;
-    let names: string[];
-    try {
-      names = await readdir(dir);
-    } catch {
-      continue;
-    }
-    for (const name of names) {
-      const full = join(dir, name);
-      let s: Awaited<ReturnType<typeof lstat>>;
-      try {
-        s = await lstat(full);
-      } catch {
-        continue;
-      }
-      if (s.isDirectory()) {
-        stack.push(full);
-      } else if (s.isFile() && name.endsWith(".jsonl")) {
-        out.push(full);
-      }
-    }
+    await collectRolloutFilesInDir(dir, stack, out);
   }
   // Date-partitioned paths (`YYYY/MM/DD/rollout-<datetime>-<uuid>.jsonl`)
   // sort lexicographically into chronological order, giving deterministic
   // results across runs and platforms.
   out.sort();
   return out;
+}
+
+async function collectRolloutFilesInDir(
+  dir: string,
+  stack: string[],
+  out: string[],
+): Promise<void> {
+  const names = await readdir(dir).catch(() => undefined);
+  if (names === undefined) return;
+  for (const name of names) {
+    await collectRolloutPath(join(dir, name), name, stack, out);
+  }
+}
+
+async function collectRolloutPath(
+  fullPath: string,
+  name: string,
+  stack: string[],
+  out: string[],
+): Promise<void> {
+  const s = await lstat(fullPath).catch(() => undefined);
+  if (s === undefined) return;
+  if (s.isDirectory()) stack.push(fullPath);
+  else if (s.isFile() && name.endsWith(".jsonl")) out.push(fullPath);
 }
 
 async function buildSessionRef(filePath: string): Promise<SessionRef> {

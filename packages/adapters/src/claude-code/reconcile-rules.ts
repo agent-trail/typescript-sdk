@@ -7,6 +7,8 @@
 import type { ReconcilerRule } from "@agent-trail/adapter-kit";
 import type { Entry, ToolKind } from "@agent-trail/types";
 import { CLAUDE_CODE_ENTRY_ID_NAMESPACE, deriveSynthesizedEntryId } from "../session-uid.js";
+import { linkerCallId } from "../shared/linker-meta.js";
+import { uniqueOptionLabelToId } from "../shared/options.js";
 import { dropTaskPlanAckResults, withTaskPlanDeltas } from "../task-plan.js";
 import { synthesizeVcsCommitEvents } from "../vcs-commit.js";
 import { type CcHint, HINT } from "./mappings.js";
@@ -14,13 +16,6 @@ import { isObject, stringValue } from "./source.js";
 
 function hintOf(entry: Entry): CcHint | undefined {
   return entry.meta?.[HINT] as CcHint | undefined;
-}
-
-function linkerCallId(entry: Entry): string | undefined {
-  const linker = entry.meta?.linker;
-  if (linker === null || typeof linker !== "object") return undefined;
-  const callId = (linker as Record<string, unknown>).call_id;
-  return typeof callId === "string" ? callId : undefined;
 }
 
 function payloadHasUsage(entry: Entry): boolean {
@@ -400,25 +395,8 @@ function questionOptions(question: Record<string, unknown>): Record<string, unkn
 }
 
 function normalizeSelectedLabels(selected: string[], options: Record<string, unknown>[]): string[] {
-  const labelToId = uniqueLabelToId(options);
+  const labelToId = uniqueOptionLabelToId(options);
   return selected.map((value) => labelToId.get(value) ?? value);
-}
-
-function uniqueLabelToId(options: Record<string, unknown>[]): Map<string, string> {
-  const labelCounts = new Map<string, number>();
-  for (const option of options) {
-    const label = option.label;
-    if (typeof label === "string") labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1);
-  }
-  const out = new Map<string, string>();
-  for (const option of options) {
-    const label = option.label;
-    const id = option.id;
-    if (typeof label === "string" && typeof id === "string" && labelCounts.get(label) === 1) {
-      out.set(label, id);
-    }
-  }
-  return out;
 }
 
 function knownOptionSet(options: Record<string, unknown>[]): Set<string> {

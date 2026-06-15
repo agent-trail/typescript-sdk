@@ -93,14 +93,7 @@ function copySchemaType(data: Raw, p: Raw): void {
   }
 }
 
-function sanitizedSchema(value: unknown): Raw | undefined {
-  if (!isObject(value)) return undefined;
-  const out: Raw = {};
-  copySchemaType(out, value);
-  copyString(out, value, "format");
-  copyString(out, value, "$ref");
-  copyString(out, value, "pattern");
-  copyStringArray(out, value, "required");
+function copyNumericSchemaConstraints(out: Raw, value: Raw): void {
   for (const key of [
     "minimum",
     "maximum",
@@ -116,28 +109,48 @@ function sanitizedSchema(value: unknown): Raw | undefined {
   }
   copyBooleanOrNumber(out, value, "exclusiveMinimum");
   copyBooleanOrNumber(out, value, "exclusiveMaximum");
+}
 
-  if (isObject(value.properties)) {
-    const properties: Raw = {};
-    for (const [name, property] of Object.entries(value.properties)) {
-      const sanitized = sanitizedSchema(property);
-      properties[name] = sanitized ?? {};
-    }
-    if (Object.keys(properties).length > 0) out.properties = properties;
+function sanitizedProperties(value: Raw): Raw | undefined {
+  if (!isObject(value.properties)) return undefined;
+  const properties: Raw = {};
+  for (const [name, property] of Object.entries(value.properties)) {
+    const sanitized = sanitizedSchema(property);
+    properties[name] = sanitized ?? {};
   }
+  return Object.keys(properties).length > 0 ? properties : undefined;
+}
 
+function sanitizedSchemaVariants(value: Raw, key: "oneOf" | "anyOf" | "allOf"): Raw[] | undefined {
+  const variants = value[key];
+  if (!Array.isArray(variants)) return undefined;
+  const sanitized = variants
+    .map((variant) => sanitizedSchema(variant))
+    .filter((variant): variant is Raw => variant !== undefined);
+  return sanitized.length > 0 ? sanitized : undefined;
+}
+
+function copyCompositeSchemaFields(out: Raw, value: Raw): void {
+  const properties = sanitizedProperties(value);
+  if (properties !== undefined) out.properties = properties;
   const items = sanitizedSchema(value.items);
   if (items !== undefined) out.items = items;
-
   for (const key of ["oneOf", "anyOf", "allOf"] as const) {
-    const variants = value[key];
-    if (!Array.isArray(variants)) continue;
-    const sanitized = variants
-      .map((variant) => sanitizedSchema(variant))
-      .filter((variant): variant is Raw => variant !== undefined);
-    if (sanitized.length > 0) out[key] = sanitized;
+    const variants = sanitizedSchemaVariants(value, key);
+    if (variants !== undefined) out[key] = variants;
   }
+}
 
+function sanitizedSchema(value: unknown): Raw | undefined {
+  if (!isObject(value)) return undefined;
+  const out: Raw = {};
+  copySchemaType(out, value);
+  copyString(out, value, "format");
+  copyString(out, value, "$ref");
+  copyString(out, value, "pattern");
+  copyStringArray(out, value, "required");
+  copyNumericSchemaConstraints(out, value);
+  copyCompositeSchemaFields(out, value);
   return Object.keys(out).length > 0 ? out : undefined;
 }
 
@@ -160,23 +173,37 @@ function sanitizedElicitationRequest(value: unknown): Raw | undefined {
   copyString(out, value, "type");
   copyString(out, value, "action");
 
-  const elicitationId =
-    stringValue(value.elicitation_id) ??
-    stringValue(value.elicitationId) ??
-    stringValue(value.request_id) ??
-    stringValue(value.requestId);
+  const elicitationId = elicitationRequestId(value);
   if (elicitationId !== undefined) out.elicitation_id = elicitationId;
 
-  const urlData = stringValue(value.url);
-  if (urlData !== undefined) Object.assign(out, sanitizedUrlData(urlData));
+  copySanitizedUrlData(out, value);
 
-  const schema =
-    sanitizedSchema(value.requestedSchema) ??
-    sanitizedSchema(value.requested_schema) ??
-    sanitizedSchema(value.schema);
+  const schema = sanitizedElicitationSchema(value);
   if (schema !== undefined) out.schema = schema;
 
   return Object.keys(out).length > 0 ? out : undefined;
+}
+
+function elicitationRequestId(value: Raw): string | undefined {
+  return (
+    stringValue(value.elicitation_id) ??
+    stringValue(value.elicitationId) ??
+    stringValue(value.request_id) ??
+    stringValue(value.requestId)
+  );
+}
+
+function copySanitizedUrlData(out: Raw, value: Raw): void {
+  const urlData = stringValue(value.url);
+  if (urlData !== undefined) Object.assign(out, sanitizedUrlData(urlData));
+}
+
+function sanitizedElicitationSchema(value: Raw): Raw | undefined {
+  return (
+    sanitizedSchema(value.requestedSchema) ??
+    sanitizedSchema(value.requested_schema) ??
+    sanitizedSchema(value.schema)
+  );
 }
 
 function permissionRequestBaseData(p: Raw): { data: Raw; callId?: string | undefined } {
@@ -355,33 +382,29 @@ const patchApplyEnd = lifecycle("patch_apply_end", (p) => {
   };
 });
 
-const patchApplyBegin = lifecycle("patch_apply_begin", (p) => {
-  const data: Raw = {};
-  copyString(data, p, "call_id");
-  copyString(data, p, "turn_id");
-  if (typeof p.auto_approved === "boolean") data.auto_approved = p.auto_approved;
-  copyObject(data, p, "changes");
-  return {
-    kind: "x-codex/patch_apply_begin",
-    rawType: "event_msg.patch_apply_begin",
-    data,
-    linkedCallId: stringValue(p.call_id),
-  };
-});
+const patchApplyBegin = patchApplyProgress("patch_apply_begin", "x-codex/patch_apply_begin");
+const patchApplyUpdated = patchApplyProgress("patch_apply_updated", "x-codex/patch_apply_updated");
 
-const patchApplyUpdated = lifecycle("patch_apply_updated", (p) => {
+function patchApplyProgress(payloadType: string, kind: string): MappingDef<Raw> {
+  return lifecycle(payloadType, (p) => {
+    const data = patchApplyProgressData(p);
+    return {
+      kind,
+      rawType: `event_msg.${payloadType}`,
+      data,
+      linkedCallId: stringValue(p.call_id),
+    };
+  });
+}
+
+function patchApplyProgressData(p: Raw): Raw {
   const data: Raw = {};
   copyString(data, p, "call_id");
   copyString(data, p, "turn_id");
   if (typeof p.auto_approved === "boolean") data.auto_approved = p.auto_approved;
   copyObject(data, p, "changes");
-  return {
-    kind: "x-codex/patch_apply_updated",
-    rawType: "event_msg.patch_apply_updated",
-    data,
-    linkedCallId: stringValue(p.call_id),
-  };
-});
+  return data;
+}
 
 const applyPatchApprovalRequest = lifecycle("apply_patch_approval_request", (p) => {
   const { data, callId } = permissionRequestBaseData(p);

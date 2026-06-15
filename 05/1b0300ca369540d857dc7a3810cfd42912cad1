@@ -1,0 +1,69 @@
+packages/adapters/src/claude-code/mapping/metadata.ts
+  s_41a01eab7e41e9::t_1f2439c38d20a0 58-61,63,74
+  s_41a01eab7e41e9::t_6a3ce79d642d0e 54,62,64-73,75-110
+packages/adapters/src/claude-code/reconcile-rules.ts
+  s_41a01eab7e41e9::t_e31b5da13630dd 46,49-53,60-115
+  s_41a01eab7e41e9::t_1f202755fdb228 237-252,254-255,257-314,318-319,321-324,326-339
+  s_41a01eab7e41e9::t_bf051fc8fbfc38 315-317,320
+  s_41a01eab7e41e9::t_44450144a40ed7 325,537-546,548-553,555-560,562
+  s_41a01eab7e41e9::t_2c3b83ab7b31ec 376-398,400-407,413,418,421-435,437-441,449-450,452,454-458,461,463-485
+  s_41a01eab7e41e9::t_53db1134ef43b8 399
+  s_41a01eab7e41e9::t_45e7123ea17264 518-532,536,563-566,569-571
+packages/adapters/src/claude-code/entry-metadata.ts
+  s_41a01eab7e41e9::t_bf051fc8fbfc38 60
+  s_41a01eab7e41e9::t_9a3ab3c0930fde 32-59,61-67,69-72
+packages/adapters/src/claude-code/tools.ts
+  s_41a01eab7e41e9::t_36485918958a24 4-8,13,18-257,270-271,274-286,294-300,302-305,309
+  s_41a01eab7e41e9::t_e46ec4c62ab560 9-12
+  s_41a01eab7e41e9::t_ad5a71369406cc 258-269,272-273
+packages/adapters/src/claude-code/mapping/messages.ts
+  s_41a01eab7e41e9::t_d435783eed878a 290-326,330-411,416-451,455-488
+  s_41a01eab7e41e9::t_5a61dd6390cbd0 68-72,76-87,117-119,124-148,151,154-194,198-199,208-286
+  s_41a01eab7e41e9::t_e86a7619282172 195-197,200-207,412-415,452-454
+packages/adapters/src/shared/local-jsonl.ts
+  s_41a01eab7e41e9::t_ebd39a344ce12a 168
+packages/adapters/src/claude-code/source.ts
+  s_41a01eab7e41e9::t_baf5d9c71ae6dd 92,98-103
+packages/adapters/src/claude-code/index.test.ts
+  s_41a01eab7e41e9::t_e7accc83cc8b66 1968-1972,1979,1981,1983-1984
+  s_41a01eab7e41e9::t_0f7b78310941bd 2553,3564,3568-3570
+  s_41a01eab7e41e9::t_5cca136250a797 256-295
+  s_41a01eab7e41e9::t_fb9f656ed7ea0e 296-352,356-365,372-409
+  s_41a01eab7e41e9::t_bc7ba8cb2c714a 1868-1872,1880,1882,1884-1885
+  s_41a01eab7e41e9::t_d1d2399b83052a 353-355,366-371
+packages/adapters/src/claude-code/parser.ts
+  s_41a01eab7e41e9::t_f735a485b53899 77-88,90-105,107-110,113-121,123-125
+packages/adapters/src/claude-code/mapping/shared.ts
+  s_41a01eab7e41e9::t_0e0a5826cf991f 79-96,105,109,117-120,203-204,206,211,216-242
+  s_41a01eab7e41e9::t_d248188e07aba1 75-78,97-98,107-108,111,121-124,212-215,243-252
+  s_41a01eab7e41e9::t_bf051fc8fbfc38 99-100,103-104
+  s_41a01eab7e41e9::t_a97185ce26f204 101-102
+  s_41a01eab7e41e9::t_8dd2c63cb6ffad 110,112-116
+packages/adapters/src/claude-code/index.ts
+  s_41a01eab7e41e9::t_a5d14fc220e49b 2,74
+  s_41a01eab7e41e9::t_91e9bb980ca2b4 62-70
+  s_41a01eab7e41e9::t_946beacecf7521 190-194,196,199,201,224,228,237,239,251-314
+  s_41a01eab7e41e9::t_b81225a69b737d 1,22-27,45-51,53-54,61,71,73,75-76,328-333,363
+  s_41a01eab7e41e9::t_1dc67b685d0278 32,84
+packages/adapters/src/claude-code/envelope-mappers.ts
+  s_41a01eab7e41e9::t_a2762cc8b95506 4-48,84-85,87-89,92-100
+packages/adapters/src/claude-code/mapping/capabilities.ts
+  s_41a01eab7e41e9::t_10a7303140d8fb 90-95
+  s_41a01eab7e41e9::t_d51dd2c529d623 16-23,25-41,44-62,64-89,96-122,124-132,135-155,158-165,167-180,182-199,202-218,221-236,239-253,256-266,294-306,316-318,321,323-327,329-332,334-336,338,340-344,346-353,355-360,362-366,368-383,385-386
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "051b0300ca369540d857dc7a3810cfd42912cad1",
+  "prompts": {},
+  "sessions": {
+    "s_41a01eab7e41e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec547-b5c0-7200-b226-4f1ef52334a0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

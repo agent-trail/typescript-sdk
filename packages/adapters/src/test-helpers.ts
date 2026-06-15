@@ -46,80 +46,104 @@ export function firstJsonlFile(
   root: string | undefined,
   exclude?: (path: string) => boolean,
 ): string | undefined {
-  if (root === undefined) return undefined;
-  let entries: DirectoryEntry[];
-  try {
-    entries = readdirSync(root, { withFileTypes: true }).sort((a, b) =>
-      a.name.localeCompare(b.name),
-    );
-  } catch {
-    return undefined;
-  }
-  for (const entry of entries) {
-    const path = join(root, entry.name);
-    if (entry.isDirectory()) {
-      const found = firstJsonlFile(path, exclude);
-      if (found !== undefined) return found;
-      continue;
-    }
-    if (!entry.name.endsWith(".jsonl")) continue;
-    if (exclude?.(path) === true) continue;
-    try {
-      if (statSync(path).isFile()) return path;
-    } catch {}
-  }
-  return undefined;
+  return firstMatchingFile(root, {
+    extension: ".jsonl",
+    accept: (path) => exclude?.(path) !== true,
+  });
 }
 
 export function firstJsonFile(
   root: string | undefined,
   include?: (path: string) => boolean,
 ): string | undefined {
+  return firstMatchingFile(root, {
+    extension: ".json",
+    accept: (path) => include?.(path) !== false,
+    acceptRootFile: true,
+  });
+}
+
+type FirstFileOptions = {
+  accept: (path: string) => boolean;
+  acceptRootFile?: boolean;
+  extension: ".json" | ".jsonl";
+};
+
+function firstMatchingFile(
+  root: string | undefined,
+  options: FirstFileOptions,
+): string | undefined {
   if (root === undefined) return undefined;
-  try {
-    const stat = statSync(root);
-    if (stat.isFile() && root.endsWith(".json") && include?.(root) !== false) return root;
-    if (!stat.isDirectory()) return undefined;
-  } catch {
-    return undefined;
-  }
-  let entries: DirectoryEntry[];
-  try {
-    entries = readdirSync(root, { withFileTypes: true }).sort((a, b) =>
-      a.name.localeCompare(b.name),
-    );
-  } catch {
-    return undefined;
-  }
+  const rootKind = pathKind(root);
+  if (rootKind === "file") return rootFileMatch(root, options);
+  if (rootKind !== "directory") return undefined;
+  return firstMatchingFileInDirectory(root, options);
+}
+
+function rootFileMatch(root: string, options: FirstFileOptions): string | undefined {
+  if (options.acceptRootFile !== true) return undefined;
+  return fileNameMatches(root, options) ? root : undefined;
+}
+
+function firstMatchingFileInDirectory(root: string, options: FirstFileOptions): string | undefined {
+  const entries = sortedDirectoryEntries(root);
+  if (entries === undefined) return undefined;
   for (const entry of entries) {
     const path = join(root, entry.name);
-    if (entry.isDirectory()) {
-      const found = firstJsonFile(path, include);
-      if (found !== undefined) return found;
-      continue;
-    }
-    if (!entry.name.endsWith(".json")) continue;
-    if (include?.(path) === false) continue;
-    try {
-      if (statSync(path).isFile()) return path;
-    } catch {}
+    const found = firstMatchingFileEntry(path, entry, options);
+    if (found !== undefined) return found;
   }
   return undefined;
 }
 
+function firstMatchingFileEntry(
+  path: string,
+  entry: DirectoryEntry,
+  options: FirstFileOptions,
+): string | undefined {
+  if (entry.isDirectory()) return firstMatchingFileInDirectory(path, options);
+  if (!fileNameMatches(path, options)) return undefined;
+  return pathKind(path) === "file" ? path : undefined;
+}
+
+function fileNameMatches(path: string, options: FirstFileOptions): boolean {
+  return path.endsWith(options.extension) && options.accept(path);
+}
+
+function pathKind(path: string): "directory" | "file" | undefined {
+  try {
+    const stat = statSync(path);
+    if (stat.isFile()) return "file";
+    if (stat.isDirectory()) return "directory";
+  } catch {}
+  return undefined;
+}
+
+function sortedDirectoryEntries(root: string): DirectoryEntry[] | undefined {
+  try {
+    return readdirSync(root, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
+  } catch {
+    return undefined;
+  }
+}
+
 function enabledRealSessionRef(options: RealSessionSmokeOptions): SessionRef | undefined {
   if (process.env.CI !== undefined && process.env.CI.length > 0) return undefined;
-  const customPath = process.env[options.envVar];
-  const path =
-    customPath === undefined || customPath.length === 0
-      ? options.defaultSessionPath?.()
-      : (options.resolveSessionPath?.(customPath) ?? customPath);
+  const path = enabledRealSessionPath(options);
   if (path === undefined || path.length === 0) return undefined;
   return {
     id: options.fallbackSessionId,
     adapter: options.adapter.name,
     path,
   };
+}
+
+function enabledRealSessionPath(options: RealSessionSmokeOptions): string | undefined {
+  const customPath = process.env[options.envVar];
+  if (customPath === undefined || customPath.length === 0) {
+    return options.defaultSessionPath?.();
+  }
+  return options.resolveSessionPath?.(customPath) ?? customPath;
 }
 
 function entryCounts(entries: Entry[]): Record<FeatureType, number> {
@@ -165,25 +189,41 @@ function assertFeatureInvariants(entry: Entry, summary: string): void {
   try {
     const payload = entry.payload as Record<string, unknown>;
     assertAttachmentShape(payload.attachments);
-
-    if (entry.type === "tool_call" && entry.payload.tool === "file_edit") {
-      assertFileEditArgs(entry.payload.args);
-    }
-    if (entry.type === "tool_result") {
-      expect(entry.payload.for_id).toMatch(ID_PATTERN);
-    }
-    if (entry.type === "tool_call_aborted" && entry.payload.scope === "tool_call") {
-      expect(entry.payload.for_id).toMatch(ID_PATTERN);
-    }
-    if (entry.type === "context_compact" && Array.isArray(entry.payload.replaced_message_ids)) {
-      for (const id of entry.payload.replaced_message_ids) {
-        expect(id).toMatch(ID_PATTERN);
-      }
-    }
+    assertToolCallInvariant(entry);
+    assertToolResultInvariant(entry);
+    assertToolCallAbortInvariant(entry);
+    assertContextCompactInvariant(entry);
   } catch (error) {
     throw new Error(
       `real-session smoke feature invariant failed: ${error instanceof Error ? error.message : String(error)}\n${summary}`,
     );
+  }
+}
+
+function assertToolCallInvariant(entry: Entry): void {
+  if (entry.type === "tool_call" && entry.payload.tool === "file_edit") {
+    assertFileEditArgs(entry.payload.args);
+  }
+}
+
+function assertToolResultInvariant(entry: Entry): void {
+  if (entry.type === "tool_result") {
+    expect(entry.payload.for_id).toMatch(ID_PATTERN);
+  }
+}
+
+function assertToolCallAbortInvariant(entry: Entry): void {
+  if (entry.type === "tool_call_aborted" && entry.payload.scope === "tool_call") {
+    expect(entry.payload.for_id).toMatch(ID_PATTERN);
+  }
+}
+
+function assertContextCompactInvariant(entry: Entry): void {
+  if (entry.type !== "context_compact" || !Array.isArray(entry.payload.replaced_message_ids)) {
+    return;
+  }
+  for (const id of entry.payload.replaced_message_ids) {
+    expect(id).toMatch(ID_PATTERN);
   }
 }
 
@@ -292,15 +332,20 @@ function embeddedUsageSource(raw: unknown): RawObject | undefined {
   const envelopeMessage = objectValue(envelope?.message);
   const directMessage = objectValue(obj.message);
   const tokens = objectValue(obj.tokens);
-  return (
-    objectValue(envelopeMessage?.usage) ??
-    objectValue(directMessage?.usage) ??
-    objectValue(obj.usage) ??
-    (tokens !== undefined ? { tokens } : undefined) ??
-    (pickNumber(obj, ["tokens_input", "tokens_output", "tokens_total"]) !== undefined
-      ? obj
-      : undefined)
-  );
+  const candidates = [
+    objectValue(envelopeMessage?.usage),
+    objectValue(directMessage?.usage),
+    objectValue(obj.usage),
+    tokens !== undefined ? { tokens } : undefined,
+    flatTokenSource(obj),
+  ];
+  return candidates.find((candidate): candidate is RawObject => candidate !== undefined);
+}
+
+function flatTokenSource(source: RawObject): RawObject | undefined {
+  return pickNumber(source, ["tokens_input", "tokens_output", "tokens_total"]) !== undefined
+    ? source
+    : undefined;
 }
 
 function sourceTotal(source: RawObject): number | undefined {
@@ -388,36 +433,49 @@ export function assertEmbeddedSourceUsageCaptured(trail: TrailFile, summary: str
       if (source === undefined) continue;
       checked += 1;
 
-      const total = sourceTotal(source);
-      if (total !== undefined) {
-        checkedAnyTotal += 1;
-        expect(usage.total_tokens).toBe(total);
-      }
-      const totalCumulative = sourceTotalCumulative(source);
-      if (totalCumulative !== undefined) {
-        checkedAnyTotal += 1;
-        expect(usage.total_tokens_cumulative).toBe(totalCumulative);
-      }
-      const input = sourceInput(source);
-      if (input !== undefined) expect(usage.input_tokens).toBe(input);
-      const output = sourceOutput(source);
-      if (output !== undefined) expect(usage.output_tokens).toBe(output);
-      const cacheRead = sourceCacheRead(source);
-      if (cacheRead !== undefined) expect(usage.cache_read_tokens).toBe(cacheRead);
-      const cacheCreate = sourceCacheCreate(source);
-      if (cacheCreate !== undefined) expect(usage.cache_creation_tokens).toBe(cacheCreate);
-      const reasoning = sourceReasoning(source);
-      if (reasoning !== undefined) expect(usage.reasoning_tokens).toBe(reasoning);
+      checkedAnyTotal += assertUsageMatchesSource(usage, source);
     }
   }
-  if (checked === 0 && trail.groups[0]?.header.agent.name !== "opencode") {
+  assertUsageCoverage(trail, summary, checked, checkedAnyTotal);
+}
+
+function assertUsageMatchesSource(usage: RawObject, source: RawObject): number {
+  let totalCount = 0;
+  totalCount += assertOptionalUsageField(usage, "total_tokens", sourceTotal(source));
+  totalCount += assertOptionalUsageField(
+    usage,
+    "total_tokens_cumulative",
+    sourceTotalCumulative(source),
+  );
+  assertOptionalUsageField(usage, "input_tokens", sourceInput(source));
+  assertOptionalUsageField(usage, "output_tokens", sourceOutput(source));
+  assertOptionalUsageField(usage, "cache_read_tokens", sourceCacheRead(source));
+  assertOptionalUsageField(usage, "cache_creation_tokens", sourceCacheCreate(source));
+  assertOptionalUsageField(usage, "reasoning_tokens", sourceReasoning(source));
+  return totalCount;
+}
+
+function assertOptionalUsageField(
+  usage: RawObject,
+  field: string,
+  expected: number | undefined,
+): number {
+  if (expected === undefined) return 0;
+  expect(usage[field]).toBe(expected);
+  return field === "total_tokens" || field === "total_tokens_cumulative" ? 1 : 0;
+}
+
+function assertUsageCoverage(
+  trail: TrailFile,
+  summary: string,
+  checked: number,
+  checkedAnyTotal: number,
+): void {
+  const agentName = trail.groups[0]?.header.agent.name;
+  if (checked === 0 && agentName !== "opencode") {
     throw new Error(`real-session smoke found no embedded source usage\n${summary}`);
   }
-  if (
-    trail.groups[0]?.header.agent.name !== "claude-code" &&
-    trail.groups[0]?.header.agent.name !== "opencode" &&
-    checkedAnyTotal === 0
-  ) {
+  if (agentName !== "claude-code" && agentName !== "opencode" && checkedAnyTotal === 0) {
     throw new Error(`real-session smoke found no source total token usage\n${summary}`);
   }
 }

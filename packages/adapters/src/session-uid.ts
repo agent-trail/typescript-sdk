@@ -1,4 +1,8 @@
-import { createHash } from "node:crypto";
+import {
+  canonicalizeIdentityString,
+  deriveSeededUuidV5,
+  deriveUuidV5,
+} from "@agent-trail/core/identity";
 
 /**
  * Per-adapter namespace UUIDs for deterministic `session_uid`/entry-id
@@ -9,51 +13,14 @@ import { createHash } from "node:crypto";
  * stable forever. Changing one is a corpus-wide migration.
  */
 
-const UUID_HYPHENATED_PATTERN =
-  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-const UUID_UNHYPHENATED_PATTERN = /^[0-9a-fA-F]{32}$/;
-const ULID_PATTERN = /^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$/;
-
-export function canonicalizeIdentityString(value: string): string {
-  if (UUID_HYPHENATED_PATTERN.test(value) || UUID_UNHYPHENATED_PATTERN.test(value)) {
-    return value.toLowerCase();
-  }
-  if (ULID_PATTERN.test(value)) return value.toUpperCase();
-  return value;
-}
+export { canonicalizeIdentityString };
 
 export function deriveSessionUid(namespace: string, upstreamId: string): string {
   return deriveUuidV5(namespace, upstreamId);
 }
 
 export function deriveSynthesizedEntryId(namespace: string, seedParts: readonly string[]): string {
-  return deriveUuidV5(namespace, seedParts.join("\x1f"));
-}
-
-function deriveUuidV5(namespace: string, name: string): string {
-  const namespaceBytes = uuidBytes(namespace);
-  const hash = createHash("sha1").update(namespaceBytes).update(name, "utf8").digest();
-  const bytes = Uint8Array.prototype.slice.call(hash, 0, 16);
-  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x50;
-  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
-  return formatUuid(bytes);
-}
-
-function uuidBytes(uuid: string): Uint8Array {
-  const hex = uuid.replace(/-/g, "");
-  if (hex.length !== 32 || /[^0-9a-fA-F]/.test(hex)) {
-    throw new TypeError(`Invalid namespace UUID: ${uuid}`);
-  }
-  const bytes = new Uint8Array(16);
-  for (let index = 0; index < bytes.length; index += 1) {
-    bytes[index] = Number.parseInt(hex.slice(index * 2, index * 2 + 2), 16);
-  }
-  return bytes;
-}
-
-function formatUuid(bytes: Uint8Array): string {
-  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+  return deriveSeededUuidV5(namespace, seedParts);
 }
 
 /** Namespace for Claude Code adapter session_uids. Stable forever — do not change. */

@@ -4,8 +4,10 @@
 
 ```ts
 
-// @public
-export const DEFAULT_PATTERNS: RedactionPattern[];
+import { DEFAULT_PATTERNS } from '@agent-trail/core/credential-patterns';
+import { RedactionPattern } from '@agent-trail/core/credential-patterns';
+
+export { DEFAULT_PATTERNS }
 
 // @public
 export type LoadedRedactionPack = RedactionPackSummary & {
@@ -63,13 +65,7 @@ export type RedactionPackSummary = {
     source: RedactionPackSource;
 };
 
-// @public
-export type RedactionPattern = {
-    id: string;
-    description: string;
-    regex: RegExp;
-    placeholder: string;
-};
+export { RedactionPattern }
 
 // @public
 export type RedactionSample = {

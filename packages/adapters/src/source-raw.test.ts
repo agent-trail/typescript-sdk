@@ -1,5 +1,4 @@
 // @ts-nocheck
-// @ts-nocheck
 import { afterEach, expect, test } from "bun:test";
 import { BEARER_TOKEN, CREDENTIAL_PATTERNS } from "./secret-patterns.js";
 import { enforceSourceRawSize, redactValue } from "./source-raw.js";
@@ -87,6 +86,13 @@ test("redactValue redacts a top-level string containing a credential", () => {
   expect(redactValue("Authorization: Bearer abcdefABCDEF0123456789xyzXYZ")).toBe(
     "Authorization: Bearer [TOKEN]",
   );
+});
+
+test("redactValue leaves path-like source raw values unchanged", () => {
+  expect(redactValue({ cwd: "/Users/example/project", path: "/home/example/file.ts" })).toEqual({
+    cwd: "/Users/example/project",
+    path: "/home/example/file.ts",
+  });
 });
 
 test("redactValue and source raw sizing replace lone surrogates", () => {

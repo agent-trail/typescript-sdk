@@ -20,6 +20,22 @@ import {
   schemaDiagnosticCode,
 } from "./validation/schema/errors.js";
 
+export {
+  BEARER_TOKEN,
+  CREDENTIAL_CONTEXT_PLACEHOLDER,
+  CREDENTIAL_PATTERNS,
+  DEFAULT_PATTERNS,
+  isCredentialKey,
+  isOpaqueTokenValue,
+  isSafeCredentialContextValue,
+  type RedactionPattern,
+} from "./credential-patterns.js";
+export {
+  canonicalizeIdentityString,
+  deriveSeededUuidV5,
+  deriveUuidV5,
+} from "./identity.js";
+
 /**
  * Validation strictness for core trail validation.
  *

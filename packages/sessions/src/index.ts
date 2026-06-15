@@ -58,6 +58,7 @@ export type {
   LoadSessionOptions,
   LoadSessionResult,
   SessionsClient,
+  SessionsDefaultAdapterOptions,
   SessionsOptions,
   SessionsShareInput,
   SessionsShareTransport,

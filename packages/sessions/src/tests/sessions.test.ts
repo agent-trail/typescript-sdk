@@ -160,6 +160,7 @@ sessionsTest("share redacts stored trail and records gist id", async (harness) =
   const result = await shareSession({
     catalogDb: harness.catalogDb,
     storeRoot: harness.storeRoot,
+    adapters: [harness.adapter],
     transport,
     adapter: "test-agent",
     sourceId: SESSION_ID,
@@ -186,6 +187,7 @@ sessionsTest("export returns raw finalized stored bytes", async (harness) => {
   const result = await exportSession({
     catalogDb: harness.catalogDb,
     storeRoot: harness.storeRoot,
+    adapters: [harness.adapter],
     adapter: "test-agent",
     sourceId: SESSION_ID,
   });
@@ -215,6 +217,7 @@ sessionsTest("export ignores mutable catalog object paths", async (harness) => {
   const result = await exportSession({
     catalogDb: harness.catalogDb,
     storeRoot: harness.storeRoot,
+    adapters: [harness.adapter],
     adapter: "test-agent",
     sourceId: SESSION_ID,
   });
@@ -241,7 +244,7 @@ sessionsTest(
     const other = await registerTrail(otherInput, {
       catalogDb: harness.catalogDb,
       storeRoot: harness.storeRoot,
-      sourcePath: "/tmp/source/other-session.jsonl",
+      sourcePath: SESSION_PATH,
     });
     if (other.contentHash === null) throw new Error("other register failed");
     await harness.catalogDb.exec(
@@ -253,6 +256,7 @@ sessionsTest(
       await exportSession({
         catalogDb: harness.catalogDb,
         storeRoot: harness.storeRoot,
+        adapters: [harness.adapter],
         adapter: "test-agent",
         sourceId: SESSION_ID,
       }),

@@ -293,11 +293,30 @@ export type SessionsClient = {
 };
 
 // @public
+export type SessionsDefaultAdapterOptions = {
+    "claude-code"?: {
+        env?: NodeJS.ProcessEnv;
+    };
+    codex?: {
+        env?: NodeJS.ProcessEnv;
+    };
+    opencode?: {
+        env?: NodeJS.ProcessEnv;
+        storageDir?: string;
+        dbPath?: string;
+        sqliteDriver?: SqliteDriver;
+    };
+    pi?: {
+        env?: NodeJS.ProcessEnv;
+    };
+};
+
+// @public
 export type SessionsOptions = {
     catalogDb: CatalogDb;
     storeRoot?: string;
     adapters?: readonly TrailAdapter[];
-    defaultAdapterOptions?: DefaultTrailAdaptersOptions;
+    defaultAdapterOptions?: SessionsDefaultAdapterOptions;
 };
 
 // @public

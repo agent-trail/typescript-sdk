@@ -32,6 +32,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@agent-trail/adapter-kit": "workspace:*",
     "@agent-trail/adapters": "workspace:*",
     "@agent-trail/catalog": "workspace:*",
     "@agent-trail/core": "workspace:*",

@@ -1,8 +1,5 @@
-import type {
-  DefaultTrailAdaptersOptions,
-  DetectOptions,
-  TrailAdapter,
-} from "@agent-trail/adapters";
+import type { SqliteDriver } from "@agent-trail/adapter-kit";
+import type { DetectOptions, TrailAdapter } from "@agent-trail/adapters";
 import type { CatalogDb, CatalogEntryRow } from "@agent-trail/catalog";
 import type { RedactionSummary, RedactTrailOptions } from "@agent-trail/redact";
 import type { RegisterStatus } from "@agent-trail/store";
@@ -20,7 +17,24 @@ export type SessionsOptions = {
   /** Concrete adapters. Defaults to `createDefaultTrailAdapters`. */
   adapters?: readonly TrailAdapter[];
   /** Options used when default adapters are constructed. */
-  defaultAdapterOptions?: DefaultTrailAdaptersOptions;
+  defaultAdapterOptions?: SessionsDefaultAdapterOptions;
+};
+
+/**
+ * Options used when sessions constructs the default adapter set.
+ *
+ * @public
+ */
+export type SessionsDefaultAdapterOptions = {
+  "claude-code"?: { env?: NodeJS.ProcessEnv };
+  codex?: { env?: NodeJS.ProcessEnv };
+  opencode?: {
+    env?: NodeJS.ProcessEnv;
+    storageDir?: string;
+    dbPath?: string;
+    sqliteDriver?: SqliteDriver;
+  };
+  pi?: { env?: NodeJS.ProcessEnv };
 };
 
 /**

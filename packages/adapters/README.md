@@ -29,8 +29,9 @@ Credential pattern primitives live in `@agent-trail/core` and the
 `@agent-trail/core/credential-patterns` subpath for packages that need the same
 credential-only source raw policy:
 
-- `BEARER_TOKEN`, `CREDENTIAL_PATTERNS`, and the other named patterns from
-  `credential-patterns`
+- `BEARER_TOKEN`, `CREDENTIAL_PATTERNS`, `DEFAULT_PATTERNS`,
+  `CREDENTIAL_CONTEXT_PLACEHOLDER`, `RedactionPattern`, and the credential key
+  helper predicates from `credential-patterns`
 
 Source raw size limits remain adapter-internal. If you are writing an adapter
 outside this workspace, import credential patterns from core and implement your

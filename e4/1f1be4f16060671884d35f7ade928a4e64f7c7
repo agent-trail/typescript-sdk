@@ -1,0 +1,1171 @@
+packages/schema/fixtures/validation/valid/multi-session-fork-from-chain.trail.jsonl
+  s_41a01eab7e41e9::t_f42bbbbbe5a93d 1
+  s_41a01eab7e41e9::t_3843eb7e8a2668 3
+packages/schema/fixtures/validation/invalid-schema/tool-result-meta-shell-command-extra-field.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/pi/system-events.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-5
+packages/adapter-kit/src/mapping/dispatch.test.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-4
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_29ebef52f81761 2,5-54
+packages/adapters/tests/fixtures/contracts/codex-refactor-contract.source.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-5
+packages/adapters/tests/fixtures/real-sessions/pi-v1-vcs-commit.trail.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-5
+packages/adapters/src/header-metadata.test.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 3-4,6-12,14-56
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 5
+  s_41a01eab7e41e9::t_aab997279a3993 13
+  s_41a01eab7e41e9::t_8306e21651dcdc 1-2
+packages/adapters/src/shared/type-guards.ts
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 1-3
+packages/adapters/src/pi/paths.ts
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1-40
+packages/schema/fixtures/validation/invalid-graph/ambiguous-sequential-pairing.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/source-schemas/select.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-45
+packages/schema/fixtures/validation/hash-vectors/replacement-char.trail.jsonl
+  s_41a01eab7e41e9::t_f42bbbbbe5a93d 1
+packages/adapter-kit/src/readers/bun-sqlite-driver.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1,3-12,24-30
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 2
+  s_41a01eab7e41e9::t_9d6afe041e9c02 13-23
+packages/schema/fixtures/validation/invalid-graph/stream-open-with-content-hash.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/codex/diagnostics-v0_128.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-8
+packages/schema/fixtures/validation/invalid-schema/command-invoke-bad-result-action.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/invalid-schema/redaction-count-non-integer.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/etc/adapter-kit.api.md
+  s_41a01eab7e41e9::t_d790b07ac9ac64 1-351
+packages/schema/fixtures/validation/invalid-graph/unmatched-tool-call-session-terminated-without-open-call-ids.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/codex/real-session.test.ts
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_d80bae4e1ba6fc 101
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 2,10-100,102-111
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3,5-7
+  s_41a01eab7e41e9::t_d620ce23162a34 4,8-9
+packages/schema/fixtures/validation/valid/tool-call-matched-by-semantic-call-id.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/claude-code/basic-flow.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-9
+packages/adapter-kit/src/reconciler/branch.test.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 4
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_29ebef52f81761 2-3,5-25
+packages/adapters/tests/fixtures/real-sessions/claude-code-v1-vcs-commit.trail.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-6
+packages/adapters/tests/fixtures/pi/linear-flow.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-5
+packages/adapters/src/session-uid.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-58
+packages/schema/fixtures/validation/hash-mismatch/content-hash-mismatch.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/claude-code/mappings.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1,7-12,14-20
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 2-6,13
+packages/schema/fixtures/validation/invalid-graph/duplicate-option-labels.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/invalid-schema/agent-message-usage-missing-required.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/real-sessions/pi-v1-edit-forms.source.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-5
+packages/schema/fixtures/validation/invalid-schema/command-invoke-missing-kind.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/valid/tool-call-matched-by-for-id.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/codex/mappings.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-2,7-13,18,20-97
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-6,14-17,19
+packages/adapters/tests/fixtures/real-sessions/claude-code-v1-vcs-commit.source.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-3
+packages/adapter-kit/src/mapping/match.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 3-25
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 1-2
+packages/core/test/parse-fidelity.test.ts
+  s_41a01eab7e41e9::t_ed3797f0a3a237 12
+packages/schema/fixtures/validation/valid/command-invoke-full.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/claude-code/usage-first-entry.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-3
+packages/schema/fixtures/validation/invalid-graph/branch-point-unknown-from-id.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/source-schemas/README.md
+  s_41a01eab7e41e9::t_29ebef52f81761 1-70
+packages/adapters/src/codex/overrides.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-8,11-348
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 9-10
+packages/store/test/register.test.ts
+  s_41a01eab7e41e9::t_ed3797f0a3a237 89,101,125,168,180,204,303,327,373,395,490,502,545,559,605,647
+  s_41a01eab7e41e9::t_437782b8f4e8bc 22
+packages/adapters/src/opencode/source.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-4
+  s_41a01eab7e41e9::t_4de4495b79e719 15,20-21,26-29,33-36,41
+  s_41a01eab7e41e9::t_a46fc0777573cb 126
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1-2,5-14,16-19,22-25,30-32,37-40,42-125,127-189
+packages/adapter-kit/src/mapping/ids.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-73
+packages/schema/fixtures/validation/invalid-graph/parse-fidelity-drift.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/invalid-graph/sequential-pairing-stays-in-sibling-branch.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/import-smoke.test.ts
+  s_41a01eab7e41e9::t_9159213e1112a5 14
+  s_41a01eab7e41e9::t_e9bc801964cc58 1-13,15
+packages/schema/fixtures/validation/invalid-schema/tool-call-aborted-turn-scope-with-for-id.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/reader-tolerant/tool-result-meta-registered-extra-field.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/README.md
+  s_41a01eab7e41e9::t_ed3797f0a3a237 11
+packages/adapters/tests/fixtures/claude-code/interrupt-and-model-change.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-6
+packages/adapters/src/test-helpers.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-4,7-240,244,247-423
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 5-6
+  s_41a01eab7e41e9::t_fbccad4b3fde8a 241-243,245-246
+packages/redact/test/redact.test.ts
+  s_41a01eab7e41e9::t_ed3797f0a3a237 9
+packages/adapters/src/session-uid.test.ts
+  s_41a01eab7e41e9::t_8306e21651dcdc 1-2
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 8
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 3-7,9-44
+packages/adapter-kit/src/primitives/usage.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-107
+packages/adapters/src/resume.ts
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 2-10
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 1
+packages/adapter-kit/api-extractor.json
+  s_41a01eab7e41e9::t_a944571d90c085 1-42
+packages/schema/fixtures/validation/valid/tool-result-for-id-targets-header-falls-through.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/primitives/shell.test.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 2,4-18
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3
+packages/schema/fixtures/validation/reader-tolerant/reserved-future-event-type.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/reconciler/parent-chain.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-16
+packages/schema/fixtures/validation/valid/command-invoke-extension-kind.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/invalid-graph/unmatched-tool-call-at-eof.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/claude-code/capability-changes.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-5
+packages/schema/fixtures/validation/invalid-graph/envelope-sessions-manifest-empty.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 2
+packages/adapters/src/opencode/attachments.ts
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1,3-36
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 2
+packages/adapters/src/claude-code/index.ts
+  s_41a01eab7e41e9::t_ac3dba2ab9a3cf 42,380-383,387-388,452-453
+  s_41a01eab7e41e9::t_6778c5a27c4035 93,153,385-386,451
+  s_41a01eab7e41e9::t_8f871fd8d3bbcb 362-363
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 2-4,7-13,17-20,29-41,43-89,94-152,154-231,233-325,327-361,364-379,384,443
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 5-6,14-16,21-28
+  s_41a01eab7e41e9::t_feda5f1e45436c 232,326
+  s_41a01eab7e41e9::t_f0549e9bb55267 1,90-92,389-442,444-450
+packages/schema/fixtures/validation/invalid-graph/sequential-pairing-stays-in-subagent-sibling-branch.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/invalid-schema/envelope-missing-producer.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 2
+packages/adapters/src/claude-code/mapping/system.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-2,6-104
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-5
+packages/adapters/etc/adapters.api.md
+  s_41a01eab7e41e9::t_d790b07ac9ac64 1-183
+packages/schema/fixtures/validation/hash-vectors/envelope-two-tier.trail.jsonl
+  s_41a01eab7e41e9::t_f42bbbbbe5a93d 2
+  s_41a01eab7e41e9::t_794e44d77a986e 1
+packages/adapters/src/pi/suppressed-entries.test.ts
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 2-4,6-50
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 5
+packages/schema/fixtures/validation/invalid-schema/agent-message-usage-extra-field.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/pi/usage-and-cost.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-3
+packages/adapters/tests/fixtures/real-sessions/claude-code-v1.trail.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-3781
+packages/adapters/tests/fixtures/pi/custom-message-variants.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-6
+packages/adapters/tests/fixtures/real-sessions/pi-v1-edit-forms.trail.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-6
+packages/adapters/src/codex/paths.ts
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 1-22
+packages/schema/fixtures/validation/invalid-graph/tool-result-for-id-wins-over-semantic-conflict.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/real-sessions/codex-v0_128.source.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-938
+packages/adapters/tests/fixtures/codex/v0_135-events.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-9
+packages/schema/fixtures/validation/invalid-graph/multiple-envelopes.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 3
+packages/adapters/src/codex/mappings/tools.ts
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 1-3,5-11,14-21,23-308
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 4,12-13,22
+packages/adapters/src/opencode/real-session.test.ts
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 3-7,10-14,20-310
+  s_41a01eab7e41e9::t_81d0129954b7a7 8
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_dfeaa8070167f6 2
+  s_41a01eab7e41e9::t_f0549e9bb55267 9
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 15-17
+  s_41a01eab7e41e9::t_d620ce23162a34 18-19
+packages/schema/fixtures/validation/invalid-schema/segment-seq-zero.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/source-schemas/registry.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-35
+packages/schema/fixtures/validation/valid/session-metadata-update-agent-model-default.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/valid/streaming-finalized-clean.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/codex/image-message.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-4
+packages/schema/fixtures/validation/valid/tool-call-aborted-turn-scope.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/tsconfig.build.json
+  s_41a01eab7e41e9::t_6284e176012e61 1-15
+packages/adapters/src/codex/mappings/shared.ts
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 1-2,4-9,13-94,96-98
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3,10-12
+  s_41a01eab7e41e9::t_a46fc0777573cb 95
+packages/adapters/src/codex/mappings/lifecycle.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-6
+  s_41a01eab7e41e9::t_4de4495b79e719 27-32,182
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-2,7-26,33-181,183-581
+packages/schema/fixtures/validation/invalid-schema/segment-seq-2-without-session-uid.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/valid/tool-result-output-size-truncated.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/readers/sqlite-reader.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-2,4-10,15-78
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3
+  s_41a01eab7e41e9::t_f0549e9bb55267 12-14
+  s_41a01eab7e41e9::t_cefd2e7877181a 11
+packages/adapter-kit/src/pipeline/quarantine.ts
+  s_41a01eab7e41e9::t_4952b0dd440098 59
+  s_41a01eab7e41e9::t_29ebef52f81761 1,4-58,60-63
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 2-3
+packages/adapters/tests/fixtures/codex/image-message-repeated-text.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-4
+packages/adapters/src/pi/mapping/custom.ts
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1-2,6-155
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-5
+packages/adapters/src/shared/concurrency.test.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 2,4-49
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+packages/source-schemas/codex/meta.json
+  s_41a01eab7e41e9::t_29ebef52f81761 1-9
+packages/schema/fixtures/validation/invalid-schema/segment-seq-2-without-prev-hash.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/store/test/reconcile-incoming.test.ts
+  s_41a01eab7e41e9::t_ed3797f0a3a237 60,82,115,178,216,262,296,375,421,435
+packages/source-schemas/codex/v0.135.d.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-15
+packages/adapters/src/pi/mapping/branching.ts
+  s_41a01eab7e41e9::t_891adb9a995b51 14
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 1-2,6-13,15-128
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-5
+packages/adapters/src/opencode/paths.ts
+  s_41a01eab7e41e9::t_6778c5a27c4035 3-5,7,11,16-18,20,24-25
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1-2,6,8-10,12-15,19,21-23,26-27
+packages/schema/fixtures/validation/reader-tolerant/unknown-event-type.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/valid/session-end-with-final-message-id.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/codex/lifecycle.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-24
+packages/adapters/tests/fixtures/codex/diagnostics.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-8
+packages/schema/fixtures/validation/hash-vectors/absent-content-hash.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/source-schemas/corpus.test.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 6-7
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_29ebef52f81761 2-5,8-67
+packages/schema/fixtures/validation/invalid-schema/user-message-non-string-text.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/readers/sqlite-reader.test.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 2-6,10-92
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 7-9
+packages/adapters/src/codex/assembly.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-3,8-11,21-206,209-326
+  s_41a01eab7e41e9::t_4be353154004f3 207-208
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 4-7,12-20
+packages/adapters/src/index.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 69-70,75
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 2-7,9-12,16-22,24-28,31-37,41-62,64,82-96,101
+  s_41a01eab7e41e9::t_19a3470c20b519 8,13-15,23,29-30,38-40,63
+  s_41a01eab7e41e9::t_0616c43f0f48b6 65-68,71-74,76-81
+  s_41a01eab7e41e9::t_3fdaa8a2478f54 1,97-100
+packages/schema/fixtures/validation/valid/with-trail-envelope-and-hash.trail.jsonl
+  s_41a01eab7e41e9::t_794e44d77a986e 1
+  s_41a01eab7e41e9::t_f42bbbbbe5a93d 2
+packages/adapters/tests/fixtures/codex/image-message-unmatched.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-3
+packages/adapters/src/pi/mapping/shared.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 1
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 2-27,30-49
+  s_41a01eab7e41e9::t_891adb9a995b51 28-29
+packages/adapter-kit/src/pipeline/override.test.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 2,7-80
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-6
+packages/schema/fixtures/validation/valid/session-metadata-update-vendor.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/codex/apply-patch.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-7
+packages/schema/fixtures/validation/invalid-schema/tool-result-truncated-missing-output-size.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/valid/unmatched-tool-call-suppressed-by-session-terminated.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/claude-code/real-session.test.ts
+  s_41a01eab7e41e9::t_d620ce23162a34 2,9-10
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 7-8
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 3-6,11-34
+packages/schema/fixtures/validation/hash-vectors/jcs-stress.trail.jsonl
+  s_41a01eab7e41e9::t_f42bbbbbe5a93d 1
+packages/schema/fixtures/validation/invalid-schema/session-end-final-message-id-null.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/mapping/dispatch.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 4-20
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 1-3
+packages/source-schemas/codex/v0.128.json
+  s_41a01eab7e41e9::t_1a4185327e67d2 7,10,22,25,40,43,55,86
+  s_41a01eab7e41e9::t_29ebef52f81761 1-6,8-9,11-21,23-24,26-39,41-42,44-54,56-85,87-104
+packages/schema/fixtures/validation/invalid-schema/user-message-missing-text.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/pi/usage-first-entry.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-5
+packages/schema/fixtures/validation/invalid-schema/command-invoke-bad-kind.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/invalid-schema/session-uid-not-ulid-or-uuid.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/valid/minimal-linear.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/shared/jsonl-head.test.ts
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 2-5,7-63
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 6
+packages/adapters/src/opencode/tools.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 2
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1,3-112,114-115,117-121
+  s_41a01eab7e41e9::t_8f871fd8d3bbcb 113,116
+packages/schema/schema/v0.1.0.json
+  s_41a01eab7e41e9::t_5429480f1009f5 112
+packages/adapter-kit/src/source-schemas/validate.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-2,5-55
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-4
+packages/schema/fixtures/validation/valid/context-compact-replaced-message-ids.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/opencode/health.ts
+  s_41a01eab7e41e9::t_4739f67b927910 5-10,14
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 4,11-13,15-31
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 1-3
+packages/adapters/src/opencode/storage/index.ts
+  s_41a01eab7e41e9::t_28b905c5353dd7 22,27-28,94-100,138,161,166,175,183-185,187-188,242-245,252-255,257,266,281,308,342,344-345,347,349,380,386
+  s_41a01eab7e41e9::t_f0549e9bb55267 3
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1-2,6-19,21,29-93,101-105,107-137,139-160,162-165,167-174,176-177,179-181,186,189-241,246-251,256,258-265,267-280,282-307,309-341,346,348,350-379,381,385,387-391
+  s_41a01eab7e41e9::t_4de4495b79e719 23-25,178
+  s_41a01eab7e41e9::t_4739f67b927910 26,106,182,343,382-384
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 4-5,20
+packages/adapter-kit/src/primitives/args.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 3-24
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 1-2
+packages/adapters/src/pi/mappings.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 2-8,10
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1,9,11-32
+packages/adapters/src/pi/kit.ts
+  s_41a01eab7e41e9::t_d3a1f6842d0668 1,62
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 3,6-11,14-19,21-61,63-64
+  s_41a01eab7e41e9::t_f0549e9bb55267 2
+  s_41a01eab7e41e9::t_a46fc0777573cb 20
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 4-5,12-13
+packages/schema/fixtures/validation/valid/unmatched-tool-call-suppressed-by-session-end.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/source-schemas/type-smoke.test.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 2-18
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+packages/adapter-kit/src/readers/compose.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1,3-73
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 2
+packages/schema/fixtures/validation/valid/multi-segment-seg2.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/reconciler/cumulative-tokens.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 2
+  s_41a01eab7e41e9::t_29ebef52f81761 1,3-77
+packages/adapters/tests/fixtures/codex/reasoning-dedupe.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-10
+packages/adapter-kit/src/reconciler/index.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1,7-34
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 2-6
+packages/schema/fixtures/validation/invalid-graph/envelope-sessions-manifest-multiple.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1-2
+packages/adapters/tests/fixtures/codex/token-usage.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-5
+packages/adapters/src/vcs-commit.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1,3-15,17-20,22-53,56-110,113-151,154,156-316
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 2
+  s_41a01eab7e41e9::t_4de4495b79e719 16,21
+  s_41a01eab7e41e9::t_8f871fd8d3bbcb 54-55,111-112,152-153,155
+packages/adapters/src/parenting.test.ts
+  s_41a01eab7e41e9::t_8306e21651dcdc 1-2
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 3-4,6-76
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 5
+packages/adapters/src/pi/real-session.test.ts
+  s_41a01eab7e41e9::t_d620ce23162a34 2,9-10
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 3-6,11-26
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 7-8
+packages/adapters/src/vcs.ts
+  s_41a01eab7e41e9::t_fdb970c5920be4 10,158-159,162,164-178
+  s_41a01eab7e41e9::t_a46fc0777573cb 96
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-9,11-95,97-157,160-161,163,179
+packages/adapters/tests/fixtures/pi/string-assistant-model-change.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-5
+packages/adapter-kit/README.md
+  s_41a01eab7e41e9::t_29ebef52f81761 1-198
+packages/adapters/src/claude-code/parser.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-5,8-142
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 6-7
+packages/adapter-kit/src/pipeline/quarantine.test.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 2-3,5-9,11-19,21-55,57-64
+  s_41a01eab7e41e9::t_ed3797f0a3a237 10,20,56
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 4
+packages/adapter-kit/src/primitives/usage.test.ts
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3
+  s_41a01eab7e41e9::t_29ebef52f81761 2,4-162
+packages/adapters/tests/fixtures/real-sessions/opencode-v1-vcs-commit.source.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-3
+packages/source-schemas/pi/v1.d.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-23
+packages/adapters/src/pi/divergence.ts
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1-75
+packages/adapter-kit/src/primitives/coerce.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-6
+packages/adapters/tests/fixtures/codex/reasoning-cross-turn.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-10
+packages/adapters/src/entries.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 2
+  s_41a01eab7e41e9::t_4de4495b79e719 6-7
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1,3-5,8-62
+packages/schema/fixtures/validation/hash-vectors/segment-chain-seq2.trail.jsonl
+  s_41a01eab7e41e9::t_f42bbbbbe5a93d 1
+packages/adapters/src/contract-goldens.test.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 13
+  s_41a01eab7e41e9::t_049c910747d813 83-85
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 3-5,7,11-12,18-70,74-82,86-92
+  s_41a01eab7e41e9::t_81d0129954b7a7 6,71-73
+  s_41a01eab7e41e9::t_d620ce23162a34 8-10,14-17
+  s_41a01eab7e41e9::t_8306e21651dcdc 1-2
+packages/adapter-kit/src/pipeline/define-adapter.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 2-8
+  s_41a01eab7e41e9::t_2589c2bdd02f0b 36,51-53,55-56,75-79
+  s_41a01eab7e41e9::t_5157af581fc539 46,48
+  s_41a01eab7e41e9::t_29ebef52f81761 1,9-35,37-45,47,49-50,54,57-74,80-85
+packages/adapters/tests/fixtures/pi/README.md
+  s_41a01eab7e41e9::t_29ebef52f81761 1-42
+packages/adapters/tests/fixtures/real-sessions/codex-v0_128.trail.jsonl
+  s_41a01eab7e41e9::t_d80bae4e1ba6fc 1-557
+packages/adapters/src/shared/jsonl-head.ts
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 1-57
+packages/adapters/src/opencode/index.test.ts
+  s_41a01eab7e41e9::t_d620ce23162a34 13-14
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_f0549e9bb55267 10
+  s_41a01eab7e41e9::t_81d0129954b7a7 9
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 11-12
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 3-8,15-434,466-485,494-1606
+  s_41a01eab7e41e9::t_e3281614444e05 435-465,486-493
+  s_41a01eab7e41e9::t_dfeaa8070167f6 2
+packages/schema/fixtures/validation/invalid-graph/multi-session-cross-group-parent.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/primitives/args.test.ts
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_29ebef52f81761 2,4-35
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3
+packages/adapters/src/codex/kit.ts
+  s_41a01eab7e41e9::t_a46fc0777573cb 19,33
+  s_41a01eab7e41e9::t_5429480f1009f5 30-31,34
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-5,14-15
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 1-2,6-13,16-18,20-29,32,35-73
+packages/adapter-kit/src/pipeline/engine.test.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 2,6-93
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-5
+packages/adapters/tests/fixtures/codex/image-message-source-data.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-3
+packages/adapters/tests/fixtures/pi/reasoning-and-interrupt.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-5
+packages/adapters/src/shared/registry.ts
+  s_41a01eab7e41e9::t_f0549e9bb55267 1-2,35-37
+  s_41a01eab7e41e9::t_b36309a9fbd2b1 4-5,7-13,15-32,38-43
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 6,14,33-34,44
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3
+packages/adapters/src/pi/mapping/metadata.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-5
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1-2,6-69
+packages/adapters/tsconfig.json
+  s_41a01eab7e41e9::t_f233208ef7a5df 10-11
+  s_41a01eab7e41e9::t_6284e176012e61 1-9,12
+packages/schema/fixtures/validation/invalid-graph/session-end-forward-final-message-id.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/valid/tool-call-matched-same-parent-siblings.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/contracts/codex-refactor-contract.trail.jsonl
+  s_41a01eab7e41e9::t_d80bae4e1ba6fc 1-6
+packages/schema/fixtures/validation/invalid-graph/branch-summary-unknown-abandoned-branch-id.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/source-schemas/opencode/v1.json
+  s_41a01eab7e41e9::t_29ebef52f81761 1-67
+packages/schema/fixtures/validation/valid/tool-call-aborted-extension-scope-reason.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/invalid-schema/tool-call-aborted-tool-scope-missing-for-id.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/real-sessions/codex-v0_135.trail.jsonl
+  s_41a01eab7e41e9::t_d80bae4e1ba6fc 1-763
+packages/adapters/src/opencode/index.ts
+  s_41a01eab7e41e9::t_4739f67b927910 57,126
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 5-6,13-24
+  s_41a01eab7e41e9::t_7c1935be59be7d 39
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 3-4,7-12,30-38,42-47,64,104,124
+  s_41a01eab7e41e9::t_5ea30784f77bed 1,25-29,48-56,58-63,125,127-136
+  s_41a01eab7e41e9::t_a1b3e2069971f3 41
+  s_41a01eab7e41e9::t_f0549e9bb55267 2,40,65-103,105-123
+packages/schema/fixtures/validation/invalid-schema/header-wrong-schema-version.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+.fallowrc.json
+  s_41a01eab7e41e9::t_325db29d9019c7 13-14,18
+  s_41a01eab7e41e9::t_7ac37483520427 15-17,19-21
+packages/adapters/tests/fixtures/pi/compaction-and-model-change.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-7
+packages/adapters/tests/fixtures/pi/bash-execution.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-4
+packages/adapters/tests/fixtures/real-sessions/opencode-v1.trail.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-95
+packages/adapters/src/codex/discovery.ts
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 1-2,8-25,30-103,105-157,159-185,191-201,206-229
+  s_41a01eab7e41e9::t_6778c5a27c4035 186-190,202-205
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-7
+  s_41a01eab7e41e9::t_4de4495b79e719 26-29
+  s_41a01eab7e41e9::t_a46fc0777573cb 104,158
+packages/adapters/src/codex/reconcile-rules.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-2,7-368
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-6
+packages/adapter-kit/src/schema-agent.test.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 2,7-40,42-89,93-131
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-6
+  s_41a01eab7e41e9::t_ed3797f0a3a237 41
+  s_41a01eab7e41e9::t_f23853c8b756f1 90-92
+packages/schema/fixtures/validation/valid/multiple-session-end-events.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/pi/leaf-and-label.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-5
+packages/types/src/index.ts
+  s_41a01eab7e41e9::t_0cfeeb33f68ca5 7-9
+packages/adapters/tests/fixtures/real-sessions/README.md
+  s_41a01eab7e41e9::t_29ebef52f81761 1-13
+packages/source-schemas/claude-code/v1.d.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-30
+packages/core/test/serialization.test.ts
+  s_41a01eab7e41e9::t_ed3797f0a3a237 14
+packages/adapter-kit/src/reconciler/cumulative-tokens.test.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 4
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_29ebef52f81761 2-3,5-101
+packages/adapters/src/claude-code/reconcile-rules.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 9-13
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-8,14-479,482,484-487,492-497
+  s_41a01eab7e41e9::t_6145d0a44b2603 483
+  s_41a01eab7e41e9::t_4be353154004f3 480-481
+  s_41a01eab7e41e9::t_4a13ffcb48c1a4 488-491
+packages/source-schemas/opencode/meta.json
+  s_41a01eab7e41e9::t_29ebef52f81761 1-6
+packages/adapters/src/claude-code/kit.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-10,13-24,27-103,105-155
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 11-12,25-26
+  s_41a01eab7e41e9::t_a46fc0777573cb 104
+docs/GLOSSARY.md
+  s_41a01eab7e41e9::t_4ae9a2f6499770 49-53,76-84
+packages/schema/fixtures/validation/invalid-schema/tool-call-missing-args-path.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/invalid-schema/agent-message-usage-missing-output.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/claude-code/tools.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 1-2
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 3-99,102-202
+  s_41a01eab7e41e9::t_8f871fd8d3bbcb 100-101
+packages/adapters/tests/fixtures/real-sessions/codex-v0_135-vcs-commit.trail.jsonl
+  s_41a01eab7e41e9::t_d80bae4e1ba6fc 1-5
+packages/adapter-kit/src/reconciler/parent-chain.test.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 2-3,5,7-54
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 4
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_ed3797f0a3a237 6
+packages/schema/fixtures/validation/invalid-schema/agent-message-usage-zero-context-window.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/real-sessions/pi-v1.source.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-728
+packages/adapters/tests/fixtures/real-sessions/codex-v0_135-vcs-commit.source.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-3
+packages/adapters/src/codex/stateful.test.ts
+  s_41a01eab7e41e9::t_d620ce23162a34 6,9-10
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 7-8
+  s_41a01eab7e41e9::t_d80bae4e1ba6fc 46
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 3-5,11-45,47-219
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_dfeaa8070167f6 2
+packages/core/etc/core.api.md
+  s_41a01eab7e41e9::t_d790b07ac9ac64 32-42,116-121,129-133
+packages/schema/fixtures/validation/valid/capability-change-initial-snapshot.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/package.json
+  s_41a01eab7e41e9::t_832f4a4293c582 3,7-14,17-18,21-22,42-43,46
+  s_41a01eab7e41e9::t_29ebef52f81761 1-2,4-6,15-16,19-20,23-41,44-45,47-48
+packages/adapters/tests/fixtures/real-sessions/pi-v1-vcs-commit.source.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-3
+packages/schema/fixtures/validation/hash-mismatch/content-hash-invalid-hex.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/index.test.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 13
+  s_41a01eab7e41e9::t_aab997279a3993 85
+  s_41a01eab7e41e9::t_8306e21651dcdc 1,3
+  s_41a01eab7e41e9::t_dfeaa8070167f6 2
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 4-12,14-84,86-313
+packages/adapter-kit/src/reconciler/custom.test.ts
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_ed3797f0a3a237 7
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 4-5
+  s_41a01eab7e41e9::t_29ebef52f81761 2-3,6,8-67
+packages/adapters/src/vcs.test.ts
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 3-120,122-296
+  s_41a01eab7e41e9::t_d620ce23162a34 121
+  s_41a01eab7e41e9::t_8306e21651dcdc 1-2
+packages/schema/fixtures/validation/valid/tool-call-aborted-closes-call.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/index.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 1-2,7-10,16-21,26-27,37-41,54
+  s_41a01eab7e41e9::t_29ebef52f81761 3-6,11-15,22-25,28-36,42-53
+packages/schema/fixtures/validation/invalid-schema/vcs-null-revision-without-branch.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/reader-tolerant/ill-formed-string.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/primitives/guards.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-11
+packages/schema/fixtures/validation/valid/user-message-origin-injected.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/codex/mappings/capabilities.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-4
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 1-2,5-179
+packages/adapters/tests/fixtures/real-sessions/claude-code-v1.source.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-4151
+packages/schema/fixtures/validation/invalid-graph/duplicate-option-labels-mixed-ids.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/codex/parser.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-24,28,30-139,141-643
+  s_41a01eab7e41e9::t_5429480f1009f5 29
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 25-27
+  s_41a01eab7e41e9::t_a46fc0777573cb 140
+docs/adr/0001-sdk-package-architecture-and-public-api-boundaries.md
+  s_41a01eab7e41e9::t_137b6e293f6dd4 55-56,59-61,79-80,107-112
+packages/adapters/src/opencode/header.ts
+  s_41a01eab7e41e9::t_70583468a4e9ab 20
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1-7,9-15,17-19,21-59
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 8,16
+docs/parser-source-matrix.md
+  s_41a01eab7e41e9::t_ed30b85fbcd96a 1-37
+packages/schema/fixtures/validation/hash-vectors/multi-session-slice.trail.jsonl
+  s_41a01eab7e41e9::t_f42bbbbbe5a93d 1,4
+packages/adapters/package.json
+  s_41a01eab7e41e9::t_e8317d4bb336c8 3,7-15,18-19,33
+  s_41a01eab7e41e9::t_29ebef52f81761 1-2,4-6,16-17,20-32,34-40
+packages/schema/fixtures/validation/invalid-schema/command-invoke-missing-name.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/invalid-schema/tool-call-truncated-missing-args-size.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/import-smoke.test.ts
+  s_41a01eab7e41e9::t_e9bc801964cc58 1-15
+packages/adapter-kit/src/reconciler/strip-linker.test.ts
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 4
+  s_41a01eab7e41e9::t_ed3797f0a3a237 6
+  s_41a01eab7e41e9::t_29ebef52f81761 2-3,5,7-36
+packages/schema/fixtures/validation/invalid-graph/unknown-parent-id.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/claude-code/source.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-109
+packages/schema/fixtures/validation/reader-tolerant/unknown-payload-field.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/valid/command-invoke-slash.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/real-session-fixtures.test.ts
+  s_41a01eab7e41e9::t_049c910747d813 382-384
+  s_41a01eab7e41e9::t_81d0129954b7a7 8,369
+  s_41a01eab7e41e9::t_aab997279a3993 166,183,201
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 3-7,9-10,15-16,18,24-165,167-182,184-200,202-368,370-381,385-387,391-584
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 17
+  s_41a01eab7e41e9::t_d620ce23162a34 11-14,19-23,388-390
+  s_41a01eab7e41e9::t_8306e21651dcdc 1-2
+packages/schema/spec-artifacts.json
+  s_41a01eab7e41e9::t_f42bbbbbe5a93d 24,28,32,36,44,48,52,56,60,64,68,72,76,80,84,88,92,96,100,104,108,112,120,124,128,132,136,140,144,148,152,156,160,164,168,172,176,180,184,188,192,196,200,204,208,216,220,224,228,248,252,256,260,264,268,272,276,280,284,288,292,312,316,320,324,328,332,336,340,344,364,368,372,376,380,384,388,392,404,408,416,420,424,428,432,444,452,460,464,468,476,480,484,488,492,496,500,504,508,516,524,528,532,536,544,560,588,592,600,604,608,612,616,620,624,628,632,648,660,676,680,684,688,692,696,700,708
+  s_41a01eab7e41e9::t_bde1d183c4d776 412
+  s_41a01eab7e41e9::t_3843eb7e8a2668 512
+  s_41a01eab7e41e9::t_794e44d77a986e 40,520,704
+  s_41a01eab7e41e9::t_b4a0cbf37ca992 11
+packages/adapters/src/header-metadata.ts
+  s_41a01eab7e41e9::t_6145d0a44b2603 26-27
+  s_41a01eab7e41e9::t_70583468a4e9ab 25,28
+  s_41a01eab7e41e9::t_29ebef52f81761 1-24,29-32
+packages/schema/fixtures/validation/invalid-graph/non-monotonic-event-ts.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/reader-tolerant/nested-unknown-payload-field.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/valid/context-compact-provenance-only-ids.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/valid/tool-call-file-patch.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/valid/tool-result-meta-shell-command.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/valid/vcs-unborn-head.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/valid/command-invoke-result-action-ext.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/codex/capability-changes.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-9
+packages/adapters/src/claude-code/paths.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-27
+packages/adapter-kit/src/reconciler/strip-linker.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-17
+packages/adapters/src/claude-code/mapping/capabilities.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-2,6-12,14-394
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-5,13
+packages/adapters/src/pi/mapping/messages.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 12-15
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 1-11,16-260
+packages/source-schemas/codex/v0.135.json
+  s_41a01eab7e41e9::t_29ebef52f81761 1-6,8-9,11-21,23-24,26-39,41-42,44-54,56-103,105-122
+  s_41a01eab7e41e9::t_1a4185327e67d2 7,10,22,25,40,43,55,104
+packages/adapters/src/parse-fidelity.ts
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1-39
+packages/adapters/src/inline-media.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-21
+scripts/spec-release.ts
+  s_41a01eab7e41e9::t_b4a0cbf37ca992 11
+packages/adapters/tests/fixtures/codex/web-search.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-5
+packages/types/src/generated.ts
+  s_41a01eab7e41e9::t_d743f51eedefc9 121,191,749,897
+packages/schema/fixtures/validation/invalid-graph/envelope-not-at-line-1.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/invalid-schema/tool-call-file-list-missing-path.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/source-schemas/select.test.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 2,4-39
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+packages/schema/fixtures/validation/valid/minimal-with-content-hash.trail.jsonl
+  s_41a01eab7e41e9::t_f42bbbbbe5a93d 1
+packages/adapters/src/codex/source.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 9
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-8,10-29
+packages/schema/fixtures/validation/invalid-graph/header-has-parent-id.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/mapping/types.test.ts
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_29ebef52f81761 2,4-22
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3
+packages/adapters/src/parenting.ts
+  s_41a01eab7e41e9::t_4de4495b79e719 6
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 1-5,7-36
+tsconfig.json
+  s_41a01eab7e41e9::t_3b19091ae31188 21-25,29
+packages/schema/fixtures/validation/valid/command-invoke-minimal.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/valid/linear-with-parent-ids.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/codex/capture-gaps.test.ts
+  s_41a01eab7e41e9::t_d620ce23162a34 8,11-12
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 9-10
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 2-7,13-740
+packages/schema/fixtures/validation/valid/multi-session-with-envelope.trail.jsonl
+  s_41a01eab7e41e9::t_f42bbbbbe5a93d 2
+  s_41a01eab7e41e9::t_794e44d77a986e 1
+packages/source-schemas/pi/v1.json
+  s_41a01eab7e41e9::t_29ebef52f81761 1-25
+packages/schema/fixtures/validation/valid/with-trail-envelope-all-fields.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1-2
+packages/adapter-kit/src/readers/compose.test.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 4-5
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_29ebef52f81761 2-3,6-120
+packages/adapters/tests/fixtures/real-sessions/opencode-v1.source.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-103
+packages/schema/fixtures/validation/invalid-schema/tool-call-file-patch-file-missing-diff.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/claude-code/mapping/metadata.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-2,5-89
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-4
+packages/adapter-kit/src/types.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 2
+  s_41a01eab7e41e9::t_ed3797f0a3a237 84
+  s_41a01eab7e41e9::t_29ebef52f81761 1,3-22,28-83,85,87-97,100-106
+  s_41a01eab7e41e9::t_1b835be28d99b3 23-27,86,98-99
+packages/schema/fixtures/validation/valid/agent-message-usage.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/manifest.json
+  s_41a01eab7e41e9::t_f42bbbbbe5a93d 110,131,133,153,174,195-196,217,238,259
+packages/schema/fixtures/validation/invalid-graph/multi-session-orphan-prelude.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 2
+packages/adapters/src/pi/mapping/context.ts
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 3-10,12-29
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 1-2
+  s_41a01eab7e41e9::t_891adb9a995b51 11
+packages/adapters/src/task-plan.ts
+  s_41a01eab7e41e9::t_a46fc0777573cb 4,26
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 1-3,5-25,27-238
+packages/adapters/tests/fixtures/pi/branch-flow.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-8
+packages/adapters/src/claude-code/mapping/shared.ts
+  s_41a01eab7e41e9::t_4de4495b79e719 32-36
+  s_41a01eab7e41e9::t_0c12ba98623f7a 1
+  s_41a01eab7e41e9::t_70583468a4e9ab 136
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 2-6,10-31,37-135,137-203
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 7-9
+packages/schema/fixtures/validation/hash-mismatch/trail-envelope-content-hash-mismatch.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 2
+packages/schema/fixtures/validation/invalid-graph/duplicate-tool-result-for-id.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/invalid-graph/sequential-pairing-stays-in-branch.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/codex/mappings/diagnostics.ts
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 1-2,5-133
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-4
+packages/adapter-kit/src/primitives/guards.test.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 2,4-33
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3
+packages/adapters/src/claude-code/envelope-mappers.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 2-126
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 1
+packages/adapters/src/codex/v0_135.test.ts
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 2-7,10-506
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 8-9
+packages/adapters/src/resume.test.ts
+  s_41a01eab7e41e9::t_8306e21651dcdc 1-2
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 3,16-116
+  s_41a01eab7e41e9::t_d620ce23162a34 5-15
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 4
+packages/adapter-kit/src/readers/jsonl-reader.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-2,4-72
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3
+packages/schema/fixtures/validation/valid/redaction-count-meta.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/README.md
+  s_41a01eab7e41e9::t_29ebef52f81761 1-102
+packages/adapter-kit/src/source-schemas/validate.test.ts
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_29ebef52f81761 2,5-64
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-4
+packages/types/etc/types.api.md
+  s_41a01eab7e41e9::t_d790b07ac9ac64 121-122,336,352,514,572-574,838-840,909
+packages/adapter-kit/src/primitives/coerce.test.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3
+  s_41a01eab7e41e9::t_29ebef52f81761 2,4-18
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+packages/adapter-kit/src/source-schemas/registry.test.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 2,4-30
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3
+packages/adapters/src/opencode/mappings.ts
+  s_41a01eab7e41e9::t_70583468a4e9ab 203
+  s_41a01eab7e41e9::t_0efffe7ae4157a 555-567
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1,5-9,11-23,26-42,44-65,67-202,204-553,568-626
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-4,10,24-25
+  s_41a01eab7e41e9::t_8f871fd8d3bbcb 554
+  s_41a01eab7e41e9::t_19a3470c20b519 2,43,66
+packages/adapters/src/pi/index.test.ts
+  s_41a01eab7e41e9::t_dfeaa8070167f6 2
+  s_41a01eab7e41e9::t_d620ce23162a34 7,17-18
+  s_41a01eab7e41e9::t_e3281614444e05 620-634
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 8-9,14-16,1308
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 3-6,10-13,19-619,635-1307,1309-2019
+packages/schema/fixtures/validation/valid/session-end-final-message-id-references-header.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/invalid-schema/vcs-null-revision-with-empty-branch.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/valid/user-query-duplicate-labels-with-ids.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/readers/types.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-4,6-20
+  s_41a01eab7e41e9::t_1b835be28d99b3 5
+packages/adapters/src/claude-code/entry-metadata.ts
+  s_41a01eab7e41e9::t_0d99e69f50daac 2
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-4
+  s_41a01eab7e41e9::t_7ac37483520427 1
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 5-54
+scripts/generate-source-types.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-51
+packages/adapters/tests/fixtures/codex/compact-and-model-change.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-8
+packages/adapters/src/codex/mappings/messages.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-8,12-15,17,23-173
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 9-11
+  s_41a01eab7e41e9::t_4de4495b79e719 16,18-22
+packages/adapters/src/envelope.ts
+  s_41a01eab7e41e9::t_19a3470c20b519 7-8,10,12-14
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1-2,4-6,9,11,15-37
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3
+packages/adapters/src/entries.test.ts
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 3,5-38
+  s_41a01eab7e41e9::t_8306e21651dcdc 1-2
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 4
+packages/adapters/src/pi/entry-metadata.ts
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 4-12
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 1-3
+packages/adapters/tsconfig.build.json
+  s_41a01eab7e41e9::t_6284e176012e61 1-15
+packages/source-schemas/codex/v0.128.d.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-15
+packages/adapters/src/shared/concurrency.ts
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 1-35
+packages/source-schemas/package.json
+  s_41a01eab7e41e9::t_29ebef52f81761 1-2,4-63
+  s_41a01eab7e41e9::t_3c62bd6325b928 3
+packages/adapters/src/pi/parser.ts
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1-5,8-38
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 6-7
+packages/schema/fixtures/validation/invalid-graph/tool-call-aborted-turn-scope-does-not-close-call.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/vcs-commit.test.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 4
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 3,5-353
+  s_41a01eab7e41e9::t_8306e21651dcdc 1-2
+packages/schema/fixtures/validation/invalid-graph/duplicate-id.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/mapping/define-mapping.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 1-2
+  s_41a01eab7e41e9::t_29ebef52f81761 3-10
+packages/adapters/tests/fixtures/pi/tool-result-error.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-4
+packages/adapters/src/pi/source.ts
+  s_41a01eab7e41e9::t_a46fc0777573cb 104
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1-103,105-159
+packages/adapters/src/claude-code/stateful.test.ts
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_dfeaa8070167f6 2
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 3-7,14-433
+  s_41a01eab7e41e9::t_d620ce23162a34 8,12-13
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 9-11
+packages/adapters/src/codex/health.ts
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 1,5,10-51,53-59,61-75
+  s_41a01eab7e41e9::t_6778c5a27c4035 6-9,52,60
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 2-4
+packages/adapters/src/pi/tools.ts
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1,3-122,125-162,165-260
+  s_41a01eab7e41e9::t_8f871fd8d3bbcb 123-124,163-164
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 2
+packages/schema/fixtures/validation/invalid-graph/session-end-unknown-final-message-id.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/primitives/shell.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-6
+packages/adapters/tests/fixtures/codex/capability-changes-v0_128.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-2
+packages/adapters/src/codex/index.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 2-7
+  s_41a01eab7e41e9::t_edc054025ac496 11-13,17-19,46-47
+  s_41a01eab7e41e9::t_6778c5a27c4035 15-16,45
+  s_41a01eab7e41e9::t_f0549e9bb55267 20-43
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 1,8-10,14,44
+packages/schema/fixtures/validation/valid/multi-session-two-no-envelope.trail.jsonl
+  s_41a01eab7e41e9::t_f42bbbbbe5a93d 1
+packages/schema/fixtures/validation/valid/with-trail-envelope.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 2
+packages/adapter-kit/src/readers/jsonl-reader.test.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 7
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_29ebef52f81761 2-6,8-90
+packages/source-schemas/claude-code/v1.json
+  s_41a01eab7e41e9::t_29ebef52f81761 1-32
+packages/adapters/src/source-raw.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 8
+  s_41a01eab7e41e9::t_56a4746534701a 7,9-10
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1-6,11-236
+packages/schema/fixtures/validation/invalid-graph/user-query-response-unknown-for-id.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/invalid-schema/tool-call-file-patch-empty-files.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/reader-tolerant/patch-compatible-schema-version.trail.jsonl
+  s_41a01eab7e41e9::t_bde1d183c4d776 1
+packages/schema/fixtures/validation/valid/tool-call-matched-sequentially.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/opencode/metadata.ts
+  s_41a01eab7e41e9::t_a46fc0777573cb 74
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1-2,4-73,75-96
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3
+packages/schema/fixtures/validation/valid/streaming-open.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/invalid-graph/parent-cycle.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapter-kit/src/pipeline/engine.ts
+  s_41a01eab7e41e9::t_1b835be28d99b3 18-19
+  s_41a01eab7e41e9::t_f0549e9bb55267 24-29
+  s_41a01eab7e41e9::t_a46fc0777573cb 91
+  s_41a01eab7e41e9::t_29ebef52f81761 1,7-17,20-23,30-90,92-122
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 2-6
+packages/adapters/src/pi/mapping/compaction.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 3-5
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 1-2,6-84
+packages/adapters/tests/fixtures/claude-code/README.md
+  s_41a01eab7e41e9::t_29ebef52f81761 1-26
+packages/schema/fixtures/validation/invalid-graph/unmatched-tool-call-partial-suppression.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/real-sessions/pi-v1.trail.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-1001
+packages/adapter-kit/src/pipeline/define-adapter.test.ts
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 6-9
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_29ebef52f81761 2-5,10-223
+packages/core/test/helpers.ts
+  s_41a01eab7e41e9::t_ed3797f0a3a237 9
+packages/adapters/tests/fixtures/real-sessions/codex-v0_135.source.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-1223
+package.json
+  s_41a01eab7e41e9::t_67aeff5f4f8341 10,16,19
+packages/schema/fixtures/validation/hash-vectors/segment-chain-seq1.trail.jsonl
+  s_41a01eab7e41e9::t_f42bbbbbe5a93d 1
+packages/adapter-kit/src/reconciler/tool-linking.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-59
+packages/adapters/tests/fixtures/codex/desktop-tracer.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-7
+packages/adapters/src/claude-code/index.test.ts
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_e3281614444e05 127-144
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 9-14
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 3-7,17-126,145-4165
+  s_41a01eab7e41e9::t_dfeaa8070167f6 2
+  s_41a01eab7e41e9::t_d620ce23162a34 8,15-16
+packages/adapters/tests/fixtures/claude-code/fidelity-edge-cases.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-9
+packages/schema/fixtures/validation/invalid-graph/ambiguous-sequential-pairing-with-session-end.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/invalid-graph/duplicate-segment-seq.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1-2
+packages/schema/fixtures/validation/invalid-schema/vcs-null-revision-with-head-commit.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/valid/multi-segment-seg1.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/src/secret-patterns.ts
+  s_41a01eab7e41e9::t_cf7e25d3ab1813 1-266,268-314,316-362
+  s_41a01eab7e41e9::t_f1f5e1d4139523 267,315
+packages/adapter-kit/tsconfig.json
+  s_41a01eab7e41e9::t_f233208ef7a5df 10-11
+  s_41a01eab7e41e9::t_6284e176012e61 1-9,12
+packages/adapter-kit/src/reconciler/tool-linking.test.ts
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_ed3797f0a3a237 6
+  s_41a01eab7e41e9::t_29ebef52f81761 2-3,5,7-101
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 4
+packages/adapters/src/pi/index.ts
+  s_41a01eab7e41e9::t_f0549e9bb55267 1,40-42,173-228,230-236
+  s_41a01eab7e41e9::t_6778c5a27c4035 43,102,169-170,237
+  s_41a01eab7e41e9::t_5079c6f891a103 120,165-168,171-172,238-239
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 4-5,12-21
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 2-3,6-11,22-39,44-101,103-119,121-164,229
+packages/adapters/src/pi/reconcile-rules.ts
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1-9,15-404
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 10-14
+packages/schema/fixtures/validation/invalid-graph/tool-args-unredacted-secret.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/schema/fixtures/validation/valid/tool-call-file-list.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+scripts/check-api.ts
+  s_41a01eab7e41e9::t_0ea69a3b66aa7e 18-19
+packages/source-schemas/claude-code/meta.json
+  s_41a01eab7e41e9::t_29ebef52f81761 1-3,5-6
+  s_41a01eab7e41e9::t_1a4185327e67d2 4
+packages/schema/fixtures/validation/hash-vectors/minimal-pending-roundtrip.trail.jsonl
+  s_41a01eab7e41e9::t_f42bbbbbe5a93d 1
+packages/adapters/tests/fixtures/pi/quarantine.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-4
+packages/adapters/tests/fixtures/real-sessions/opencode-v1-vcs-commit.trail.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-7
+packages/adapters/src/source-raw.test.ts
+  s_41a01eab7e41e9::t_c23e9744da3265 4
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 5
+  s_41a01eab7e41e9::t_8306e21651dcdc 1-2
+  s_41a01eab7e41e9::t_29ebef52f81761 3,6-260
+packages/source-schemas/pi/meta.json
+  s_41a01eab7e41e9::t_29ebef52f81761 1-3,5-6
+  s_41a01eab7e41e9::t_1a4185327e67d2 4
+packages/adapters/src/codex/index.test.ts
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+  s_41a01eab7e41e9::t_d620ce23162a34 8,12-13
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 9-11
+  s_41a01eab7e41e9::t_d80bae4e1ba6fc 242,251,311
+  s_41a01eab7e41e9::t_dfeaa8070167f6 2
+  s_41a01eab7e41e9::t_ab8f5b4fa7a7f3 3-7,14-202,220-241,243-250,252-310,312-3162
+  s_41a01eab7e41e9::t_e3281614444e05 203-219
+packages/adapters/src/shared/registry.test.ts
+  s_41a01eab7e41e9::t_d162b9dd963cc2 3-7,10-13,16-18,21-23,25-27,29-30
+  s_41a01eab7e41e9::t_906ec5ff6c02e1 2,8-9,14-15,19-20,24,28,31
+  s_41a01eab7e41e9::t_8306e21651dcdc 1
+packages/source-schemas/opencode/v1.d.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-35
+packages/adapters/src/trail-sanitizer.ts
+  s_41a01eab7e41e9::t_9f9ae456b67a8a 1-130
+packages/adapters/tests/fixtures/claude-code/compact-provenance.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-5
+packages/adapters/api-extractor.json
+  s_41a01eab7e41e9::t_a944571d90c085 1-42
+packages/core/src/index.ts
+  s_41a01eab7e41e9::t_1a4185327e67d2 16-21,263-265
+  s_41a01eab7e41e9::t_055fabf53b759d 30-34
+  s_41a01eab7e41e9::t_47b21ef445d385 7,35-36,105-124,208-262,266-300
+packages/core/test/core-api.test.ts
+  s_41a01eab7e41e9::t_ed3797f0a3a237 17
+packages/adapters/src/claude-code/mapping/messages.ts
+  s_41a01eab7e41e9::t_29ebef52f81761 1-10,12-21,25-421
+  s_41a01eab7e41e9::t_1fca9452cf9dbd 11,22-24
+packages/schema/fixtures/validation/invalid-graph/out-of-order-segment-seq.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1-2
+packages/schema/fixtures/validation/invalid-graph/non-interoperable-number.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1-2
+packages/schema/fixtures/validation/invalid-schema/segment-seq-1-with-prev-hash.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+packages/adapters/tests/fixtures/claude-code/permission-mode.jsonl
+  s_41a01eab7e41e9::t_29ebef52f81761 1-4
+packages/schema/fixtures/validation/invalid-schema/tool-call-aborted-bad-reason.trail.jsonl
+  s_41a01eab7e41e9::t_ed3797f0a3a237 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "e41f1be4f16060671884d35f7ade928a4e64f7c7",
+  "prompts": {},
+  "sessions": {
+    "s_41a01eab7e41e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec547-b5c0-7200-b226-4f1ef52334a0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

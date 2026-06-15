@@ -26,12 +26,16 @@ file contract (parsing, validation, hashing, reconciliation) and does not
 ship adapter-specific raw-handling code.
 
 Credential pattern primitives live in `@agent-trail/core` and the
-`@agent-trail/core/credential-patterns` subpath for packages that need the same
-credential-only source raw policy:
+`@agent-trail/core/credential-patterns` subpath. For adapter `source.raw`
+credential-only handling, use `CREDENTIAL_PATTERNS` and the credential key helper
+predicates:
 
-- `BEARER_TOKEN`, `CREDENTIAL_PATTERNS`, `DEFAULT_PATTERNS`,
-  `CREDENTIAL_CONTEXT_PLACEHOLDER`, `RedactionPattern`, and the credential key
-  helper predicates from `credential-patterns`
+- `BEARER_TOKEN`, `CREDENTIAL_PATTERNS`, `CREDENTIAL_CONTEXT_PLACEHOLDER`,
+  `RedactionPattern`, `isCredentialKey`, `isSafeCredentialContextValue`, and
+  `isOpaqueTokenValue`
+
+`DEFAULT_PATTERNS` also includes path normalization rules and is intended for
+redaction/share-time behavior, not adapter parsing.
 
 Source raw size limits remain adapter-internal. If you are writing an adapter
 outside this workspace, import credential patterns from core and implement your

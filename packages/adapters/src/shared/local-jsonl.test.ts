@@ -103,6 +103,18 @@ describe("newestLocalJsonlSourceVersion", () => {
 
     await expect(newestLocalJsonlSourceVersion(dir, options)).resolves.toBe("new");
   });
+
+  test("does not fall back to an older JSONL file when the newest has no version", async () => {
+    const dir = project("repo-with-versionless-newest");
+    const older = session(dir, "old.jsonl", [{ version: "old" }]);
+    const newer = session(dir, "new.jsonl", [{ type: "user" }]);
+    const oldDate = new Date("2026-01-01T00:00:00.000Z");
+    const newDate = new Date("2026-01-02T00:00:00.000Z");
+    utimesSync(older, oldDate, oldDate);
+    utimesSync(newer, newDate, newDate);
+
+    await expect(newestLocalJsonlSourceVersion(dir, options)).resolves.toBeNull();
+  });
 });
 
 describe("inspectLocalJsonlSourceHealth", () => {

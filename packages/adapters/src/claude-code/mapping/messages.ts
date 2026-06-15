@@ -65,24 +65,21 @@ function userQueryQuestion(
     id: stringValue(raw.id) ?? questionId(question, fallbackOccurrence),
     question,
   };
-  addString(out, "header", raw.header);
-  addBoolean(out, "multi_select", raw.multi_select ?? raw.multiSelect);
-  addBoolean(out, "is_secret", raw.is_secret ?? raw.isSecret);
-  addBoolean(out, "allow_other", raw.allow_other ?? raw.allowOther ?? raw.is_other);
-  addValue(out, "options", optionObjects(raw.options) ?? optionObjects(raw.choices));
+  const header = stringValue(raw.header);
+  const multiSelect = firstBoolean(raw.multi_select, raw.multiSelect);
+  const isSecret = firstBoolean(raw.is_secret, raw.isSecret);
+  const allowOther = firstBoolean(raw.allow_other, raw.allowOther, raw.is_other);
+  const options = optionObjects(raw.options) ?? optionObjects(raw.choices);
+  if (header !== undefined) out.header = header;
+  if (multiSelect !== undefined) out.multi_select = multiSelect;
+  if (isSecret !== undefined) out.is_secret = isSecret;
+  if (allowOther !== undefined) out.allow_other = allowOther;
+  if (options !== undefined) out.options = options;
   return out;
 }
 
-function addString(out: Record<string, unknown>, key: string, value: unknown): void {
-  addValue(out, key, stringValue(value));
-}
-
-function addBoolean(out: Record<string, unknown>, key: string, value: unknown): void {
-  addValue(out, key, booleanValue(value));
-}
-
-function addValue(out: Record<string, unknown>, key: string, value: unknown): void {
-  if (value !== undefined) out[key] = value;
+function firstBoolean(...values: unknown[]): boolean | undefined {
+  return values.map(booleanValue).find((value) => value !== undefined);
 }
 
 function userQueryPayload(input: unknown): { questions: Record<string, unknown>[] } | undefined {

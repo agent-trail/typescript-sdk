@@ -189,7 +189,7 @@ function hookPermissionDecision(context: CapabilityContext): TrailEntryDraft[] {
   const toolCallId = hookToolCallId(attachment);
   const data: Record<string, unknown> = { decision };
   addValue(data, "tool_call_id", toolCallId);
-  addString(data, "hook_event", attachment.hook_event ?? attachment.hookEvent);
+  addValue(data, "hook_event", firstString(attachment.hook_event, attachment.hookEvent));
   addString(data, "capability", attachment.capability);
   return [
     {
@@ -227,7 +227,7 @@ function hookAdditionalContextData(
   safeContent: ReturnType<typeof hookAdditionalContextContent>,
 ): Record<string, unknown> {
   const data: Record<string, unknown> = { source_kind: "hook" };
-  addString(data, "hook_event", attachment.hook_event ?? attachment.hookEvent);
+  addValue(data, "hook_event", firstString(attachment.hook_event, attachment.hookEvent));
   const hookName = stringValue(attachment.hook_name) ?? stringValue(attachment.hookName);
   if (hookName !== undefined) {
     data.name = hookName;
@@ -296,11 +296,15 @@ function summarizeHookOutput(out: Record<string, unknown>, key: "stdout" | "stde
 
 function hookSuccessData(attachment: Record<string, unknown>): Record<string, unknown> {
   const data: Record<string, unknown> = {};
-  addString(data, "hook_event", attachment.hook_event ?? attachment.hookEvent);
-  addString(data, "hook_name", attachment.hook_name ?? attachment.hookName);
+  addValue(data, "hook_event", firstString(attachment.hook_event, attachment.hookEvent));
+  addValue(data, "hook_name", firstString(attachment.hook_name, attachment.hookName));
   addValue(data, "tool_call_id", hookToolCallId(attachment));
-  addTruncatedNumber(data, "exit_code", attachment.exit_code ?? attachment.exitCode);
-  addTruncatedNumber(data, "duration_ms", attachment.duration_ms ?? attachment.durationMs);
+  addTruncatedNumber(data, "exit_code", firstNumber(attachment.exit_code, attachment.exitCode));
+  addTruncatedNumber(
+    data,
+    "duration_ms",
+    firstNumber(attachment.duration_ms, attachment.durationMs),
+  );
   addString(data, "command", attachment.command);
   addValue(data, "stdout_excerpt", outputExcerpt(stringValue(attachment.stdout)));
   addValue(data, "stderr_excerpt", outputExcerpt(stringValue(attachment.stderr)));
@@ -379,6 +383,14 @@ function addString(out: Record<string, unknown>, key: string, value: unknown): v
 function addTruncatedNumber(out: Record<string, unknown>, key: string, value: unknown): void {
   const number = numberValue(value);
   addValue(out, key, number === undefined ? undefined : Math.trunc(number));
+}
+
+function firstString(...values: unknown[]): string | undefined {
+  return values.map(stringValue).find((value) => value !== undefined);
+}
+
+function firstNumber(...values: unknown[]): number | undefined {
+  return values.map(numberValue).find((value) => value !== undefined);
 }
 
 function addValue(out: Record<string, unknown>, key: string, value: unknown): void {

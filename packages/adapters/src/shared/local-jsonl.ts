@@ -62,11 +62,8 @@ export async function newestLocalJsonlSourceVersion(
 ): Promise<string | null> {
   const files = await jsonlFilesWithMtime(dir);
   files.sort((a, b) => b.mtime - a.mtime);
-  for (const file of files) {
-    const version = await versionFromHead(file.path, options);
-    if (version !== undefined) return version;
-  }
-  return null;
+  const newest = files[0];
+  return newest === undefined ? null : ((await versionFromHead(newest.path, options)) ?? null);
 }
 
 export async function inspectLocalJsonlSourceHealth(

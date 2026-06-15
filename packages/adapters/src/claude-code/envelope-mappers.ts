@@ -1,7 +1,9 @@
 import { type CcEnvelope, jsonObjectValue, stringValue } from "./source.js";
 
 export function systemEventText(envelope: CcEnvelope): string {
-  return TEXT_MAPPERS[envelope.type ?? ""]?.(envelope) ?? "System event";
+  const type = envelope.type ?? "";
+  const mapper = Object.hasOwn(TEXT_MAPPERS, type) ? TEXT_MAPPERS[type] : undefined;
+  return mapper?.(envelope) ?? "System event";
 }
 
 const TEXT_MAPPERS: Record<string, (envelope: CcEnvelope) => string> = {

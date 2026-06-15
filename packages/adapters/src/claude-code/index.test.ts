@@ -1947,6 +1947,10 @@ test("parseSession() uses normalized hook_success tool ids for semantic linkage"
         type: "hook_success",
         hookEvent: "PostToolUse",
         hookName: "PostToolUse:Bash",
+        hook_event: 42,
+        hook_name: false,
+        exit_code: "0",
+        exitCode: 0,
         toolUseID: " tooluse-trimmed ",
       },
     },
@@ -1958,6 +1962,9 @@ test("parseSession() uses normalized hook_success tool ids for semantic linkage"
   const data = (evt?.payload as { data?: Record<string, unknown> }).data;
 
   expect(data?.tool_call_id).toBe("tooluse-trimmed");
+  expect(data?.hook_event).toBe("PostToolUse");
+  expect(data?.hook_name).toBe("PostToolUse:Bash");
+  expect(data?.exit_code).toBe(0);
   expect(evt?.semantic?.call_id).toBe("tooluse-trimmed");
   const diagnostics = await validateAdapterTrail(trail);
   expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
@@ -2562,6 +2569,10 @@ test("toolKindAndArgs promotes common Claude tools out of other", () => {
     tool: "file_list",
     args: { path: "src" },
   });
+  expect(toolKindAndArgs("LS", { path: "src", file_path: "wrong" })).toEqual({
+    tool: "file_list",
+    args: { path: "src" },
+  });
   expect(
     toolKindAndArgs("Edit", {
       file_path: "src/app.ts",
@@ -2679,7 +2690,9 @@ test("AskUserQuestion emits structured user query and response events", async ()
                   {
                     question: "Ship it?",
                     header: "Ship",
+                    multi_select: "yes",
                     multiSelect: true,
+                    allow_other: "yes",
                     allowOther: true,
                     options: [
                       { id: "yes-safe", label: "yes", description: "Ship now" },

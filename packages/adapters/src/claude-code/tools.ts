@@ -105,7 +105,10 @@ function fileListTool(
   args: Record<string, unknown>,
 ): ToolMapping | undefined {
   if (name !== "LS") return undefined;
-  return { tool: "file_list", args: { path: pathArg(args) ?? "." } };
+  return {
+    tool: "file_list",
+    args: { path: stringValue(args.path) ?? stringValue(args.file_path) ?? "." },
+  };
 }
 
 function notebookEditTool(

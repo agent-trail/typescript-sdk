@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import type { TrailEntryDraft } from "@agent-trail/adapter-kit";
-import { defineMapping, mapAgentMessageUsage } from "@agent-trail/adapter-kit";
+import { defineMapping } from "@agent-trail/adapter-kit";
 import type { ToolKind } from "@agent-trail/types";
+import { mapAgentMessageUsage } from "../../legacy-kit-helpers.js";
 import {
   isNonEmptyString,
   isTaskPlanStatus,

@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { SessionRef, TrailAdapter, TrailFile } from "@agent-trail/adapters";
@@ -112,6 +112,33 @@ sessionsTest("load parses, reconciles, stores, and links generated trail", async
   });
 });
 
+sessionsTest("load links envelope trails to the session object", async (harness) => {
+  const adapter = fakeAdapter([sourceRef()], trailFileWithEnvelope);
+  await discoverSessions({
+    catalogDb: harness.catalogDb,
+    adapters: [adapter],
+  });
+
+  const result = await loadSession({
+    catalogDb: harness.catalogDb,
+    storeRoot: harness.storeRoot,
+    adapters: [adapter],
+    adapter: "test-agent",
+    sourceId: SESSION_ID,
+  });
+
+  expect(result.status).toBe("loaded");
+  if (result.status !== "loaded") return;
+  expect(await readFile(result.objectPath, "utf8")).not.toContain('"type":"trail"');
+  expect((await listSessions({ catalogDb: harness.catalogDb })).rows).toEqual([
+    expect.objectContaining({
+      state: "source+registered",
+      source_id: SESSION_ID,
+      content_hash: result.contentHash,
+    }),
+  ]);
+});
+
 sessionsTest("share redacts stored trail and records gist id", async (harness) => {
   const client = createSessionsClient({
     catalogDb: harness.catalogDb,
@@ -157,6 +184,7 @@ sessionsTest("export returns raw finalized stored bytes", async (harness) => {
 
   const result = await exportSession({
     catalogDb: harness.catalogDb,
+    storeRoot: harness.storeRoot,
     adapter: "test-agent",
     sourceId: SESSION_ID,
   });
@@ -165,6 +193,97 @@ sessionsTest("export returns raw finalized stored bytes", async (harness) => {
   if (result.status !== "exported") return;
   expect(result.jsonl).toContain("sk-live-secret-1234567890");
   expect(result.contentHash).toMatch(/^[0-9a-f]{64}$/);
+});
+
+sessionsTest("export ignores mutable catalog object paths", async (harness) => {
+  const client = createSessionsClient({
+    catalogDb: harness.catalogDb,
+    storeRoot: harness.storeRoot,
+    adapters: [harness.adapter],
+  });
+  await client.discover();
+  const loaded = await client.load({ adapter: "test-agent", sourceId: SESSION_ID });
+  if (loaded.status !== "loaded") throw new Error("load failed");
+  const tamperedPath = join(harness.storeRoot, "tampered.trail.jsonl");
+  await writeFile(tamperedPath, "tampered", "utf8");
+  await harness.catalogDb.exec("UPDATE trail_objects SET object_path = ? WHERE content_hash = ?", [
+    tamperedPath,
+    loaded.contentHash,
+  ]);
+
+  const result = await exportSession({
+    catalogDb: harness.catalogDb,
+    storeRoot: harness.storeRoot,
+    adapter: "test-agent",
+    sourceId: SESSION_ID,
+  });
+
+  expect(result.status).toBe("exported");
+  if (result.status !== "exported") return;
+  expect(result.jsonl).not.toBe("tampered");
+  expect(result.jsonl).toContain("sk-live-secret-1234567890");
+});
+
+sessionsTest("export can write raw finalized bytes to a target path", async (harness) => {
+  const client = createSessionsClient({
+    catalogDb: harness.catalogDb,
+    storeRoot: harness.storeRoot,
+    adapters: [harness.adapter],
+  });
+  await client.discover();
+  await client.load({ adapter: "test-agent", sourceId: SESSION_ID });
+
+  const toPath = join(harness.storeRoot, "exports", "session.trail.jsonl");
+  const result = await client.export({
+    adapter: "test-agent",
+    sourceId: SESSION_ID,
+    toPath,
+  });
+
+  expect(result).toMatchObject({ status: "exported", path: toPath });
+  await expect(readFile(toPath, "utf8")).resolves.toContain("sk-live-secret-1234567890");
+});
+
+sessionsTest("share and export return typed missing-state statuses", async (harness) => {
+  expect(
+    await loadSession({
+      catalogDb: harness.catalogDb,
+      adapters: [],
+      adapter: "missing-agent",
+      sourceId: SESSION_ID,
+    }),
+  ).toMatchObject({ status: "adapter_not_found" });
+
+  expect(
+    await shareSession({
+      catalogDb: harness.catalogDb,
+      adapter: "test-agent",
+      sourceId: SESSION_ID,
+    }),
+  ).toMatchObject({ status: "transport_missing" });
+
+  await discoverSessions({
+    catalogDb: harness.catalogDb,
+    adapters: [harness.adapter],
+  });
+
+  expect(
+    await exportSession({
+      catalogDb: harness.catalogDb,
+      storeRoot: harness.storeRoot,
+      adapter: "test-agent",
+      sourceId: SESSION_ID,
+    }),
+  ).toMatchObject({ status: "no_generated_trail" });
+
+  expect(
+    await exportSession({
+      catalogDb: harness.catalogDb,
+      storeRoot: harness.storeRoot,
+      adapter: "test-agent",
+      sourceId: "missing-session",
+    }),
+  ).toMatchObject({ status: "source_not_found" });
 });
 
 function sourceRef(): SessionRef {
@@ -177,7 +296,10 @@ function sourceRef(): SessionRef {
   };
 }
 
-function fakeAdapter(sessions: SessionRef[]): TrailAdapter {
+function fakeAdapter(
+  sessions: SessionRef[],
+  trailFactory: () => TrailFile = trailFile,
+): TrailAdapter {
   return {
     name: "test-agent",
     async detectSessions() {
@@ -185,7 +307,7 @@ function fakeAdapter(sessions: SessionRef[]): TrailAdapter {
     },
     async parseSession(ref) {
       if (ref.path === undefined) throw new Error("missing path");
-      return trailFile();
+      return trailFactory();
     },
     async isAvailable() {
       return true;
@@ -237,5 +359,18 @@ function trailFile(): TrailFile {
         ],
       },
     ],
+  };
+}
+
+function trailFileWithEnvelope(): TrailFile {
+  return {
+    envelope: {
+      type: "trail",
+      schema_version: "0.1.0",
+      id: "55555555-5555-4555-8555-555555555555",
+      ts: SESSION_TS,
+      producer: "agent-trail-test",
+    },
+    ...trailFile(),
   };
 }

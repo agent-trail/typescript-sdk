@@ -52,31 +52,46 @@ async function fileSessionSummaries(
   const sessionRoot = join(storageDir, "session");
   if (!(await dirExists(sessionRoot))) return [];
   const out: OpenCodeSessionSummary[] = [];
-  const projects = await readdir(sessionRoot, { withFileTypes: true }).catch(() => []);
-  for (const project of projects) {
-    if (!project.isDirectory()) continue;
-    const dir = join(sessionRoot, project.name);
-    const files = await readdir(dir, { withFileTypes: true }).catch(() => []);
-    for (const file of files) {
-      if (!file.isFile() || !/^ses_.*\.json$/.test(file.name)) continue;
-      const path = join(dir, file.name);
-      const raw = await readJsonFile(path);
-      if (raw === undefined) continue;
-      const id = file.name.replace(/\.json$/, "");
-      const cwd = stringValue(raw.directory);
-      if (cwd === undefined) continue;
-      const time = isObject(raw.time) ? raw.time : {};
-      const modifiedAt = timestampToIso(time.updated) ?? (await stat(path)).mtime.toISOString();
-      out.push({
-        id,
-        cwd,
-        modifiedAt,
-        path,
-        version: stringValue(raw.version),
-      });
-    }
+  for (const dir of await projectSessionDirs(sessionRoot)) {
+    out.push(...(await summariesInProjectDir(dir)));
   }
   return out;
+}
+
+async function projectSessionDirs(sessionRoot: string): Promise<string[]> {
+  const projects = await readdir(sessionRoot, { withFileTypes: true }).catch(() => []);
+  return projects
+    .filter((project) => project.isDirectory())
+    .map((project) => join(sessionRoot, project.name));
+}
+
+async function summariesInProjectDir(dir: string): Promise<OpenCodeSessionSummary[]> {
+  const files = await readdir(dir, { withFileTypes: true }).catch(() => []);
+  const summaries: OpenCodeSessionSummary[] = [];
+  for (const file of files) {
+    if (!file.isFile() || !/^ses_.*\.json$/.test(file.name)) continue;
+    const summary = await summaryFromSessionFile(join(dir, file.name), file.name);
+    if (summary !== undefined) summaries.push(summary);
+  }
+  return summaries;
+}
+
+async function summaryFromSessionFile(
+  path: string,
+  fileName: string,
+): Promise<OpenCodeSessionSummary | undefined> {
+  const raw = await readJsonFile(path);
+  if (raw === undefined) return undefined;
+  const cwd = stringValue(raw.directory);
+  if (cwd === undefined) return undefined;
+  const time = isObject(raw.time) ? raw.time : {};
+  return {
+    id: fileName.replace(/\.json$/, ""),
+    cwd,
+    modifiedAt: timestampToIso(time.updated) ?? (await stat(path)).mtime.toISOString(),
+    path,
+    version: stringValue(raw.version),
+  };
 }
 
 async function readJsonFilesInDir(dir: string): Promise<Raw[]> {
@@ -115,14 +130,12 @@ export async function loadFileSessionWithOptions(
     };
 
   const messages = (await readJsonFilesInDir(join(storageDir, "message", id)))
-    .filter((raw): raw is OpenCodeMessage => stringValue(raw.id) !== undefined)
-    .map((raw) => ({ ...raw, id: stringValue(raw.id) as string }))
+    .flatMap(jsonFileMessage)
     .sort((a, b) => partTimestamp(a).localeCompare(partTimestamp(b)) || a.id.localeCompare(b.id));
   const partsByMessage = new Map<string, OpenCodePart[]>();
   for (const message of messages) {
     const parts = (await readJsonFilesInDir(join(storageDir, "part", message.id)))
-      .filter((raw): raw is OpenCodePart => stringValue(raw.id) !== undefined)
-      .map((raw) => ({ ...raw, id: stringValue(raw.id) as string }))
+      .flatMap(jsonFilePart)
       .sort(
         (a, b) =>
           partTimestamp(a, message).localeCompare(partTimestamp(b, message)) ||
@@ -145,6 +158,16 @@ export async function loadFileSessionWithOptions(
     sessionMessages: enrichment.sessionMessages,
     permissions: enrichment.permissions,
   };
+}
+
+function jsonFileMessage(raw: Raw): OpenCodeMessage[] {
+  const id = stringValue(raw.id);
+  return id === undefined ? [] : [{ ...raw, id }];
+}
+
+function jsonFilePart(raw: Raw): OpenCodePart[] {
+  const id = stringValue(raw.id);
+  return id === undefined ? [] : [{ ...raw, id }];
 }
 
 function normalizeDbSession(row: Raw): Raw {
@@ -180,53 +203,67 @@ function loadDbMetadataForFileSession(
   permissions: Raw[];
 } {
   const dbPath = options.dbPath ?? opencodeDbPath(options.env);
-  if (dbPath === undefined || options.sqliteDriver === undefined)
-    return { session: {}, sessionMessages: [], permissions: [] };
+  if (dbPath === undefined || options.sqliteDriver === undefined) return emptyDbMetadata();
   let db: SqliteConnection | undefined;
   try {
     db = options.sqliteDriver.open(dbPath);
-    const sessionRow = db.prepare("SELECT * FROM session WHERE id = $id").get?.({ $id: id });
-    if (!isObject(sessionRow)) return { session: {}, sessionMessages: [], permissions: [] };
-    const session = normalizeDbSession(sessionRow);
-    if (!canEnrichFileSession(fileSession, session)) {
-      return { session: {}, sessionMessages: [], permissions: [] };
-    }
-    const projectId = stringValue(session.project_id) ?? stringValue(session.projectID);
-    const project =
-      projectId === undefined
-        ? undefined
-        : optionalRows(db, "SELECT * FROM project WHERE id = $project", { $project: projectId })[0];
-    const sessionMessages = optionalRows(
-      db,
-      "SELECT * FROM session_message WHERE session_id = $id ORDER BY time_created, id",
-      { $id: id },
-    ).map(
-      (row): Raw => ({
-        ...parsedJsonObject(row.data),
-        id: stringValue(row.id),
-        type: stringValue(row.type),
-        sessionID: id,
-        time_created: row.time_created,
-        time_updated: row.time_updated,
-      }),
-    );
-    const permissions =
-      projectId === undefined
-        ? []
-        : optionalRows(
-            db,
-            "SELECT * FROM permission WHERE project_id = $project ORDER BY time_created",
-            { $project: projectId },
-          ).map((row) => ({
-            ...row,
-            data: parsedJsonValue(row.data),
-          }));
-    return { session, project, sessionMessages, permissions };
+    return dbMetadataForFileSession(db, id, fileSession);
   } catch {
-    return { session: {}, sessionMessages: [], permissions: [] };
+    return emptyDbMetadata();
   } finally {
     db?.close();
   }
+}
+
+function emptyDbMetadata(): {
+  session: Raw;
+  project?: Raw | undefined;
+  sessionMessages: Raw[];
+  permissions: Raw[];
+} {
+  return { session: {}, sessionMessages: [], permissions: [] };
+}
+
+function dbMetadataForFileSession(
+  db: SqliteConnection,
+  id: string,
+  fileSession: Raw,
+): {
+  session: Raw;
+  project?: Raw | undefined;
+  sessionMessages: Raw[];
+  permissions: Raw[];
+} {
+  const sessionRow = db.prepare("SELECT * FROM session WHERE id = $id").get?.({ $id: id });
+  if (!isObject(sessionRow)) return emptyDbMetadata();
+  const session = normalizeDbSession(sessionRow);
+  if (!canEnrichFileSession(fileSession, session)) return emptyDbMetadata();
+  return dbMetadataForSession(db, id, session);
+}
+
+function dbMetadataForSession(
+  db: SqliteConnection,
+  id: string,
+  session: Raw,
+): {
+  session: Raw;
+  project?: Raw | undefined;
+  sessionMessages: Raw[];
+  permissions: Raw[];
+} {
+  const projectId = stringValue(session.project_id) ?? stringValue(session.projectID);
+  return {
+    session,
+    project: projectRow(db, projectId),
+    sessionMessages: sessionMessageRows(db, id),
+    permissions: permissionRows(db, projectId),
+  };
+}
+
+function projectRow(db: SqliteConnection, projectId: string | undefined): Raw | undefined {
+  return projectId === undefined
+    ? undefined
+    : optionalRows(db, "SELECT * FROM project WHERE id = $project", { $project: projectId })[0];
 }
 
 function canEnrichFileSession(fileSession: Raw, dbSession: Raw): boolean {
@@ -308,35 +345,40 @@ export function loadDbSessionWithOptions(
       .prepare("SELECT * FROM todo WHERE session_id = $id ORDER BY position")
       .all({ $id: id })
       .filter(isObject);
-    const sessionMessages = optionalRows(
-      db,
-      "SELECT * FROM session_message WHERE session_id = $id ORDER BY time_created, id",
-      { $id: id },
-    ).map(
-      (row): Raw => ({
-        ...parsedJsonObject(row.data),
-        id: stringValue(row.id),
-        type: stringValue(row.type),
-        sessionID: id,
-        time_created: row.time_created,
-        time_updated: row.time_updated,
-      }),
-    );
-    const permissions =
-      projectId === undefined
-        ? []
-        : optionalRows(
-            db,
-            "SELECT * FROM permission WHERE project_id = $project ORDER BY time_created",
-            { $project: projectId },
-          ).map((row) => ({
-            ...row,
-            data: parsedJsonValue(row.data),
-          }));
+    const sessionMessages = sessionMessageRows(db, id);
+    const permissions = permissionRows(db, projectId);
     return { session, project, messages, partsByMessage, todos, sessionMessages, permissions };
   } finally {
     db.close();
   }
+}
+
+function sessionMessageRows(db: SqliteConnection, sessionId: string): Raw[] {
+  return optionalRows(
+    db,
+    "SELECT * FROM session_message WHERE session_id = $id ORDER BY time_created, id",
+    { $id: sessionId },
+  ).map((row): Raw => {
+    return {
+      ...parsedJsonObject(row.data),
+      id: stringValue(row.id),
+      type: stringValue(row.type),
+      sessionID: sessionId,
+      time_created: row.time_created,
+      time_updated: row.time_updated,
+    };
+  });
+}
+
+function permissionRows(db: SqliteConnection, projectId: string | undefined): Raw[] {
+  if (projectId === undefined) return [];
+  return optionalRows(
+    db,
+    "SELECT * FROM permission WHERE project_id = $project ORDER BY time_created",
+    {
+      $project: projectId,
+    },
+  ).map((row) => ({ ...row, data: parsedJsonValue(row.data) }));
 }
 
 function sqliteSessionSummaries(options: OpenCodeStorageOptions): OpenCodeSessionSummary[] {

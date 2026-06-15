@@ -11,14 +11,10 @@
   },
   "duplicates": {
     "threshold": 0,
-    "ignore": [
-      "packages/types/src/generated.ts",
-      "**/*.test.ts",
-      "packages/adapters/src/opencode/**"
-    ]
+    "ignore": ["packages/types/src/generated.ts", "**/*.test.ts"]
   },
   "health": {
-    "ignore": ["packages/adapters/src/opencode/**"]
+    "ignore": []
   },
   "production": false
 }

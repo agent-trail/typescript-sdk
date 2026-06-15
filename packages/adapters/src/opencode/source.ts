@@ -69,29 +69,24 @@ export function arrayValue(value: unknown): unknown[] | undefined {
 export function timestampToIso(value: unknown): string | undefined {
   try {
     const n = numberValue(value);
-    if (n !== undefined) {
-      const date = new Date(n);
-      if (!Number.isNaN(date.getTime())) return date.toISOString();
-    }
+    if (n !== undefined) return dateToIso(n);
     const s = stringValue(value);
-    if (s !== undefined) {
-      const trimmed = s.trim();
-      if (trimmed.length === 0) return undefined;
-      const ms = Number(trimmed);
-      if (Number.isFinite(ms)) {
-        const date = new Date(ms);
-        if (!Number.isNaN(date.getTime())) return date.toISOString();
-      }
-      const parsed = Date.parse(trimmed);
-      if (Number.isFinite(parsed)) {
-        const date = new Date(parsed);
-        if (!Number.isNaN(date.getTime())) return date.toISOString();
-      }
-    }
+    return s === undefined ? undefined : stringTimestampToIso(s);
   } catch {
     return undefined;
   }
-  return undefined;
+}
+
+function stringTimestampToIso(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return undefined;
+  const ms = Number(trimmed);
+  return Number.isFinite(ms) ? dateToIso(ms) : dateToIso(Date.parse(trimmed));
+}
+
+function dateToIso(value: number): string | undefined {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 }
 
 export async function readJsonFile(path: string): Promise<Raw | undefined> {
@@ -125,18 +120,22 @@ export function parsedJsonObject(text: unknown): Raw {
 
 function normalizedSourceRaw(raw: Raw, rawType: string): Raw {
   const redacted = redactValue(raw) as Raw;
-  if (rawType.startsWith("part.") || rawType.startsWith("tool.")) {
-    return { type: "part", part_type: stringValue(raw.type) ?? "tool", data: redacted };
+  const sourceType = normalizedSourceType(rawType);
+  if (sourceType === "part") {
+    return { type: sourceType, part_type: stringValue(raw.type) ?? "tool", data: redacted };
   }
-  if (rawType.startsWith("session_message.")) {
-    return { type: "session_message", event_type: stringValue(raw.type), data: redacted };
+  if (sourceType === "session_message") {
+    return { type: sourceType, event_type: stringValue(raw.type), data: redacted };
   }
-  if (rawType.startsWith("session.")) return { type: "session", data: redacted };
-  if (rawType.startsWith("project.")) return { type: "project", data: redacted };
-  if (rawType === "todo") return { type: "todo", data: redacted };
-  if (rawType === "permission") return { type: "permission", data: redacted };
-  if (rawType === "event") return { type: "event", data: redacted };
-  return { type: rawType, data: redacted };
+  return { type: sourceType, data: redacted };
+}
+
+function normalizedSourceType(rawType: string): string {
+  if (rawType.startsWith("part.") || rawType.startsWith("tool.")) return "part";
+  if (rawType.startsWith("session_message.")) return "session_message";
+  if (rawType.startsWith("session.")) return "session";
+  if (rawType.startsWith("project.")) return "project";
+  return rawType;
 }
 
 export function sourceFor(

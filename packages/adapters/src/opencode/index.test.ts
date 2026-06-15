@@ -611,7 +611,21 @@ test("file storage uses path-derived ids instead of stale JSON ids", async () =>
   });
 });
 
-test("parseSession() emits a valid finalized trail from file storage", async () => {
+test("parseSession() emits a valid finalized trail from file storage", parseFileStorageFixture);
+
+async function parseFileStorageFixture(): Promise<void> {
+  const trail = await parseSeededFileStorageFixture();
+  assertFileStorageEnvelope(trail);
+  const group = trail.groups[0]!;
+  assertFileStorageHeader(group);
+  assertFileStorageEntries(group);
+  assertFileStorageSources(group);
+  const diagnostics = await validateAdapterTrail(trail);
+  expect(diagnostics.filter((diagnostic) => diagnostic.severity === "error")).toEqual([]);
+  expect(trailRecords(trail)[0]).toHaveProperty("content_hash");
+}
+
+async function parseSeededFileStorageFixture(): ReturnType<typeof opencodeAdapter.parseSession> {
   const sessionPath = seedFileSession({
     id: "ses_parse",
     directory: "/work/parse",
@@ -676,16 +690,25 @@ test("parseSession() emits a valid finalized trail from file storage", async () 
   });
   seedFileTodo({ sessionID: "ses_parse", content: "Read README", status: "completed" });
 
-  const trail = await opencodeAdapter.parseSession({
+  return opencodeAdapter.parseSession({
     id: "ses_parse",
     adapter: "opencode",
     path: sessionPath,
   });
+}
+
+function assertFileStorageEnvelope(
+  trail: Awaited<ReturnType<typeof opencodeAdapter.parseSession>>,
+): void {
   expect(trail.envelope?.type).toBe("trail");
   expect(trail.envelope?.name).toBe("Parse OpenCode");
   expect(trail.envelope?.producer).toMatch(/^@agent-trail\/adapters-opencode\//);
   expect(trail.envelope?.content_hash).toMatch(/^[0-9a-f]{64}$/);
-  const group = trail.groups[0]!;
+}
+
+function assertFileStorageHeader(
+  group: Awaited<ReturnType<typeof opencodeAdapter.parseSession>>["groups"][number],
+): void {
   expect(group.header.agent).toEqual({
     name: "opencode",
     version: "1.0.153",
@@ -694,6 +717,11 @@ test("parseSession() emits a valid finalized trail from file storage", async () 
   expect(group.header.cwd).toBe("/work/parse");
   expect(group.header.content_hash).toMatch(/^[0-9a-f]{64}$/);
   expect(group.header.parse_fidelity).toEqual({ quarantined_count: 0 });
+}
+
+function assertFileStorageEntries(
+  group: Awaited<ReturnType<typeof opencodeAdapter.parseSession>>["groups"][number],
+): void {
   expect(group.entries.every((entry) => entry.parent_id === undefined)).toBe(true);
   expect(group.entries.map((entry) => entry.type)).toEqual([
     "session_metadata_update",
@@ -731,6 +759,11 @@ test("parseSession() emits a valid finalized trail from file storage", async () 
     text: "Read complete.",
     model: "claude-sonnet-4-5",
   });
+}
+
+function assertFileStorageSources(
+  group: Awaited<ReturnType<typeof opencodeAdapter.parseSession>>["groups"][number],
+): void {
   expect(group.entries.every((entry) => entry.meta?.["dev.opencode.raw_type"] !== undefined)).toBe(
     true,
   );
@@ -738,10 +771,7 @@ test("parseSession() emits a valid finalized trail from file storage", async () 
   for (const entry of group.entries) {
     expect(validateSourceRecord("opencode", "v1", entry.source?.raw ?? {})).toEqual([]);
   }
-  const diagnostics = await validateAdapterTrail(trail);
-  expect(diagnostics.filter((diagnostic) => diagnostic.severity === "error")).toEqual([]);
-  expect(trailRecords(trail)[0]).toHaveProperty("content_hash");
-});
+}
 
 test("parseSession() prefers message modelID for reasoning parts over session default", async () => {
   const sessionPath = seedFileSession({

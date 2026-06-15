@@ -7,21 +7,21 @@ export function attachmentFrom(raw: Raw): Attachment | undefined {
   const filename = stringValue(raw.filename) ?? stringValue(raw.name);
   const uri = url !== undefined && /^(https:|file:|sha256:)/.test(url) ? url : undefined;
   if (uri === undefined && filename === undefined) return undefined;
-  const kind = mime?.startsWith("image/") ? "image" : mime !== undefined ? "file" : "other";
-  const media_type = mime;
-  if (uri !== undefined) {
-    return {
-      kind,
-      ...(media_type !== undefined ? { media_type } : {}),
-      uri,
-      ...(filename !== undefined ? { name: filename } : {}),
-    };
-  }
+  const base = {
+    kind: attachmentKind(mime),
+    ...(mime !== undefined ? { media_type: mime } : {}),
+  };
+  if (uri !== undefined)
+    return { ...base, uri, ...(filename !== undefined ? { name: filename } : {}) };
   return {
-    kind,
-    ...(media_type !== undefined ? { media_type } : {}),
+    ...base,
     name: filename as string,
   };
+}
+
+function attachmentKind(mime: string | undefined): Attachment["kind"] {
+  if (mime === undefined) return "other";
+  return mime.startsWith("image/") ? "image" : "file";
 }
 
 export function attachmentsFrom(value: unknown): Attachment[] {

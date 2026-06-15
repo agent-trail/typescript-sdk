@@ -4,6 +4,7 @@ import {
   buildRenderModel,
   buildTranscriptItems,
   DEFAULT_FILTERS,
+  FILTERS,
   filterTranscriptItems,
   type RenderEvent,
   renderItemAnchor,
@@ -347,6 +348,32 @@ test("summary notices and fallback events stay out of transcript but remain in f
   expect(model.transcriptItems).toEqual([]);
 });
 
+test("fallback raw JSON formatting is bounded during traversal", () => {
+  const record: Record<string, unknown> = {
+    id: "01HEVTA0000000000000000001",
+    payload: {},
+    ts: "2026-05-17T14:00:05.000Z",
+    type: "future_event",
+  };
+  for (let index = 0; index < 400; index += 1) {
+    record[`field_${index}`] = "x".repeat(100);
+  }
+  Object.defineProperty(record, "late_throwing_value", {
+    enumerable: true,
+    get() {
+      throw new Error("bounded formatter should not read past the cap");
+    },
+  });
+
+  const model = buildRenderModel({
+    groups: [{ events: [{ line: 2, record }] }],
+    records: [{ line: 2, record }],
+  });
+
+  expect(model.events[0]?.rawJson).toContain("... truncated");
+  expect(model.events[0]?.rawJson?.length).toBeLessThan(2_100);
+});
+
 test("filters transcript items and exposes stable helper values", () => {
   const items = buildTranscriptItems([
     {
@@ -366,6 +393,9 @@ test("filters transcript items and exposes stable helper values", () => {
   ]);
 
   expect(filterTranscriptItems(items, DEFAULT_FILTERS)).toHaveLength(4);
+  expect(Object.isFrozen(DEFAULT_FILTERS)).toBe(true);
+  expect(Object.isFrozen(FILTERS)).toBe(true);
+  expect(Object.isFrozen(FILTERS[0])).toBe(true);
   expect(
     filterTranscriptItems(items, {
       agent: false,

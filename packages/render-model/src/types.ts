@@ -104,7 +104,7 @@ export type EventFilter = "agent" | "thinking" | "tool" | "user";
  *
  * @public
  */
-export type ActiveFilters = Record<EventFilter, boolean>;
+export type ActiveFilters = Readonly<Record<EventFilter, boolean>>;
 
 /** One transcript item in the shared render model.
  *
@@ -151,8 +151,12 @@ export type RenderModelSummary = {
  * @public
  */
 export type RenderModel = {
+  /** Full display-neutral event stream, including summaries, notices, and fallback records. */
   events: RenderEvent[];
+  /** Unfiltered transcript stream containing only user, agent/thinking, and tool items. */
   allTranscriptItems: TranscriptItem[];
+  /** Filtered transcript stream containing only user, agent/thinking, and tool items. */
   transcriptItems: TranscriptItem[];
+  /** Aggregate counts for the parsed trail and supplied diagnostics. */
   summary: RenderModelSummary;
 };

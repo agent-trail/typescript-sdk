@@ -5,7 +5,7 @@
 ```ts
 
 // @public
-export type ActiveFilters = Record<EventFilter, boolean>;
+export type ActiveFilters = Readonly<Record<EventFilter, boolean>>;
 
 // @public
 export function buildRenderModel(trail: RenderTrail, options?: BuildRenderModelOptions): RenderModel;
@@ -26,11 +26,11 @@ export const DEFAULT_FILTERS: ActiveFilters;
 export type EventFilter = "agent" | "thinking" | "tool" | "user";
 
 // @public
-export const FILTERS: {
+export const FILTERS: readonly Readonly<{
     filter: EventFilter;
     label: string;
     shortLabel: string;
-}[];
+}>[];
 
 // @public
 export function filterTranscriptItems(items: readonly TranscriptItem[], activeFilters: ActiveFilters): TranscriptItem[];

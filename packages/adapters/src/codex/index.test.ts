@@ -362,6 +362,56 @@ test("createCodexAdapter env override discovers sessions without mutating proces
   expect(refs.map((ref) => ref.id)).toEqual([id]);
 });
 
+test("sourceHealth() reports Codex sessions through the factory env override", async () => {
+  const customCodexHome = mkdtempSync(join(tmpdir(), "codex-adapter-health-"));
+  try {
+    const sessionsDir = codexSessionsDir({ CODEX_HOME: customCodexHome });
+    if (sessionsDir === undefined) throw new Error("expected sessions dir");
+    const dayDir = join(sessionsDir, "2026", "05", "28");
+    mkdirSync(dayDir, { recursive: true });
+    const id = "019d7909-85dd-7881-aa12-95ffc8ca8ba1";
+    const ts = "2026-05-28T01:46:00.000Z";
+    writeFileSync(
+      join(dayDir, `rollout-${ts.replace(/[:.]/g, "-")}-${id}.jsonl`),
+      `${JSON.stringify({
+        timestamp: ts,
+        type: "session_meta",
+        payload: { id, timestamp: ts, cwd: "/factory", cli_version: "0.135.0" },
+      })}\n`,
+    );
+
+    const adapter = createCodexAdapter({ env: { CODEX_HOME: customCodexHome } });
+    await expect(adapter.sourceHealth?.()).resolves.toEqual({
+      adapter: "codex",
+      path: sessionsDir,
+      present: true,
+      readable: true,
+      sessionCount: 1,
+      sourceVersion: "0.135.0",
+      warnings: [],
+    });
+  } finally {
+    rmSync(customCodexHome, { recursive: true, force: true });
+  }
+});
+
+test("sourceHealth() reports a missing Codex sessions root", async () => {
+  const customCodexHome = join(tmpHome, "missing-codex-home");
+  const sessionsDir = codexSessionsDir({ CODEX_HOME: customCodexHome });
+  if (sessionsDir === undefined) throw new Error("expected sessions dir");
+  const adapter = createCodexAdapter({ env: { CODEX_HOME: customCodexHome } });
+
+  await expect(adapter.sourceHealth?.()).resolves.toEqual({
+    adapter: "codex",
+    path: sessionsDir,
+    present: false,
+    readable: false,
+    sessionCount: 0,
+    sourceVersion: null,
+    warnings: ["source path not found"],
+  });
+});
+
 test("createCodexAdapter env override is used for parse-time session index and child lookup", async () => {
   const customCodexHome = mkdtempSync(join(tmpdir(), "codex-adapter-parse-env-"));
   try {

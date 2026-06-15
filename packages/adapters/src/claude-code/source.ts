@@ -89,14 +89,18 @@ export function jsonString(value: unknown): string {
 export function textFromToolResultContent(content: unknown): string {
   if (typeof content === "string") return content;
   if (Array.isArray(content)) {
-    const text = content
-      .filter(legacyIsObject)
-      .filter((block) => block.type === "text" && typeof block.text === "string")
-      .map((block) => block.text as string)
-      .join("\n");
+    const text = textFromTextBlocks(content);
     return text.length > 0 ? text : JSON.stringify(content);
   }
   return jsonString(content);
+}
+
+export function textFromTextBlocks(content: unknown[]): string {
+  return content
+    .filter(legacyIsObject)
+    .filter((block) => block.type === "text" && typeof block.text === "string")
+    .map((block) => block.text as string)
+    .join("\n");
 }
 
 // Claude Code engine emits these bracket markers verbatim; not user-authored.

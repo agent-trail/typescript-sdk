@@ -65,18 +65,24 @@ function userQueryQuestion(
     id: stringValue(raw.id) ?? questionId(question, fallbackOccurrence),
     question,
   };
-  const header = stringValue(raw.header);
-  if (header !== undefined) out.header = header;
-  const multiSelect = booleanValue(raw.multi_select) ?? booleanValue(raw.multiSelect);
-  if (multiSelect !== undefined) out.multi_select = multiSelect;
-  const isSecret = booleanValue(raw.is_secret) ?? booleanValue(raw.isSecret);
-  if (isSecret !== undefined) out.is_secret = isSecret;
-  const allowOther =
-    booleanValue(raw.allow_other) ?? booleanValue(raw.allowOther) ?? booleanValue(raw.is_other);
-  if (allowOther !== undefined) out.allow_other = allowOther;
-  const options = optionObjects(raw.options) ?? optionObjects(raw.choices);
-  if (options !== undefined) out.options = options;
+  addString(out, "header", raw.header);
+  addBoolean(out, "multi_select", raw.multi_select ?? raw.multiSelect);
+  addBoolean(out, "is_secret", raw.is_secret ?? raw.isSecret);
+  addBoolean(out, "allow_other", raw.allow_other ?? raw.allowOther ?? raw.is_other);
+  addValue(out, "options", optionObjects(raw.options) ?? optionObjects(raw.choices));
   return out;
+}
+
+function addString(out: Record<string, unknown>, key: string, value: unknown): void {
+  addValue(out, key, stringValue(value));
+}
+
+function addBoolean(out: Record<string, unknown>, key: string, value: unknown): void {
+  addValue(out, key, booleanValue(value));
+}
+
+function addValue(out: Record<string, unknown>, key: string, value: unknown): void {
+  if (value !== undefined) out[key] = value;
 }
 
 function userQueryPayload(input: unknown): { questions: Record<string, unknown>[] } | undefined {
@@ -108,283 +114,378 @@ function taskPlanItemsFromTodoWrite(input: unknown): TaskPlanItem[] | undefined 
   const items: TaskPlanItem[] = [];
   const occurrenceByContent = new Map<string, number>();
   for (const rawTodo of args.todos) {
-    if (!isObject(rawTodo)) return undefined;
-    const content = stringValue(rawTodo.content);
-    const status = rawTodo.status;
-    if (content === undefined || !isTaskPlanStatus(status)) return undefined;
-    const normalized = normalizeTaskPlanContent(content);
-    const occurrence = occurrenceByContent.get(normalized) ?? 0;
-    occurrenceByContent.set(normalized, occurrence + 1);
-    const activeForm = stringValue(rawTodo.activeForm) ?? stringValue(rawTodo.active_form);
-    items.push({
-      id: taskPlanItemId(rawTodo.id, occurrence, content),
-      content,
-      status,
-      ...(activeForm !== undefined ? { active_form: activeForm } : {}),
-    });
+    const item = taskPlanItemFromRaw(rawTodo, occurrenceByContent);
+    if (item === undefined) return undefined;
+    items.push(item);
   }
   return items;
 }
 
+function taskPlanItemFromRaw(
+  rawTodo: unknown,
+  occurrenceByContent: Map<string, number>,
+): TaskPlanItem | undefined {
+  if (!isObject(rawTodo)) return undefined;
+  const content = stringValue(rawTodo.content);
+  const status = rawTodo.status;
+  if (content === undefined || !isTaskPlanStatus(status)) return undefined;
+  const occurrence = nextTaskOccurrence(occurrenceByContent, content);
+  const activeForm = stringValue(rawTodo.activeForm) ?? stringValue(rawTodo.active_form);
+  return {
+    id: taskPlanItemId(rawTodo.id, occurrence, content),
+    content,
+    status,
+    ...(activeForm !== undefined ? { active_form: activeForm } : {}),
+  };
+}
+
+function nextTaskOccurrence(occurrenceByContent: Map<string, number>, content: string): number {
+  const normalized = normalizeTaskPlanContent(content);
+  const occurrence = occurrenceByContent.get(normalized) ?? 0;
+  occurrenceByContent.set(normalized, occurrence + 1);
+  return occurrence;
+}
+
 const userMessage = defineMapping<Raw>({
   match: { type: "user" },
-  emit: (raw) => {
-    const record = raw as CcEnvelope;
-    if (!gate(record)) return [];
-    const attribution = attributionMeta(record);
-    const drafts = ((): TrailEntryDraft[] => {
-      if (record.isCompactSummary === true) {
-        const text =
-          stringValue(record.summary) ??
-          stringValue(record.message?.content) ??
-          jsonString(record.message?.content);
-        return [
-          {
-            type: "context_compact",
-            payload: { summary: text, trigger: "auto" },
-            source: src(record, "user"),
-            meta: meta(record),
-          },
-        ];
-      }
-      const content = record.message?.content;
-      if (typeof content === "string") {
-        const interrupt = isInterruptMarker(content);
-        if (interrupt !== undefined) {
-          return [
-            {
-              type: "user_interrupt",
-              payload: { reason: interrupt.reason },
-              source: src(record, "user"),
-              meta: meta(record),
-            },
-          ];
-        }
-        if (isContinuationPreamble(content)) {
-          return [
-            {
-              type: "system_event",
-              payload: { kind: "session_start", text: content },
-              source: src(record, "user"),
-              meta: meta(record),
-            },
-          ];
-        }
-        return [
-          {
-            type: "user_message",
-            payload: { text: content },
-            source: src(record, "user"),
-            meta: meta(record),
-          },
-        ];
-      }
-      const images = imageAttachments(content);
-      const blocks = asBlocks(content).filter((b) => b.type === "text" || b.type === "tool_result");
-      const blockDrafts = blocks.flatMap((block, i): TrailEntryDraft[] => {
-        const envelopeRef = i > 0 ? "" : undefined;
-        const source = src(record, String(block.type), block, i, { envelopeRef });
-        if (block.type === "text" && typeof block.text === "string") {
-          const interrupt = isInterruptMarker(block.text);
-          if (interrupt !== undefined) {
-            return [
-              {
-                type: "user_interrupt",
-                payload: { reason: interrupt.reason },
-                source,
-                meta: meta(record),
-              },
-            ];
-          }
-          if (isContinuationPreamble(block.text)) {
-            return [
-              {
-                type: "system_event",
-                payload: { kind: "x-claudecode/system", text: block.text },
-                source,
-                meta: meta(record),
-              },
-            ];
-          }
-          return [
-            { type: "user_message", payload: { text: block.text }, source, meta: meta(record) },
-          ];
-        }
-        if (block.type === "tool_result") {
-          const callId = stringValue(block.tool_use_id);
-          const ok = block.is_error !== true;
-          const output = textFromToolResultContent(block.content);
-          return [
-            {
-              type: "tool_result",
-              payload: {
-                ok,
-                ...(output.length > 0 ? { output } : {}),
-                ...(!ok && output.length > 0 ? { error: output } : {}),
-              },
-              source,
-              meta: meta(record, { callId }),
-            },
-          ];
-        }
-        return [];
-      });
-      if (images.length === 0) return blockDrafts;
-      // Fold pasted images onto the owning user turn. Attach to the first
-      // user_message; if the turn carried no text block, synthesize one.
-      const idx = blockDrafts.findIndex((d) => d.type === "user_message");
-      if (idx >= 0) {
-        const owner = blockDrafts[idx];
-        if (owner !== undefined) {
-          blockDrafts[idx] = {
-            ...owner,
-            payload: { ...(owner.payload ?? {}), attachments: images },
-          };
-        }
-        return blockDrafts;
-      }
-      return [
-        {
-          type: "user_message",
-          payload: { text: "", attachments: images },
-          source: src(record, "user"),
-          meta: meta(record),
-        },
-        ...blockDrafts,
-      ];
-    })();
-    if (attribution === undefined) return drafts;
-    return drafts.map((d) => ({ ...d, meta: { ...attribution, ...(d.meta ?? {}) } }));
-  },
+  emit: (raw) => emitUserMessage(raw as CcEnvelope),
 });
+
+function emitUserMessage(record: CcEnvelope): TrailEntryDraft[] {
+  if (!gate(record)) return [];
+  const drafts = userMessageDrafts(record);
+  const attribution = attributionMeta(record);
+  return attribution === undefined
+    ? drafts
+    : drafts.map((draft) => ({ ...draft, meta: { ...attribution, ...(draft.meta ?? {}) } }));
+}
+
+function userMessageDrafts(record: CcEnvelope): TrailEntryDraft[] {
+  if (record.isCompactSummary === true) return compactUserDraft(record);
+  const content = record.message?.content;
+  if (typeof content === "string") return userTextDraft(record, content, "session_start");
+  return userBlockDraftsWithImages(record, content);
+}
+
+function compactUserDraft(record: CcEnvelope): TrailEntryDraft[] {
+  const text =
+    stringValue(record.summary) ??
+    stringValue(record.message?.content) ??
+    jsonString(record.message?.content);
+  return [
+    {
+      type: "context_compact",
+      payload: { summary: text, trigger: "auto" },
+      source: src(record, "user"),
+      meta: meta(record),
+    },
+  ];
+}
+
+function userTextDraft(
+  record: CcEnvelope,
+  text: string,
+  continuationKind: "session_start" | "x-claudecode/system",
+  block?: Record<string, unknown>,
+  blockIndex?: number,
+): TrailEntryDraft[] {
+  const source = src(record, block === undefined ? "user" : "text", block, blockIndex);
+  const interrupt = isInterruptMarker(text);
+  if (interrupt !== undefined) {
+    return [
+      { type: "user_interrupt", payload: { reason: interrupt.reason }, source, meta: meta(record) },
+    ];
+  }
+  if (isContinuationPreamble(text)) {
+    return [
+      {
+        type: "system_event",
+        payload: { kind: continuationKind, text },
+        source,
+        meta: meta(record),
+      },
+    ];
+  }
+  return [{ type: "user_message", payload: { text }, source, meta: meta(record) }];
+}
+
+function userBlockDraftsWithImages(record: CcEnvelope, content: unknown): TrailEntryDraft[] {
+  const images = imageAttachments(content);
+  const drafts = userContentBlocks(content).flatMap((block, index) =>
+    userBlockDraft(record, block, index),
+  );
+  return images.length === 0 ? drafts : attachImagesToUserDraft(record, drafts, images);
+}
+
+function userContentBlocks(content: unknown): Record<string, unknown>[] {
+  return asBlocks(content).filter((block) => block.type === "text" || block.type === "tool_result");
+}
+
+function userBlockDraft(
+  record: CcEnvelope,
+  block: Record<string, unknown>,
+  index: number,
+): TrailEntryDraft[] {
+  const envelopeRef = index > 0 ? "" : undefined;
+  if (block.type === "text" && typeof block.text === "string") {
+    const source = src(record, "text", block, index, { envelopeRef });
+    return userTextDraft(record, block.text, "x-claudecode/system", block, index).map((draft) => ({
+      ...draft,
+      source,
+    }));
+  }
+  if (block.type !== "tool_result") return [];
+  const source = src(record, "tool_result", block, index, { envelopeRef });
+  return [toolResultDraft(record, block, source)];
+}
+
+function toolResultDraft(
+  record: CcEnvelope,
+  block: Record<string, unknown>,
+  source: TrailEntryDraft["source"],
+): TrailEntryDraft {
+  const callId = stringValue(block.tool_use_id);
+  const ok = block.is_error !== true;
+  const output = textFromToolResultContent(block.content);
+  return {
+    type: "tool_result",
+    payload: {
+      ok,
+      ...(output.length > 0 ? { output } : {}),
+      ...(!ok && output.length > 0 ? { error: output } : {}),
+    },
+    source,
+    meta: meta(record, { callId }),
+  };
+}
+
+function attachImagesToUserDraft(
+  record: CcEnvelope,
+  drafts: TrailEntryDraft[],
+  images: ReturnType<typeof imageAttachments>,
+): TrailEntryDraft[] {
+  const index = drafts.findIndex((draft) => draft.type === "user_message");
+  if (index < 0) {
+    return [
+      {
+        type: "user_message",
+        payload: { text: "", attachments: images },
+        source: src(record, "user"),
+        meta: meta(record),
+      },
+      ...drafts,
+    ];
+  }
+  const owner = drafts[index];
+  if (owner === undefined) return drafts;
+  drafts[index] = {
+    ...owner,
+    payload: { ...(owner.payload ?? {}), attachments: images },
+  };
+  return drafts;
+}
 
 const assistantMessage = defineMapping<Raw>({
   match: { type: "assistant" },
-  emit: (raw) => {
-    const record = raw as CcEnvelope;
-    if (!gate(record)) return [];
-    const blocks = asBlocks(record.message?.content).filter(
-      (b) =>
-        b.type === "text" ||
-        b.type === "thinking" ||
-        b.type === "redacted_thinking" ||
-        b.type === "tool_use",
-    );
-    const model = stringValue(record.message?.model);
-    const usage = mapAgentMessageUsage(record.message?.usage);
-    let usageEmitted = false;
-    const consumeUsage = () => {
+  emit: (raw) => emitAssistantMessage(raw as CcEnvelope),
+});
+
+type AssistantContext = {
+  record: CcEnvelope;
+  model: string | undefined;
+  consumeUsage: () => ReturnType<typeof mapAgentMessageUsage> | undefined;
+  semantic: (extra?: Record<string, unknown>) => Record<string, unknown> | undefined;
+};
+
+function emitAssistantMessage(record: CcEnvelope): TrailEntryDraft[] {
+  if (!gate(record)) return [];
+  const context = assistantContext(record);
+  return assistantBlocks(record).flatMap((block, index) =>
+    assistantBlockDraft(context, block, index),
+  );
+}
+
+function assistantBlocks(record: CcEnvelope): Record<string, unknown>[] {
+  return asBlocks(record.message?.content).filter(
+    (block) =>
+      block.type === "text" ||
+      block.type === "thinking" ||
+      block.type === "redacted_thinking" ||
+      block.type === "tool_use",
+  );
+}
+
+function assistantContext(record: CcEnvelope): AssistantContext {
+  const model = stringValue(record.message?.model);
+  const usage = mapAgentMessageUsage(record.message?.usage);
+  let usageEmitted = false;
+  const groupId = stringValue(record.requestId);
+  return {
+    record,
+    model,
+    consumeUsage: () => {
       const blockUsage = !usageEmitted ? usage : undefined;
       if (blockUsage !== undefined) usageEmitted = true;
       return blockUsage;
-    };
-    // requestId groups all entries split out of one LLM request envelope. See
-    // issue #126; matches the spec's semantic.group_id ("one LLM request's
-    // events"). The reconciler preserves it when adding tool_kind to tool_calls.
-    const groupId = stringValue(record.requestId);
-    const sem = (extra?: Record<string, unknown>): Record<string, unknown> | undefined => {
-      const s = { ...(groupId !== undefined ? { group_id: groupId } : {}), ...(extra ?? {}) };
-      return Object.keys(s).length > 0 ? s : undefined;
-    };
-    return blocks.flatMap((block, i): TrailEntryDraft[] => {
-      const envelopeRef = i > 0 ? "" : undefined;
-      const source = src(record, String(block.type), block, i, { envelopeRef });
-      if (block.type === "text" && typeof block.text === "string") {
-        const blockUsage = consumeUsage();
-        const semantic = sem();
-        return [
-          {
-            type: "agent_message",
-            payload: {
-              text: block.text,
-              ...(model !== undefined ? { model } : {}),
-              ...(typeof record.message?.stop_reason === "string"
-                ? { stop_reason: record.message.stop_reason }
-                : {}),
-              ...(blockUsage !== undefined ? { usage: blockUsage } : {}),
-            },
-            ...(semantic !== undefined ? { semantic } : {}),
-            source,
-            meta: meta(record, { model }),
-          },
-        ];
-      }
-      if (block.type === "thinking" || block.type === "redacted_thinking") {
-        const text =
-          stringValue(block.thinking) ??
-          stringValue(block.data) ??
-          (block.type === "redacted_thinking" ? "[redacted thinking]" : "");
-        const blockUsage = consumeUsage();
-        const semantic = sem();
-        return [
-          {
-            type: "agent_thinking",
-            payload: {
-              text,
-              ...(model !== undefined ? { model } : {}),
-              ...(blockUsage !== undefined ? { usage: blockUsage } : {}),
-            },
-            ...(semantic !== undefined ? { semantic } : {}),
-            source,
-            meta: meta(record, { model }),
-          },
-        ];
-      }
-      if (block.type === "tool_use") {
-        const callId = stringValue(block.id);
-        const toolName = stringValue(block.name);
-        const taskPlanItems =
-          toolName === "TodoWrite" ? taskPlanItemsFromTodoWrite(block.input) : undefined;
-        if (taskPlanItems !== undefined) {
-          const taskPlanCallId = isNonEmptyString(callId) ? callId : undefined;
-          const semantic = sem(
-            taskPlanCallId !== undefined ? { call_id: taskPlanCallId } : undefined,
-          );
-          return [
-            {
-              type: "task_plan_update",
-              payload: { items: taskPlanItems },
-              ...(semantic !== undefined ? { semantic } : {}),
-              source,
-              meta: meta(record, { model, callId: taskPlanCallId }),
-            } as TrailEntryDraft,
-          ];
-        }
-        if (toolName === "AskUserQuestion") {
-          const payload = userQueryPayload(block.input);
-          if (payload !== undefined) {
-            const queryCallId = isNonEmptyString(callId) ? callId : undefined;
-            const semantic = sem(queryCallId !== undefined ? { call_id: queryCallId } : undefined);
-            return [
-              {
-                type: "user_query",
-                payload,
-                ...(semantic !== undefined ? { semantic } : {}),
-                source,
-                meta: meta(record, { model, callId: queryCallId }),
-              },
-            ];
-          }
-        }
-        const mapped = toolKindAndArgs(toolName, block.input);
-        const blockUsage = consumeUsage();
-        return [
-          {
-            type: "tool_call",
-            payload: { ...mapped, ...(blockUsage !== undefined ? { usage: blockUsage } : {}) },
-            semantic: sem({
-              ...(callId !== undefined ? { call_id: callId } : {}),
-              tool_kind: mapped.tool as ToolKind,
-            }),
-            source,
-            meta: meta(record, { model, callId }),
-          },
-        ];
-      }
-      return [];
-    });
-  },
-});
+    },
+    semantic: (extra) => semanticWithGroup(groupId, extra),
+  };
+}
+
+function semanticWithGroup(
+  groupId: string | undefined,
+  extra?: Record<string, unknown>,
+): Record<string, unknown> | undefined {
+  const semantic = { ...(groupId !== undefined ? { group_id: groupId } : {}), ...(extra ?? {}) };
+  return Object.keys(semantic).length > 0 ? semantic : undefined;
+}
+
+function assistantBlockDraft(
+  context: AssistantContext,
+  block: Record<string, unknown>,
+  index: number,
+): TrailEntryDraft[] {
+  const source = src(context.record, String(block.type), block, index, {
+    envelopeRef: index > 0 ? "" : undefined,
+  });
+  if (block.type === "text" && typeof block.text === "string") {
+    return [assistantTextDraft(context, block.text, source)];
+  }
+  if (block.type === "thinking" || block.type === "redacted_thinking") {
+    return [assistantThinkingDraft(context, block, source)];
+  }
+  return block.type === "tool_use" ? assistantToolDraft(context, block, source) : [];
+}
+
+function assistantTextDraft(
+  context: AssistantContext,
+  text: string,
+  source: TrailEntryDraft["source"],
+): TrailEntryDraft {
+  const blockUsage = context.consumeUsage();
+  const semantic = context.semantic();
+  return {
+    type: "agent_message",
+    payload: {
+      text,
+      ...optionalModel(context.model),
+      ...(typeof context.record.message?.stop_reason === "string"
+        ? { stop_reason: context.record.message.stop_reason }
+        : {}),
+      ...(blockUsage !== undefined ? { usage: blockUsage } : {}),
+    },
+    ...(semantic !== undefined ? { semantic } : {}),
+    source,
+    meta: meta(context.record, { model: context.model }),
+  };
+}
+
+function assistantThinkingDraft(
+  context: AssistantContext,
+  block: Record<string, unknown>,
+  source: TrailEntryDraft["source"],
+): TrailEntryDraft {
+  const text =
+    stringValue(block.thinking) ??
+    stringValue(block.data) ??
+    (block.type === "redacted_thinking" ? "[redacted thinking]" : "");
+  const blockUsage = context.consumeUsage();
+  const semantic = context.semantic();
+  return {
+    type: "agent_thinking",
+    payload: {
+      text,
+      ...optionalModel(context.model),
+      ...(blockUsage !== undefined ? { usage: blockUsage } : {}),
+    },
+    ...(semantic !== undefined ? { semantic } : {}),
+    source,
+    meta: meta(context.record, { model: context.model }),
+  };
+}
+
+function assistantToolDraft(
+  context: AssistantContext,
+  block: Record<string, unknown>,
+  source: TrailEntryDraft["source"],
+): TrailEntryDraft[] {
+  return (
+    taskPlanDraft(context, block, source) ??
+    userQueryDraft(context, block, source) ?? [genericToolCallDraft(context, block, source)]
+  );
+}
+
+function taskPlanDraft(
+  context: AssistantContext,
+  block: Record<string, unknown>,
+  source: TrailEntryDraft["source"],
+): TrailEntryDraft[] | undefined {
+  const callId = stringValue(block.id);
+  if (stringValue(block.name) !== "TodoWrite") return undefined;
+  const items = taskPlanItemsFromTodoWrite(block.input);
+  if (items === undefined) return undefined;
+  const taskPlanCallId = isNonEmptyString(callId) ? callId : undefined;
+  const semantic = context.semantic(
+    taskPlanCallId !== undefined ? { call_id: taskPlanCallId } : undefined,
+  );
+  return [
+    {
+      type: "task_plan_update",
+      payload: { items },
+      ...(semantic !== undefined ? { semantic } : {}),
+      source,
+      meta: meta(context.record, { model: context.model, callId: taskPlanCallId }),
+    } as TrailEntryDraft,
+  ];
+}
+
+function userQueryDraft(
+  context: AssistantContext,
+  block: Record<string, unknown>,
+  source: TrailEntryDraft["source"],
+): TrailEntryDraft[] | undefined {
+  const callId = stringValue(block.id);
+  if (stringValue(block.name) !== "AskUserQuestion") return undefined;
+  const payload = userQueryPayload(block.input);
+  if (payload === undefined) return undefined;
+  const queryCallId = isNonEmptyString(callId) ? callId : undefined;
+  const semantic = context.semantic(
+    queryCallId !== undefined ? { call_id: queryCallId } : undefined,
+  );
+  return [
+    {
+      type: "user_query",
+      payload,
+      ...(semantic !== undefined ? { semantic } : {}),
+      source,
+      meta: meta(context.record, { model: context.model, callId: queryCallId }),
+    },
+  ];
+}
+
+function genericToolCallDraft(
+  context: AssistantContext,
+  block: Record<string, unknown>,
+  source: TrailEntryDraft["source"],
+): TrailEntryDraft {
+  const callId = stringValue(block.id);
+  const mapped = toolKindAndArgs(stringValue(block.name), block.input);
+  const blockUsage = context.consumeUsage();
+  return {
+    type: "tool_call",
+    payload: { ...mapped, ...(blockUsage !== undefined ? { usage: blockUsage } : {}) },
+    semantic: context.semantic({
+      ...(callId !== undefined ? { call_id: callId } : {}),
+      tool_kind: mapped.tool as ToolKind,
+    }),
+    source,
+    meta: meta(context.record, { model: context.model, callId }),
+  };
+}
+
+function optionalModel(model: string | undefined): Record<string, string> {
+  return model === undefined ? {} : { model };
+}
 
 const summary = defineMapping<Raw>({
   match: { type: "summary" },

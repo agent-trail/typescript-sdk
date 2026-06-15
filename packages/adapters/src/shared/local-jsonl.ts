@@ -165,7 +165,7 @@ async function jsonlFilesWithMtime(dir: string): Promise<Array<{ path: string; m
   });
 }
 
-async function listSafeJsonlFiles(dir: string): Promise<string[]> {
+export async function listSafeJsonlFiles(dir: string): Promise<string[]> {
   const names = await readdir(dir);
   return (
     await mapConcurrent(names, DISCOVERY_CONCURRENCY_LIMIT, (name) => safeJsonlPath(dir, name))

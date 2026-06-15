@@ -1,39 +1,51 @@
 import { type CcEnvelope, jsonObjectValue, stringValue } from "./source.js";
 
 export function systemEventText(envelope: CcEnvelope): string {
-  if (envelope.type === "system") {
-    const subtype = stringValue(envelope.subtype) ?? "system";
-    const content = stringValue(envelope.content);
-    return content?.trim() ? content : `System event: ${subtype}`;
-  }
-  if (envelope.type === "progress") {
-    const data = jsonObjectValue(envelope.data);
-    const dataType = stringValue(data?.type) ?? "progress";
-    if (dataType === "hook_progress") {
-      const hookEvent = stringValue(data?.hookEvent) ?? "hook";
-      const hookName = stringValue(data?.hookName);
-      return hookName?.trim()
-        ? `Hook progress: ${hookEvent} (${hookName})`
-        : `Hook progress: ${hookEvent}`;
-    }
-    const message = stringValue(data?.message);
-    return message?.trim() ? `Progress: ${message.trim()}` : `Progress: ${dataType}`;
-  }
-  if (envelope.type === "queue-operation") {
-    const operation = stringValue(envelope.operation) ?? "unknown";
-    const content = stringValue(envelope.content);
-    return operation === "enqueue" && content?.trim()
-      ? `Queued input: ${content.trim()}`
-      : `Queue operation: ${operation}`;
-  }
-  if (envelope.type === "pr-link") {
-    const num = envelope.prNumber;
-    const url = stringValue(envelope.prUrl);
-    if (typeof num === "number" && url !== undefined) return `PR #${num}: ${url}`;
-    if (url !== undefined) return url;
-    return "PR link";
-  }
-  return "System event";
+  return TEXT_MAPPERS[envelope.type ?? ""]?.(envelope) ?? "System event";
+}
+
+const TEXT_MAPPERS: Record<string, (envelope: CcEnvelope) => string> = {
+  system: systemEnvelopeText,
+  progress: progressEnvelopeText,
+  "queue-operation": queueOperationText,
+  "pr-link": prLinkText,
+};
+
+function systemEnvelopeText(envelope: CcEnvelope): string {
+  const subtype = stringValue(envelope.subtype) ?? "system";
+  const content = stringValue(envelope.content);
+  return content?.trim() ? content : `System event: ${subtype}`;
+}
+
+function progressEnvelopeText(envelope: CcEnvelope): string {
+  const data = jsonObjectValue(envelope.data);
+  const dataType = stringValue(data?.type) ?? "progress";
+  if (dataType === "hook_progress") return hookProgressText(data);
+  const message = stringValue(data?.message);
+  return message?.trim() ? `Progress: ${message.trim()}` : `Progress: ${dataType}`;
+}
+
+function hookProgressText(data: Record<string, unknown> | undefined): string {
+  const hookEvent = stringValue(data?.hookEvent) ?? "hook";
+  const hookName = stringValue(data?.hookName);
+  return hookName?.trim()
+    ? `Hook progress: ${hookEvent} (${hookName})`
+    : `Hook progress: ${hookEvent}`;
+}
+
+function queueOperationText(envelope: CcEnvelope): string {
+  const operation = stringValue(envelope.operation) ?? "unknown";
+  const content = stringValue(envelope.content);
+  return operation === "enqueue" && content?.trim()
+    ? `Queued input: ${content.trim()}`
+    : `Queue operation: ${operation}`;
+}
+
+function prLinkText(envelope: CcEnvelope): string {
+  const num = envelope.prNumber;
+  const url = stringValue(envelope.prUrl);
+  if (typeof num === "number" && url !== undefined) return `PR #${num}: ${url}`;
+  return url ?? "PR link";
 }
 
 export function isSessionEndHookEvent(hookEvent: string | undefined): boolean {
@@ -69,27 +81,23 @@ const SYSTEM_SUBTYPE_PATTERN = /^[a-z0-9][a-z0-9_]*$/;
 // retained as a vendor extension. compact_boundary is preserved under x-claudecode
 // because the canonical context_compact entry is produced by the summary envelope.
 function systemSubtypeToKind(subtype: string | undefined): string {
-  switch (subtype) {
-    case "stop_hook_summary":
-      return "turn_end";
-    case "turn_duration":
-      return "x-claudecode/turn_duration";
-    case "compact_boundary":
-      return "x-claudecode/compact_boundary";
-    case "api_error":
-      return "api_error";
-    case "away_summary":
-      return "x-claudecode/away_summary";
-    case "local_command":
-      return "x-claudecode/local_command";
-    case "bridge_status":
-      return "x-claudecode/bridge_status";
-    default:
-      return subtype !== undefined && SYSTEM_SUBTYPE_PATTERN.test(subtype)
-        ? `x-claudecode/${subtype}`
-        : "x-claudecode/system";
+  if (subtype !== undefined && subtype in SYSTEM_SUBTYPE_KINDS) {
+    return SYSTEM_SUBTYPE_KINDS[subtype] ?? "x-claudecode/system";
   }
+  return subtype !== undefined && SYSTEM_SUBTYPE_PATTERN.test(subtype)
+    ? `x-claudecode/${subtype}`
+    : "x-claudecode/system";
 }
+
+const SYSTEM_SUBTYPE_KINDS: Record<string, string> = {
+  stop_hook_summary: "turn_end",
+  turn_duration: "x-claudecode/turn_duration",
+  compact_boundary: "x-claudecode/compact_boundary",
+  api_error: "api_error",
+  away_summary: "x-claudecode/away_summary",
+  local_command: "x-claudecode/local_command",
+  bridge_status: "x-claudecode/bridge_status",
+};
 
 export function systemEventKind(envelope: CcEnvelope): string {
   if (envelope.type === "queue-operation") return "queue_operation";

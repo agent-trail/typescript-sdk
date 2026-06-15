@@ -14,7 +14,6 @@
     "ignore": [
       "packages/types/src/generated.ts",
       "**/*.test.ts",
-      "packages/adapters/src/claude-code/**",
       "packages/adapters/src/codex/**",
       "packages/adapters/src/pi/**",
       "packages/adapters/src/opencode/**"
@@ -22,7 +21,6 @@
   },
   "health": {
     "ignore": [
-      "packages/adapters/src/claude-code/**",
       "packages/adapters/src/codex/**",
       "packages/adapters/src/pi/**",
       "packages/adapters/src/opencode/**"

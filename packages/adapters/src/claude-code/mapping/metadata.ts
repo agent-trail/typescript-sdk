@@ -51,39 +51,62 @@ const worktreeStateMetadata = defineMapping<Raw>({
     const ws = isObject(record.worktreeSession) ? record.worktreeSession : undefined;
     if (ws === undefined) return [];
 
-    const entries: TrailEntryDraft[] = [];
-    const branch = stringValue(ws.worktreeBranch);
-    if (branch !== undefined) {
-      entries.push({
-        type: "session_metadata_update",
-        payload: { field: "vcs.branch", value: branch, reason: "runtime_inferred" },
-        source: metadataSource(record, "worktree-state"),
-        meta: meta(record),
-      });
-    }
-
-    const name = stringValue(ws.worktreeName);
-    const path = stringValue(ws.worktreePath);
-    if (name !== undefined && path !== undefined) {
-      const worktree: Record<string, unknown> = { name, path };
-      const originalCwd = stringValue(ws.originalCwd);
-      const originalBranch = stringValue(ws.originalBranch);
-      const originalHeadCommit = stringValue(ws.originalHeadCommit);
-      if (originalCwd !== undefined) worktree.original_cwd = originalCwd;
-      if (originalBranch !== undefined) worktree.original_branch = originalBranch;
-      if (originalHeadCommit !== undefined && /^[a-f0-9]{7,64}$/.test(originalHeadCommit)) {
-        worktree.original_head_commit = originalHeadCommit;
-      }
-      entries.push({
-        type: "session_metadata_update",
-        payload: { field: "vcs.worktree", value: worktree, reason: "runtime_inferred" },
-        source: metadataSource(record, "worktree-state"),
-        meta: meta(record),
-      });
-    }
-
-    return entries;
+    return [branchUpdate(record, ws), worktreeUpdate(record, ws)].filter(isPresent);
   },
 });
+
+function branchUpdate(
+  record: CcEnvelope,
+  ws: Record<string, unknown>,
+): TrailEntryDraft | undefined {
+  const branch = stringValue(ws.worktreeBranch);
+  return branch === undefined ? undefined : metadataUpdate(record, "vcs.branch", branch);
+}
+
+function worktreeUpdate(
+  record: CcEnvelope,
+  ws: Record<string, unknown>,
+): TrailEntryDraft | undefined {
+  const worktree = worktreeValue(ws);
+  return worktree === undefined ? undefined : metadataUpdate(record, "vcs.worktree", worktree);
+}
+
+function metadataUpdate(record: CcEnvelope, field: string, value: unknown): TrailEntryDraft {
+  return {
+    type: "session_metadata_update",
+    payload: { field, value, reason: "runtime_inferred" },
+    source: metadataSource(record, "worktree-state"),
+    meta: meta(record),
+  };
+}
+
+function worktreeValue(ws: Record<string, unknown>): Record<string, unknown> | undefined {
+  const name = stringValue(ws.worktreeName);
+  const path = stringValue(ws.worktreePath);
+  if (name === undefined || path === undefined) return undefined;
+  return {
+    name,
+    path,
+    ...optionalString("original_cwd", ws.originalCwd),
+    ...optionalString("original_branch", ws.originalBranch),
+    ...originalHeadCommit(ws.originalHeadCommit),
+  };
+}
+
+function originalHeadCommit(value: unknown): Record<string, string> {
+  const commit = stringValue(value);
+  return commit !== undefined && /^[a-f0-9]{7,64}$/.test(commit)
+    ? { original_head_commit: commit }
+    : {};
+}
+
+function optionalString(key: string, value: unknown): Record<string, string> {
+  const string = stringValue(value);
+  return string === undefined ? {} : { [key]: string };
+}
+
+function isPresent<T>(value: T | undefined): value is T {
+  return value !== undefined;
+}
 
 export const metadataMappings = [aiTitleMetadata, agentNameMetadata, worktreeStateMetadata];

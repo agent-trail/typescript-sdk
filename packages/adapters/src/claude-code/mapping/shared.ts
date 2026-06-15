@@ -72,23 +72,56 @@ export function attributionMeta(record: CcEnvelope): Record<string, unknown> | u
 // data: URIs); the blob store resolves it at share time. Mirrors the Codex
 // adapter's image rollup (#160). See issue #126.
 export function imageAttachments(content: unknown): Attachment[] {
-  const out: Attachment[] = [];
-  for (const block of asBlocks(content)) {
-    if (block.type !== "image" && block.type !== "document") continue;
-    const source = isObject(block.source) ? block.source : undefined;
-    const data = stringValue(source?.data);
-    if (stringValue(source?.type) !== "base64" || data === undefined) continue;
-    const mediaType = stringValue(source?.media_type) ?? stringValue(source?.mediaType);
-    const decoded = decodeCappedBase64(data);
-    if (decoded.bytes === undefined) continue;
-    const att: Attachment = {
-      kind: block.type === "image" ? "image" : "file",
-      ...(mediaType !== undefined ? { media_type: mediaType } : {}),
-      uri: sha256Ref(decoded.bytes),
-    };
-    out.push(att);
+  return asBlocks(content).map(imageAttachment).filter(isPresent);
+}
+
+function imageAttachment(block: CcBlock): Attachment | undefined {
+  const media = inlineMediaBlock(block);
+  if (media === undefined) return undefined;
+  const decoded = decodeCappedBase64(media.data);
+  if (decoded.bytes === undefined) return undefined;
+  return {
+    kind: media.kind,
+    ...(media.mediaType !== undefined ? { media_type: media.mediaType } : {}),
+    uri: sha256Ref(decoded.bytes),
+  };
+}
+
+type InlineMediaBlock = {
+  kind: "image" | "file";
+  data: string;
+  mediaType?: string;
+};
+
+function inlineMediaBlock(block: CcBlock): InlineMediaBlock | undefined {
+  const source = isObject(block.source) ? block.source : undefined;
+  const data = stringValue(source?.data);
+  if (
+    !isInlineMediaType(block.type) ||
+    source === undefined ||
+    stringValue(source.type) !== "base64" ||
+    data === undefined
+  ) {
+    return undefined;
   }
-  return out;
+  return {
+    kind: block.type === "image" ? "image" : "file",
+    data,
+    ...mediaTypeFields(source),
+  };
+}
+
+function mediaTypeFields(source: Record<string, unknown>): Pick<InlineMediaBlock, "mediaType"> {
+  const mediaType = stringValue(source.media_type) ?? stringValue(source.mediaType);
+  return mediaType !== undefined ? { mediaType } : {};
+}
+
+function isInlineMediaType(value: unknown): value is "image" | "document" {
+  return value === "image" || value === "document";
+}
+
+function isPresent<T>(value: T | undefined): value is T {
+  return value !== undefined;
 }
 
 type HookAdditionalContextContent = {
@@ -167,24 +200,56 @@ function hookFailureData(
   raw: Record<string, unknown>,
   fallbackBlocking?: boolean,
 ): { text: string; data: Record<string, unknown> } {
-  const hookName = stringValue(raw.hookName) ?? stringValue(raw.hook_name) ?? stringValue(raw.name);
-  const details =
-    stringValue(raw.message) ??
-    stringValue(raw.error) ??
-    stringValue(raw.details) ??
-    stringValue(raw.stderr);
-  const code =
-    stringValue(raw.code) ?? (typeof raw.code === "number" ? String(raw.code) : undefined);
-  const blocking = booleanValue(raw.blocking) ?? fallbackBlocking;
-  const data: Record<string, unknown> = { severity: "error" };
-  if (blocking !== undefined) data.blocking = blocking;
-  if (hookName !== undefined) data.hook_name = hookName;
-  if (code !== undefined) data.code = code;
-  if (details !== undefined) data.details = details;
+  const fields = hookFailureFields(raw, fallbackBlocking);
+  const data = hookFailureDetails(fields);
   return {
-    text: hookName !== undefined ? `Hook failed: ${hookName}` : "Hook failed",
+    text: fields.hookName !== undefined ? `Hook failed: ${fields.hookName}` : "Hook failed",
     data,
   };
+}
+
+type HookFailureFields = {
+  blocking: boolean | undefined;
+  hookName: string | undefined;
+  code: string | undefined;
+  details: string | undefined;
+};
+
+function hookFailureFields(
+  raw: Record<string, unknown>,
+  fallbackBlocking?: boolean,
+): HookFailureFields {
+  return {
+    blocking: booleanValue(raw.blocking) ?? fallbackBlocking,
+    hookName: firstString(raw, ["hookName", "hook_name", "name"]),
+    code: codeString(raw.code),
+    details: firstString(raw, ["message", "error", "details", "stderr"]),
+  };
+}
+
+function firstString(raw: Record<string, unknown>, keys: readonly string[]): string | undefined {
+  for (const key of keys) {
+    const value = stringValue(raw[key]);
+    if (value !== undefined) return value;
+  }
+  return undefined;
+}
+
+function codeString(value: unknown): string | undefined {
+  return stringValue(value) ?? (typeof value === "number" ? String(value) : undefined);
+}
+
+function hookFailureDetails(input: HookFailureFields): Record<string, unknown> {
+  const data: Record<string, unknown> = { severity: "error" };
+  addValue(data, "blocking", input.blocking);
+  addValue(data, "hook_name", input.hookName);
+  addValue(data, "code", input.code);
+  addValue(data, "details", input.details);
+  return data;
+}
+
+function addValue(out: Record<string, unknown>, key: string, value: unknown): void {
+  if (value !== undefined) out[key] = value;
 }
 
 export function hookFailureDraft(

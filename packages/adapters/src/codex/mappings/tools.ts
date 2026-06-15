@@ -1,8 +1,8 @@
 import type { MappingDef, TrailEntryDraft } from "@agent-trail/adapter-kit";
 import { defineMapping } from "@agent-trail/adapter-kit";
 import type { ToolKind } from "@agent-trail/types";
+import { isNonEmptyString } from "../../shared/task-plan.js";
 import { userQueryPayloadFromInput } from "../../shared/user-query.js";
-import { isNonEmptyString } from "../../task-plan.js";
 import {
   canonicalCustomToolName,
   mapTool,

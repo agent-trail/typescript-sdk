@@ -1,10 +1,10 @@
 import type { ReconcilerRule } from "@agent-trail/adapter-kit";
 import type { AgentMessageUsage, Attachment, Entry, ToolKind } from "@agent-trail/types";
-import { CODEX_ENTRY_ID_NAMESPACE } from "../session-uid.js";
 import { linkerCallId } from "../shared/linker-meta.js";
 import { uniqueOptionLabelToId } from "../shared/options.js";
-import { dropTaskPlanAckResults, withTaskPlanDeltas } from "../task-plan.js";
-import { synthesizeVcsCommitEvents } from "../vcs-commit.js";
+import { CODEX_ENTRY_ID_NAMESPACE } from "../shared/session-uid.js";
+import { dropTaskPlanAckResults, withTaskPlanDeltas } from "../shared/task-plan.js";
+import { synthesizeVcsCommitEvents } from "../shared/vcs-commit.js";
 import { IMAGE_CARRIER, TOKEN_MODEL_CARRIER, USAGE_CARRIER } from "./mappings.js";
 
 function usageCarrier(entry: Entry): AgentMessageUsage | undefined {

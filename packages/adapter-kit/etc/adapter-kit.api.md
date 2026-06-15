@@ -4,38 +4,28 @@
 
 ```ts
 
-// @public (undocumented)
+// @public
 export interface Adapter {
-    // Warning: (ae-forgotten-export) The symbol "Entry" needs to be exported by the entry point index.d.ts
     parse(source: SourcePointer, options: ParseOptions): Promise<Entry[]>;
     parseSnapshot(snapshot: SourceSnapshot, options: ParseOptions): Promise<Entry[]>;
 }
 
-// @public (undocumented)
+// @public
 export interface AdapterDef<S = unknown> {
-    // Warning: (ae-forgotten-export) The symbol "AgentName" needs to be exported by the entry point index.d.ts
-    //
-    // (undocumented)
     agent: AgentName;
     idNamespace: string;
-    // (undocumented)
     initialState?: (() => S) | undefined;
-    // (undocumented)
-    mappings: MappingDef<any>[];
-    // (undocumented)
-    overrides?: OverrideDef<any, S>[] | undefined;
+    mappings: MappingDef<RawRecord>[];
+    overrides?: OverrideDef<RawRecord, S>[] | undefined;
     quarantineNamespace: string;
-    // (undocumented)
     reader: SourceReader;
-    // (undocumented)
     reconciler: ReconcilerConfig;
     schemaAgent?: string | undefined;
-    // (undocumented)
     sourceFormatVersions: string[];
     tsFrom: (record: RawRecord) => string;
 }
 
-// @public (undocumented)
+// @public
 export function chainReaders(readers: SourceReader[]): SourceReader;
 
 // @public
@@ -44,203 +34,157 @@ export function defineAdapter<S = unknown>(def: AdapterDef<S>): Adapter;
 // @public
 export function defineMapping<T extends RawRecord>(def: MappingDef<T>): MappingDef<T>;
 
-// @public (undocumented)
+// @public
 export class JsonlReader implements SourceReader {
     constructor(options?: JsonlReaderOptions);
-    // (undocumented)
     identityHash(source: SourcePointer): Promise<string>;
-    // (undocumented)
     records(source: SourcePointer): AsyncIterable<RawRecord>;
-    // (undocumented)
     schemaVersion(source: SourcePointer): Promise<string | undefined>;
 }
 
-// @public (undocumented)
+// @public
 export interface JsonlReaderOptions {
-    // (undocumented)
     mode?: "tolerant" | "strict";
-    // (undocumented)
     versionFrom?: (first: RawRecord) => string | undefined;
 }
 
 // @public
 export interface LinkerHints {
-    // (undocumented)
     call_id?: string;
 }
 
-// @public (undocumented)
+// @public
 export interface MappingDef<T extends RawRecord = RawRecord> {
-    // (undocumented)
     emit: (record: T) => TrailEntryDraft[];
-    // (undocumented)
     match: MatchPattern<T>;
 }
 
-// Warning: (ae-forgotten-export) The symbol "MatchPatternValue" needs to be exported by the entry point index.d.ts
-//
 // @public
 export type MatchPattern<T extends Record<string, unknown> = Record<string, unknown>> = {
     [K in keyof T]?: MatchPatternValue<T[K]>;
 };
 
-// @public (undocumented)
+// @public
+export type MatchPatternValue<V> = V extends Record<string, unknown> ? MatchPattern<V> : V;
+
+// @public
 export function mergeByTimestamp(readers: SourceReader[], options?: MergeByTimestampOptions): SourceReader;
 
-// @public (undocumented)
+// @public
 export interface MergeByTimestampOptions {
-    // (undocumented)
     timestampFrom?: (record: RawRecord) => number | undefined;
 }
 
-// @public (undocumented)
+// @public
+export type MetaWithLinker = {
+    linker?: LinkerHints;
+} & Record<string, unknown>;
+
+// @public
 export interface OverrideCtx<S> {
     emit(draft: TrailEntryDraft): void;
-    // (undocumented)
     state: S;
     window: {
         recent(n: number): RawRecord[];
     };
 }
 
-// @public (undocumented)
+// @public
 export interface OverrideDef<T extends RawRecord = RawRecord, S = unknown> {
-    // (undocumented)
     emit: (record: T, ctx: OverrideCtx<S>) => TrailEntryDraft[];
-    // (undocumented)
     match: MatchPattern<T>;
 }
 
-// @public (undocumented)
+// @public
 export interface ParseOptions {
     sessionUid: string;
 }
 
-// @public (undocumented)
+// @public
 export type RawRecord = Record<string, unknown>;
 
-// @public (undocumented)
+// @public
 export interface ReconcilerConfig {
-    // (undocumented)
     branchReconciliation?: boolean;
-    // (undocumented)
     cumulativeTokens?: boolean;
-    // (undocumented)
     custom?: ReconcilerRule[];
-    // (undocumented)
     parentChain?: boolean;
-    // (undocumented)
     toolLinking?: boolean;
 }
 
-// @public (undocumented)
+// @public
 export type ReconcilerRule = (entries: Entry[], ctx: ReconcilerRuleCtx) => Entry[];
 
-// @public (undocumented)
+// @public
 export interface ReconcilerRuleCtx {
-    // (undocumented)
     agent: AgentName;
-    // (undocumented)
     records?: RawRecord[];
 }
 
 // @public
 export function selectSchemaVersion(agent: string, sourceVersion: string | number | undefined): string | undefined;
 
-// @public (undocumented)
+// @public
 export interface SourcePointer {
-    // (undocumented)
     path: string;
 }
 
-// @public (undocumented)
+// @public
 export interface SourceReader {
-    // (undocumented)
     identityHash(source: SourcePointer): Promise<string>;
-    // (undocumented)
     records(source: SourcePointer): AsyncIterable<RawRecord>;
-    // (undocumented)
     schemaVersion(source: SourcePointer): Promise<string | undefined>;
 }
 
-// @public (undocumented)
+// @public
 export interface SourceSnapshot {
-    // (undocumented)
     records: RawRecord[];
-    // (undocumented)
     sourceVersion?: string | undefined;
 }
 
-// @public (undocumented)
+// @public
 export interface SqliteConnection {
-    // (undocumented)
     close(): void;
-    // (undocumented)
     prepare(sql: string): SqlitePreparedStatement;
 }
 
-// @public (undocumented)
+// @public
 export interface SqliteDriver {
-    // (undocumented)
     open(path: string): SqliteConnection;
 }
 
-// @public (undocumented)
+// @public
 export interface SqlitePreparedStatement {
-    // (undocumented)
     all(params?: Record<string, string | number | boolean | null>): Record<string, unknown>[];
-    // (undocumented)
     get?(params?: Record<string, string | number | boolean | null>): Record<string, unknown> | undefined;
 }
 
-// @public (undocumented)
+// @public
 export class SqliteReader implements SourceReader {
     constructor(options: SqliteReaderOptions);
-    // (undocumented)
     identityHash(source: SourcePointer): Promise<string>;
-    // (undocumented)
     records(source: SourcePointer): AsyncIterable<RawRecord>;
-    // (undocumented)
     schemaVersion(source: SourcePointer): Promise<string | undefined>;
 }
 
-// @public (undocumented)
+// @public
 export interface SqliteReaderOptions {
-    // (undocumented)
     driver: SqliteDriver;
-    // (undocumented)
     queries: Record<string, string>;
-    // (undocumented)
     rowToRecord: (queryName: string, row: Record<string, unknown>) => RawRecord;
 }
 
 // @public
 export interface TrailEntryDraft {
-    // Warning: (ae-forgotten-export) The symbol "MetaWithLinker" needs to be exported by the entry point index.d.ts
-    //
-    // (undocumented)
     meta?: MetaWithLinker | undefined;
-    // (undocumented)
     parent_id?: string | null | undefined;
-    // (undocumented)
     payload?: Record<string, unknown> | undefined;
-    // Warning: (ae-forgotten-export) The symbol "SemanticMetadata" needs to be exported by the entry point index.d.ts
-    //
-    // (undocumented)
     semantic?: SemanticMetadata | undefined;
-    // Warning: (ae-forgotten-export) The symbol "SourceMetadata" needs to be exported by the entry point index.d.ts
-    //
-    // (undocumented)
     source?: SourceMetadata | undefined;
-    // (undocumented)
     type: Entry["type"];
 }
 
-// Warning: (ae-forgotten-export) The symbol "Diagnostic" needs to be exported by the entry point index.d.ts
-//
 // @public
 export function validateSourceRecord(agent: string, version: string, record: RawRecord): Diagnostic[];
-
-// (No @packageDocumentation comment for this package)
 
 ```

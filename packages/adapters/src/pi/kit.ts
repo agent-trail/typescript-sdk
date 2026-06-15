@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { type Adapter, defineAdapter, JsonlReader } from "@agent-trail/adapter-kit";
 import type { Entry } from "@agent-trail/types";
-import { PI_ENTRY_ID_NAMESPACE } from "../session-uid.js";
+import { PI_ENTRY_ID_NAMESPACE } from "../shared/session-uid.js";
 import { makePiMappings } from "./mappings.js";
 import {
   piModelChangeFromModel,

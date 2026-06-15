@@ -1,6 +1,6 @@
 import type { Entry } from "@agent-trail/types";
-import { createSourceFor, type SourceForOptions } from "../entries.js";
-import { decodeCappedBase64, sha256Ref } from "../inline-media.js";
+import { createSourceFor, type SourceForOptions } from "../shared/entries.js";
+import { decodeCappedBase64, sha256Ref } from "../shared/inline-media.js";
 import type { CcBlock, CcEnvelope } from "./source.js";
 
 export type { SourceForOptions };

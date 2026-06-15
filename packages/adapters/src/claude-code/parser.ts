@@ -3,7 +3,7 @@ import {
   CLAUDE_CODE_SESSION_UID_NAMESPACE,
   canonicalizeIdentityString,
   deriveSessionUid,
-} from "../session-uid.js";
+} from "../shared/session-uid.js";
 import { type CcEnvelope, isObject, isTracerEnvelope, stringValue } from "./source.js";
 
 const GIT_COMMIT_PATTERN = /^[a-f0-9]{7,64}$/;

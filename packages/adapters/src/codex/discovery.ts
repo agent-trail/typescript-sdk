@@ -1,8 +1,8 @@
 import { lstat, readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import type { DetectOptions, SessionRef } from "../index.js";
-import { canonicalizeIdentityString } from "../session-uid.js";
 import { readJsonlHead as readJsonLinesHead, readJsonlHeadObjects } from "../shared/jsonl-head.js";
+import { canonicalizeIdentityString } from "../shared/session-uid.js";
 import { isRecord } from "../shared/type-guards.js";
 import { codexSessionsDir } from "./paths.js";
 

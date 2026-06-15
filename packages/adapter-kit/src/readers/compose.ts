@@ -11,8 +11,7 @@ function firstVersion(readers: SourceReader[], source: SourcePointer): Promise<s
   return first === undefined ? Promise.resolve(undefined) : first.schemaVersion(source);
 }
 
-// Drains readers sequentially: all records from the first, then the second, etc.
-// Use when temporal interleaving between sources does not matter.
+/** Combine readers by draining each reader sequentially. */
 export function chainReaders(readers: SourceReader[]): SourceReader {
   return {
     async *records(source: SourcePointer): AsyncIterable<RawRecord> {
@@ -23,10 +22,9 @@ export function chainReaders(readers: SourceReader[]): SourceReader {
   };
 }
 
+/** Options for `mergeByTimestamp`. */
 export interface MergeByTimestampOptions {
-  // Extracts a sortable numeric timestamp from a record. Defaults to a numeric
-  // `record.timestamp` (number or numeric string). Records without a usable
-  // timestamp sort before all timestamped records, in reader order.
+  /** Extract a sortable numeric timestamp from a raw record. */
   timestampFrom?: (record: RawRecord) => number | undefined;
 }
 
@@ -40,9 +38,7 @@ function defaultTimestamp(record: RawRecord): number | undefined {
   return undefined;
 }
 
-// Interleaves records from all readers ordered by timestamp ascending. The sort
-// is stable, so records with equal (or absent) timestamps keep reader order.
-// Only sound when sources emit comparable timestamps.
+/** Combine readers by interleaving records in timestamp order. */
 export function mergeByTimestamp(
   readers: SourceReader[],
   options: MergeByTimestampOptions = {},

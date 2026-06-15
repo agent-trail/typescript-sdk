@@ -4,7 +4,7 @@ import {
   decodeCappedBase64,
   INLINE_MEDIA_MAX_DECODED_BYTES,
   sha256Ref,
-} from "../../inline-media.js";
+} from "../../shared/inline-media.js";
 import { sourceFor } from "../entry-metadata.js";
 import { asBlocks, type CcBlock, type CcEnvelope, isObject, stringValue } from "../source.js";
 

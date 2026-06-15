@@ -13,18 +13,15 @@
 import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
 import type { Header, ToolKind } from "@agent-trail/types";
-import {
-  type AgentMessageUsage,
-  mapAgentMessageUsage,
-  quoteShellArg,
-} from "../legacy-kit-helpers.js";
+import { patchFiles } from "../shared/apply-patch-parser.js";
 import {
   CODEX_SESSION_UID_NAMESPACE,
   canonicalizeIdentityString,
   deriveSessionUid,
-} from "../session-uid.js";
-import { patchFiles } from "../shared/apply-patch-parser.js";
-import { type HeaderVcs, normalizeRemoteUrl } from "../vcs.js";
+} from "../shared/session-uid.js";
+import { quoteShellArg } from "../shared/shell-quote.js";
+import { type AgentMessageUsage, mapAgentMessageUsage } from "../shared/usage.js";
+import { type HeaderVcs, normalizeRemoteUrl } from "../shared/vcs.js";
 import { isObject, numericValue, stringValue, timestampToIso } from "./source.js";
 
 export { patchFiles } from "../shared/apply-patch-parser.js";

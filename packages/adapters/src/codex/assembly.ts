@@ -1,19 +1,19 @@
 import { readFile, realpath } from "node:fs/promises";
 import { isAbsolute, join, relative } from "node:path";
 import type { Entry, Header } from "@agent-trail/types";
-import { buildTrailEnvelope } from "../envelope.js";
-import { applyHeaderMetadataUpdates } from "../header-metadata.js";
 import type { TrailFile, TrailSessionGroup } from "../index.js";
-import { applyParseFidelity } from "../parse-fidelity.js";
+import { withLinkedSubagentSessionIds } from "../shared/child-session-links.js";
+import { buildTrailEnvelope } from "../shared/envelope.js";
+import { applyHeaderMetadataUpdates } from "../shared/header-metadata.js";
+import { applyParseFidelity } from "../shared/parse-fidelity.js";
 import {
   CODEX_ENTRY_ID_NAMESPACE,
   canonicalizeIdentityString,
   deriveSynthesizedEntryId,
-} from "../session-uid.js";
-import { withLinkedSubagentSessionIds } from "../shared/child-session-links.js";
+} from "../shared/session-uid.js";
+import { sanitizeTrailFile } from "../shared/trail-sanitizer.js";
 import { isRecord } from "../shared/type-guards.js";
-import { sanitizeTrailFile } from "../trail-sanitizer.js";
-import { readGitVcs } from "../vcs.js";
+import { readGitVcs } from "../shared/vcs.js";
 import { type HeadMetadata, readMetadataFromHead, walkRolloutFiles } from "./discovery.js";
 import { parseCodexSnapshotEntries } from "./kit.js";
 import { AGENT_NAME, buildHeader, turnContextSnapshot } from "./parser.js";

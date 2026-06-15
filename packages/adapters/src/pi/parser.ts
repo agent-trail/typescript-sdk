@@ -3,7 +3,7 @@ import {
   canonicalizeIdentityString,
   deriveSessionUid,
   PI_SESSION_UID_NAMESPACE,
-} from "../session-uid.js";
+} from "../shared/session-uid.js";
 import { type PiEnvelope, timestampToIso, versionString } from "./source.js";
 
 export function buildHeader(envelopes: PiEnvelope[]): Header {

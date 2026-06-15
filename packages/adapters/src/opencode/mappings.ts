@@ -1,6 +1,6 @@
 import type { AgentMessageUsage, Attachment, Entry, Header, ToolKind } from "@agent-trail/types";
-import { mapAgentMessageUsage } from "../legacy-kit-helpers.js";
-import { deriveSynthesizedEntryId, OPENCODE_ENTRY_ID_NAMESPACE } from "../session-uid.js";
+import { deriveSynthesizedEntryId, OPENCODE_ENTRY_ID_NAMESPACE } from "../shared/session-uid.js";
+import { mapAgentMessageUsage } from "../shared/usage.js";
 import { attachmentFrom, attachmentsFrom } from "./attachments.js";
 import {
   compactDiffs,

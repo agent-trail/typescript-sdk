@@ -1,4 +1,4 @@
-import { canonicalizeIdentityString } from "../session-uid.js";
+import { canonicalizeIdentityString } from "../shared/session-uid.js";
 import { isObject, jsonObjectValue, maybeNumber, stringValue } from "./source.js";
 
 type ToolMapping = {

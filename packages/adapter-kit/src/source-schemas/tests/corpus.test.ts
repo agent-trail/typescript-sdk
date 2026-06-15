@@ -1,0 +1,69 @@
+// @ts-nocheck
+import { describe, expect, test } from "bun:test";
+import { readdirSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { formatDiagnosticsText } from "@agent-trail/core";
+import type { RawRecord } from "../../readers/types.js";
+import { validateSourceRecord } from "../validate.js";
+
+const fixturesRoot = fileURLToPath(
+  new URL("../../../../adapters/tests/fixtures/", import.meta.url),
+);
+
+function readFixtureRecords(agent: string): { file: string; records: RawRecord[] }[] {
+  const dir = `${fixturesRoot}${agent}/`;
+  return readdirSync(dir)
+    .filter((name) => name.endsWith(".jsonl"))
+    .map((file) => ({
+      file,
+      records: readFileSync(`${dir}${file}`, "utf8")
+        .split("\n")
+        .filter((line) => line.length > 0)
+        .map((line) => JSON.parse(line) as RawRecord),
+    }));
+}
+
+const corpus: { agent: string; version: string }[] = [
+  { agent: "codex", version: "v0.128" },
+  { agent: "pi", version: "v1" },
+  { agent: "claude-code", version: "v1" },
+];
+
+// Fixtures that deliberately carry a schema-invalid record to exercise the
+// drift → quarantine path. Keyed `${agent}/${file}`. These assert the OPPOSITE:
+// that at least one record fails validation, so the drift coverage stays real.
+const DRIFT_FIXTURES = new Set(["pi/quarantine.jsonl"]);
+
+// Fixtures whose records belong to a newer source-schema than the agent's
+// corpus default. Keyed `${agent}/${file}` → schema version to validate against.
+const FIXTURE_VERSION_OVERRIDE = new Map([
+  ["codex/v0_135-events.jsonl", "v0.135"],
+  ["codex/image-message.jsonl", "v0.135"],
+  ["codex/image-message-repeated-text.jsonl", "v0.135"],
+  ["codex/image-message-source-data.jsonl", "v0.135"],
+  ["codex/image-message-unmatched.jsonl", "v0.135"],
+  ["codex/lifecycle.jsonl", "v0.135"],
+]);
+
+for (const { agent, version } of corpus) {
+  describe(`${agent} ${version} source schema corpus`, () => {
+    for (const { file, records } of readFixtureRecords(agent)) {
+      const isDriftFixture = DRIFT_FIXTURES.has(`${agent}/${file}`);
+      const schemaVersion = FIXTURE_VERSION_OVERRIDE.get(`${agent}/${file}`) ?? version;
+      test(`${file} ${isDriftFixture ? "carries the expected drift" : "validates clean"}`, () => {
+        const invalid = records.filter(
+          (record) => validateSourceRecord(agent, schemaVersion, record).length > 0,
+        );
+        if (isDriftFixture) {
+          expect(invalid.length).toBeGreaterThan(0);
+          return;
+        }
+        for (const record of records) {
+          expect(formatDiagnosticsText(validateSourceRecord(agent, schemaVersion, record))).toBe(
+            "",
+          );
+        }
+      });
+    }
+  });
+}

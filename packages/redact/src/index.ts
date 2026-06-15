@@ -5,10 +5,9 @@
  */
 
 export type { TrailJsonlInput } from "@agent-trail/core";
-export type { RedactionConfig, ResolveRedactionConfigOptions } from "./packs.js";
-export { resolveRedactionConfig } from "./packs.js";
-export { DEFAULT_PATTERNS } from "./patterns.js";
-export { redactTrailJsonl } from "./redactor.js";
+export type { RedactionConfig, ResolveRedactionConfigOptions } from "./config/packs.js";
+export { resolveRedactionConfig } from "./config/packs.js";
+export { DEFAULT_PATTERNS } from "./patterns/patterns.js";
 export type {
   LoadedRedactionPack,
   PiiConfig,
@@ -23,4 +22,5 @@ export type {
   RedactTrailJsonlInput,
   RedactTrailOptions,
   RedactTrailResult,
-} from "./types.js";
+} from "./public/types.js";
+export { redactTrailJsonl } from "./transform/redactor.js";

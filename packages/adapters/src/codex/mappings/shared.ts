@@ -1,13 +1,13 @@
 import { Buffer } from "node:buffer";
 import type { Entry } from "@agent-trail/types";
-import { enforceSourceRawSize, redactValue } from "../../source-raw.js";
+import { enforceSourceRawSize, redactValue } from "../../shared/source-raw.js";
 import {
   isNonEmptyString,
   isTaskPlanStatus,
   normalizeTaskPlanContent,
   type TaskPlanItem,
   taskPlanItemId,
-} from "../../task-plan.js";
+} from "../../shared/task-plan.js";
 import { AGENT_NAME } from "../parser.js";
 import { isObject, sanitizeSourceRaw, stringValue, timestampToIso } from "../source.js";
 

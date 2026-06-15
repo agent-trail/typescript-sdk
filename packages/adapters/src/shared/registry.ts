@@ -4,10 +4,15 @@ import type { TrailAdapter } from "../index.js";
 import { createOpenCodeAdapter, type OpenCodeAdapterOptions } from "../opencode/index.js";
 import { createPiAdapter, type PiAdapterOptions } from "../pi/index.js";
 
+/** Options passed to the default adapter registry. */
 export type DefaultTrailAdaptersOptions = {
+  /** Claude Code adapter options. */
   "claude-code"?: ClaudeCodeAdapterOptions;
+  /** Codex adapter options. */
   codex?: CodexAdapterOptions;
+  /** OpenCode adapter options. */
   opencode?: OpenCodeAdapterOptions;
+  /** Pi adapter options. */
   pi?: PiAdapterOptions;
 };
 
@@ -32,6 +37,7 @@ export function createAdapterByName(
   }
 }
 
+/** Create the default concrete adapters in user-visible registry order. */
 export function createDefaultTrailAdapters(
   options: DefaultTrailAdaptersOptions = {},
 ): TrailAdapter[] {

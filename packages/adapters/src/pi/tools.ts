@@ -1,5 +1,6 @@
-import { coerceInt as maybeNumber, quoteShellArg } from "../legacy-kit-helpers.js";
 import { patchFiles } from "../shared/apply-patch-parser.js";
+import { quoteShellArg } from "../shared/shell-quote.js";
+import { coerceInt as maybeNumber } from "../shared/value-coercion.js";
 import { isObject, jsonObjectValue, stringValue } from "./source.js";
 
 type ToolMapping = {
@@ -147,10 +148,8 @@ function replacementHunks(values: unknown[]): Array<{ oldText: string; newText: 
 function replacementHunk(
   value: Record<string, unknown>,
 ): { oldText: string; newText: string } | undefined {
-  const oldText =
-    stringValue(value.oldText) ?? stringValue(value.old_text) ?? stringValue(value.oldString);
-  const newText =
-    stringValue(value.newText) ?? stringValue(value.new_text) ?? stringValue(value.newString);
+  const oldText = stringValue(value.oldText) ?? stringValue(value.old_text);
+  const newText = stringValue(value.newText) ?? stringValue(value.new_text);
   return oldText !== undefined || newText !== undefined
     ? { oldText: oldText ?? "", newText: newText ?? "" }
     : undefined;

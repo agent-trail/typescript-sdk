@@ -1,6 +1,6 @@
 import pkg from "../../package.json" with { type: "json" };
 import type { DetectOptions, SessionRef, TrailAdapter, TrailFile } from "../index.js";
-import { resumeCommand } from "../resume.js";
+import { resumeCommand } from "../shared/resume.js";
 import { parseCodexTrailFile } from "./assembly.js";
 import { detectCodexSessions, dirExists, newestCodexSourceVersion } from "./discovery.js";
 import { inspectSourceHealth } from "./health.js";
@@ -8,10 +8,13 @@ import { codexSessionsDir } from "./paths.js";
 
 const PRODUCER = `@agent-trail/adapters-codex/${pkg.version}`;
 
+/** Options for the Codex adapter factory. */
 export type CodexAdapterOptions = {
+  /** Environment overrides used for discovery and parsing. */
   env?: NodeJS.ProcessEnv;
 };
 
+/** Create a Codex adapter instance. */
 export function createCodexAdapter(options: CodexAdapterOptions = {}): TrailAdapter {
   const env = options.env ?? process.env;
   return {

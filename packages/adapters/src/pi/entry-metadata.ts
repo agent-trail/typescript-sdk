@@ -1,4 +1,4 @@
-import { createSourceFor } from "../entries.js";
+import { createSourceFor } from "../shared/entries.js";
 import type { PiBlock, PiEnvelope } from "./source.js";
 import { versionString } from "./source.js";
 

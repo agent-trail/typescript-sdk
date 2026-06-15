@@ -2,48 +2,46 @@ import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import type { RawRecord, SourcePointer, SourceReader } from "./types.js";
 
-// Minimal SQLite driver surface the reader needs. Kept tiny and driver-agnostic
-// so the reader works under both Bun (`bun:sqlite`, shipped via the
-// `@agent-trail/adapter-kit/bun-sqlite` subpath) and Node (a consumer-supplied
-// `better-sqlite3` wrapper). `better-sqlite3` cannot load under Bun
-// (oven-sh/bun#4290), so the driver is injected rather than imported here.
+/** Prepared SQLite statement abstraction used by `SqliteReader`. */
 export interface SqlitePreparedStatement {
+  /** Return all matching rows. */
   all(params?: Record<string, string | number | boolean | null>): Record<string, unknown>[];
+  /** Return the first matching row when supported by the driver. */
   get?(
     params?: Record<string, string | number | boolean | null>,
   ): Record<string, unknown> | undefined;
 }
+
+/** SQLite connection abstraction used by `SqliteReader`. */
 export interface SqliteConnection {
+  /** Prepare a SQL statement. */
   prepare(sql: string): SqlitePreparedStatement;
+  /** Close the connection. */
   close(): void;
 }
+
+/** Driver abstraction for opening SQLite databases. */
 export interface SqliteDriver {
+  /** Open a SQLite database at `path`. */
   open(path: string): SqliteConnection;
 }
 
+/** Options for `SqliteReader`. */
 export interface SqliteReaderOptions {
-  // Named SQL queries, run in declared order. Each MUST carry an `ORDER BY`
-  // clause reflecting the source's natural temporal order. The reader does not
-  // sort or reorder — records are yielded exactly as the queries return them.
+  /** Named SQL queries, run in declared order. */
   queries: Record<string, string>;
-  // Projects one result row (plus its originating query name) into a raw
-  // record. The query name is the natural discriminator for downstream mapping.
+  /** Project one result row into a raw source record. */
   rowToRecord: (queryName: string, row: Record<string, unknown>) => RawRecord;
-  // SQLite driver. Inject `bunSqliteDriver` under Bun, or a `better-sqlite3`
-  // wrapper under Node.
+  /** SQLite driver. Inject `bunSqliteDriver` under Bun or a Node wrapper. */
   driver: SqliteDriver;
 }
 
-// Reads SQLite-backed sources (e.g. Cursor / Copilot `state.vscdb`). Storage
-// knowledge stays at this boundary; everything above the reader is identical to
-// JSONL adapters. Re-importing a mutated DB yields a different trail by design —
-// trails are point-in-time snapshots (epic §15.4).
-//
-// records(), schemaVersion(), and identityHash() each open the DB independently
-// (stateless, mirroring JsonlReader); revisit with caching only if profiled hot.
+/** Reads SQLite-backed sources through an injected driver. */
 export class SqliteReader implements SourceReader {
+  /** Create a SQLite source reader. */
   constructor(private readonly options: SqliteReaderOptions) {}
 
+  /** Stream query results as raw source records. */
   async *records(source: SourcePointer): AsyncIterable<RawRecord> {
     const db = this.options.driver.open(source.path);
     try {
@@ -57,6 +55,7 @@ export class SqliteReader implements SourceReader {
     }
   }
 
+  /** Return the SQLite `PRAGMA user_version` as a source schema version. */
   async schemaVersion(source: SourcePointer): Promise<string | undefined> {
     const db = this.options.driver.open(source.path);
     try {
@@ -68,6 +67,7 @@ export class SqliteReader implements SourceReader {
     }
   }
 
+  /** Return a SHA-256 hash of the SQLite database bytes. */
   async identityHash(source: SourcePointer): Promise<string> {
     const hash = createHash("sha256");
     for await (const chunk of createReadStream(source.path)) {

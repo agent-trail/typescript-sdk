@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import type { Entry } from "@agent-trail/types";
-import { canonicalizeIdentityString } from "../session-uid.js";
-import { enforceSourceRawSize, redactValue } from "../source-raw.js";
+import { canonicalizeIdentityString } from "../shared/session-uid.js";
+import { enforceSourceRawSize, redactValue } from "../shared/source-raw.js";
 
 export const SOURCE_SCHEMA_VERSION = "v1";
 

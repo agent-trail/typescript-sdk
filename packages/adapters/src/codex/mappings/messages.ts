@@ -6,7 +6,7 @@ import {
   decodeCappedBase64,
   INLINE_MEDIA_MAX_DECODED_BYTES,
   sha256Ref,
-} from "../../inline-media.js";
+} from "../../shared/inline-media.js";
 import { isObject, stringValue } from "../source.js";
 import { emittable, meta, payloadOf, RAW_TYPE, type Raw, source } from "./shared.js";
 

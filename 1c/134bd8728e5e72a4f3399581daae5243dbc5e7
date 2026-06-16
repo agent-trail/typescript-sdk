@@ -1,0 +1,25 @@
+packages/adapters/src/codex/paths.ts
+  s_b375036ea046e2::t_52a52eb65b11e0 19-22
+packages/adapters/src/pi/tests/index.test.ts
+  s_b375036ea046e2::t_52a52eb65b11e0 624-632
+packages/adapters/src/codex/tests/index.test.ts
+  s_b375036ea046e2::t_52a52eb65b11e0 294-302
+packages/adapters/src/pi/paths.ts
+  s_b375036ea046e2::t_52a52eb65b11e0 17-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "1c134bd8728e5e72a4f3399581daae5243dbc5e7",
+  "prompts": {},
+  "sessions": {
+    "s_b375036ea046e2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ecf3c-a326-7523-88e9-9e9a50146fa8",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

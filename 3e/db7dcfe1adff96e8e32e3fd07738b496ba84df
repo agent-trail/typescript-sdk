@@ -1,0 +1,39 @@
+packages/store/src/tests/paths.test.ts
+  s_25cd921d4ef21f::t_8ff6f0ef4bb4c4 1-52
+packages/core/src/tests/public-helpers.test.ts
+  s_25cd921d4ef21f::t_9e0df5b090148a 1-64
+packages/redact/src/config/tests/packs.test.ts
+  s_25cd921d4ef21f::t_fc54eee4d0c08c 7,287-316
+packages/render-model/src/tests/index.test.ts
+  s_25cd921d4ef21f::t_25e33a05a4a853 597-601,603-614
+  s_25cd921d4ef21f::t_f0a36a0d5980c9 344-446,585-596,602
+packages/redact/src/transform/tests/redact.test.ts
+  s_25cd921d4ef21f::t_d3cf6be310b808 668-701,703-720,722-735
+  s_25cd921d4ef21f::t_1e79e3743db418 702
+  s_25cd921d4ef21f::t_a769d9f5b15c41 721
+packages/sessions/src/tests/sessions.test.ts
+  s_25cd921d4ef21f::t_8aabf6314058a9 145-166
+  s_25cd921d4ef21f::t_8550b354973d5b 26
+  s_25cd921d4ef21f::t_709f139cf496ed 422,447
+  s_25cd921d4ef21f::t_68d9ae66ed3697 15
+  s_25cd921d4ef21f::t_c16a5ecac47454 102,114
+  s_25cd921d4ef21f::t_1aed1d7f714048 486-487,490-494
+  s_25cd921d4ef21f::t_f97002fe93f57b 13-14,16,91-101,103-113,488-489
+  s_25cd921d4ef21f::t_b1704f01030291 393-408
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "3edb7dcfe1adff96e8e32e3fd07738b496ba84df",
+  "prompts": {},
+  "sessions": {
+    "s_25cd921d4ef21f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ece26-39a9-7d13-be42-52b719d1fcf0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

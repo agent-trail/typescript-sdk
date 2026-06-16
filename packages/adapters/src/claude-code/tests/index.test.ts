@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CLAUDE_CODE_SESSION_UID_NAMESPACE, deriveSessionUid } from "../../shared/session-uid.js";
 import { validateAdapterTrail } from "../../shared/trail-file.js";
@@ -107,6 +107,12 @@ test("isAvailable() falls back to USERPROFILE when HOME is unset", async () => {
   expect(await claudeCodeAdapter.isAvailable()).toBe(true);
 });
 
+test("claudeCodeConfigDir falls back to HOMEDRIVE and HOMEPATH on Windows", () => {
+  expect(claudeCodeConfigDir({ HOMEDRIVE: "C:", HOMEPATH: "\\Users\\tester" }, "win32")).toBe(
+    win32.join("C:\\Users\\tester", ".claude"),
+  );
+});
+
 test("detectSessions() honors CLAUDE_CONFIG_DIR", async () => {
   const customConfigDir = mkdtempSync(join(tmpdir(), "cc-adapter-config-"));
   process.env.CLAUDE_CONFIG_DIR = customConfigDir;
@@ -122,6 +128,51 @@ test("detectSessions() honors CLAUDE_CONFIG_DIR", async () => {
     });
   } finally {
     rmSync(customConfigDir, { recursive: true, force: true });
+  }
+});
+
+test("createClaudeCodeAdapter configDir option discovers sessions without mutating process env", async () => {
+  const customConfigDir = mkdtempSync(join(tmpdir(), "cc-adapter-config-option-"));
+  try {
+    const dir = claudeCodeProjectDir({ configDir: customConfigDir, cwd: "/factory/project" });
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "sess-option.jsonl"), "");
+    const adapter = createClaudeCodeAdapter({ configDir: customConfigDir });
+    const sessions = await adapter.detectSessions({ cwd: "/factory/project" });
+    expect(sessions.map((session) => session.id)).toEqual(["sess-option"]);
+  } finally {
+    rmSync(customConfigDir, { recursive: true, force: true });
+  }
+});
+
+test("createClaudeCodeAdapter projectsRoot option drives availability, health, and version", async () => {
+  const projectsRoot = mkdtempSync(join(tmpdir(), "cc-adapter-projects-option-"));
+  try {
+    const dir = claudeCodeProjectDir({ projectsRoot, cwd: process.cwd() });
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "sess-projects.jsonl"),
+      `${JSON.stringify({
+        type: "user",
+        version: "1.2.3-custom",
+        sessionId: "sess-projects",
+        cwd: process.cwd(),
+      })}\n`,
+    );
+    const adapter = createClaudeCodeAdapter({ projectsRoot });
+
+    expect(await adapter.isAvailable()).toBe(true);
+    expect(await adapter.sourceVersion()).toBe("1.2.3-custom");
+    expect(await adapter.sourceHealth()).toMatchObject({
+      adapter: "claude-code",
+      path: projectsRoot,
+      present: true,
+      readable: true,
+      sessionCount: 1,
+      sourceVersion: "1.2.3-custom",
+    });
+  } finally {
+    rmSync(projectsRoot, { recursive: true, force: true });
   }
 });
 

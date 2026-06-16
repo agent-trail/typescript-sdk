@@ -74,6 +74,16 @@ export function registerTrail(filePath: string, opts?: RegisterOptions): Promise
 export function resolveStoreRoot(override?: string): string;
 
 // @public
+export function resolveStoreRoot(options?: StoreRootOptions): string;
+
+// @public
+export type StoreRootOptions = {
+    storeRoot?: string | undefined;
+    env?: NodeJS.ProcessEnv | undefined;
+    platform?: NodeJS.Platform | undefined;
+};
+
+// @public
 export type TrailDiagnostic = {
     line: number;
     path: string;

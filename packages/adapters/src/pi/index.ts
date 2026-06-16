@@ -21,7 +21,7 @@ import { resumeCommand } from "../shared/resume.js";
 import { sanitizeTrailFile } from "../shared/trail-sanitizer.js";
 import { parsePiSnapshotEntries } from "./kit.js";
 import { buildHeader } from "./parser.js";
-import { piProjectDir, piProjectsRoot, piSessionsDir } from "./paths.js";
+import { type PiPathOptions, piProjectDir, piProjectsRoot, piSessionsDir } from "./paths.js";
 import { parseLines, versionString } from "./source.js";
 
 const PRODUCER = `@agent-trail/adapters-pi/${pkg.version}`;
@@ -38,14 +38,14 @@ async function dirExists(path: string): Promise<boolean> {
 }
 
 async function inspectSourceHealth(
-  env: NodeJS.ProcessEnv = process.env,
+  pathOptions: NodeJS.ProcessEnv | PiPathOptions = process.env,
 ): Promise<AdapterSourceHealth> {
-  const root = piSessionsDir(env);
+  const root = piSessionsDir(pathOptions);
   return inspectLocalJsonlSourceHealth({
     adapter: "pi",
     root: root ?? null,
-    scan: () => detectPiSessions({ allCwds: true }, env),
-    sourceVersion: () => newestPiSourceVersion(env),
+    scan: () => detectPiSessions({ allCwds: true }, pathOptions),
+    sourceVersion: () => newestPiSourceVersion(pathOptions),
   });
 }
 
@@ -59,9 +59,9 @@ async function scanProjectDir(dir: string): Promise<SessionRef[]> {
 
 async function detectPiSessions(
   opts: DetectOptions | undefined,
-  env: NodeJS.ProcessEnv,
+  pathOptions: NodeJS.ProcessEnv | PiPathOptions,
 ): Promise<SessionRef[]> {
-  const sessionsDir = piSessionsDir(env);
+  const sessionsDir = piSessionsDir(pathOptions);
   if (sessionsDir === undefined) return [];
   if (opts?.allCwds === true) {
     return scanLocalJsonlProjectsRoot(piProjectsRoot(sessionsDir), {
@@ -75,8 +75,10 @@ async function detectPiSessions(
   return scanProjectDir(piProjectDir({ sessionsDir, cwd: opts?.cwd ?? process.cwd() }));
 }
 
-async function newestPiSourceVersion(env: NodeJS.ProcessEnv): Promise<string | null> {
-  const sessionsDir = piSessionsDir(env);
+async function newestPiSourceVersion(
+  pathOptions: NodeJS.ProcessEnv | PiPathOptions,
+): Promise<string | null> {
+  const sessionsDir = piSessionsDir(pathOptions);
   if (sessionsDir === undefined) return null;
   return newestLocalJsonlSourceVersion(piProjectDir({ sessionsDir, cwd: process.cwd() }), {
     adapter: "pi",
@@ -92,15 +94,20 @@ function cwdFromPiRecord(record: Record<string, unknown>): string | undefined {
 export type PiAdapterOptions = {
   /** Environment overrides used for discovery and parsing. */
   env?: NodeJS.ProcessEnv;
+  /** Override for the Pi agent root. */
+  agentDir?: string;
+  /** Override for the Pi sessions root. */
+  sessionsDir?: string;
 };
 
 /** Create a Pi adapter instance. */
 export function createPiAdapter(options: PiAdapterOptions = {}): TrailAdapter {
   const env = options.env ?? process.env;
+  const pathOptions = { ...options, env };
   return {
     name: "pi",
     async detectSessions(opts?: DetectOptions): Promise<SessionRef[]> {
-      return detectPiSessions(opts, env);
+      return detectPiSessions(opts, pathOptions);
     },
     async parseSession(ref: SessionRef): Promise<TrailFile> {
       if (ref.path === undefined) {
@@ -124,13 +131,13 @@ export function createPiAdapter(options: PiAdapterOptions = {}): TrailAdapter {
       return resumeCommand(ref, `Resume Pi session ${id}`, ["pi", "--session", id]);
     },
     async isAvailable(): Promise<boolean> {
-      const sessionsDir = piSessionsDir(env);
+      const sessionsDir = piSessionsDir(pathOptions);
       if (sessionsDir === undefined) return false;
       return dirExists(piProjectDir({ sessionsDir, cwd: process.cwd() }));
     },
     async sourceVersion(): Promise<string | null> {
-      return newestPiSourceVersion(env);
+      return newestPiSourceVersion(pathOptions);
     },
-    sourceHealth: () => inspectSourceHealth(env),
+    sourceHealth: () => inspectSourceHealth(pathOptions),
   };
 }

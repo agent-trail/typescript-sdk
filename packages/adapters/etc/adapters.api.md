@@ -18,11 +18,16 @@ export type AdapterSourceHealth = {
 // @public
 export type ClaudeCodeAdapterOptions = {
     env?: NodeJS.ProcessEnv;
+    configDir?: string;
+    projectsRoot?: string;
 };
 
 // @public
 export type CodexAdapterOptions = {
     env?: NodeJS.ProcessEnv;
+    codexHome?: string;
+    sessionsDir?: string;
+    sessionIndexPath?: string;
 };
 
 // @public
@@ -66,6 +71,8 @@ export type OpenCodeAdapterOptions = {
 // @public
 export type PiAdapterOptions = {
     env?: NodeJS.ProcessEnv;
+    agentDir?: string;
+    sessionsDir?: string;
 };
 
 // @public

@@ -12,23 +12,30 @@ const PRODUCER = `@agent-trail/adapters-codex/${pkg.version}`;
 export type CodexAdapterOptions = {
   /** Environment overrides used for discovery and parsing. */
   env?: NodeJS.ProcessEnv;
+  /** Override for the Codex config root. */
+  codexHome?: string;
+  /** Override for the Codex sessions root. */
+  sessionsDir?: string;
+  /** Override for the Codex session index JSONL path. */
+  sessionIndexPath?: string;
 };
 
 /** Create a Codex adapter instance. */
 export function createCodexAdapter(options: CodexAdapterOptions = {}): TrailAdapter {
   const env = options.env ?? process.env;
+  const pathOptions = { ...options, env };
   return {
     name: "codex",
 
     detectSessions(opts?: DetectOptions): Promise<SessionRef[]> {
-      return detectCodexSessions(opts, env);
+      return detectCodexSessions(opts, pathOptions);
     },
 
     async parseSession(ref: SessionRef): Promise<TrailFile> {
       if (ref.path === undefined) {
         throw new Error("Codex adapter requires SessionRef.path");
       }
-      return parseCodexTrailFile(ref.path, PRODUCER, { env });
+      return parseCodexTrailFile(ref.path, PRODUCER, pathOptions);
     },
 
     async resumeSession(ref: SessionRef) {
@@ -36,15 +43,15 @@ export function createCodexAdapter(options: CodexAdapterOptions = {}): TrailAdap
     },
 
     async isAvailable(): Promise<boolean> {
-      const dir = codexSessionsDir(env);
+      const dir = codexSessionsDir(pathOptions);
       if (dir === undefined) return false;
       return dirExists(dir);
     },
 
     sourceVersion(): Promise<string | null> {
-      return newestCodexSourceVersion(env);
+      return newestCodexSourceVersion(pathOptions);
     },
 
-    sourceHealth: () => inspectSourceHealth(env),
+    sourceHealth: () => inspectSourceHealth(pathOptions),
   };
 }

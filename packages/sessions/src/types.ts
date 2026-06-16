@@ -1,5 +1,11 @@
-import type { SqliteDriver } from "@agent-trail/adapter-kit";
-import type { DetectOptions, TrailAdapter } from "@agent-trail/adapters";
+import type {
+  ClaudeCodeAdapterOptions,
+  CodexAdapterOptions,
+  DetectOptions,
+  OpenCodeAdapterOptions,
+  PiAdapterOptions,
+  TrailAdapter,
+} from "@agent-trail/adapters";
 import type { CatalogDb, CatalogEntryRow } from "@agent-trail/catalog";
 import type { RedactionSummary, RedactTrailOptions } from "@agent-trail/redact";
 import type { RegisterStatus } from "@agent-trail/store";
@@ -26,15 +32,10 @@ export type SessionsOptions = {
  * @public
  */
 export type SessionsDefaultAdapterOptions = {
-  "claude-code"?: { env?: NodeJS.ProcessEnv };
-  codex?: { env?: NodeJS.ProcessEnv };
-  opencode?: {
-    env?: NodeJS.ProcessEnv;
-    storageDir?: string;
-    dbPath?: string;
-    sqliteDriver?: SqliteDriver;
-  };
-  pi?: { env?: NodeJS.ProcessEnv };
+  "claude-code"?: ClaudeCodeAdapterOptions;
+  codex?: CodexAdapterOptions;
+  opencode?: OpenCodeAdapterOptions;
+  pi?: PiAdapterOptions;
 };
 
 /**

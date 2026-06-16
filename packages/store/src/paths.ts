@@ -1,28 +1,59 @@
 import { join } from "node:path";
+import { envValue, userDataDir } from "./platform-paths.js";
 
-const DEFAULT_RELATIVE = ".local/share/trail";
+const STORE_APP_NAME = "trail";
 const SHA256_HEX_PATTERN = /^[0-9a-f]{64}$/;
+
+/**
+ * Options for resolving the local Agent Trail store root.
+ *
+ * @public
+ */
+export type StoreRootOptions = {
+  /** Explicit store root for this call. */
+  storeRoot?: string | undefined;
+  /** Environment used to resolve env overrides and platform defaults. */
+  env?: NodeJS.ProcessEnv | undefined;
+  /** Platform used for default path selection. Defaults to `process.platform`. */
+  platform?: NodeJS.Platform | undefined;
+};
 
 /**
  * Resolve the local Agent Trail store root for a call.
  *
  * @public
  */
-export function resolveStoreRoot(override?: string): string {
-  if (override !== undefined && override !== "") {
-    return override;
+export function resolveStoreRoot(override?: string): string;
+/**
+ * Resolve the local Agent Trail store root for a call.
+ *
+ * @public
+ */
+export function resolveStoreRoot(options?: StoreRootOptions): string;
+export function resolveStoreRoot(input?: string | StoreRootOptions): string {
+  if (typeof input === "string") {
+    if (input !== "") return input;
+  } else if (input?.storeRoot !== undefined && input.storeRoot !== "") {
+    return input.storeRoot;
   }
-  const envOverride = process.env.AGENT_TRAIL_HOME;
-  if (envOverride !== undefined && envOverride !== "") {
+
+  const env =
+    typeof input === "object" && input !== null ? (input.env ?? process.env) : process.env;
+  const platform =
+    typeof input === "object" && input !== null
+      ? (input.platform ?? process.platform)
+      : process.platform;
+  const envOverride = envValue(env, "AGENT_TRAIL_HOME");
+  if (envOverride !== undefined) {
     return envOverride;
   }
-  const home = process.env.HOME;
-  if (home === undefined || home === "") {
+  const defaultRoot = userDataDir(STORE_APP_NAME, env, platform);
+  if (defaultRoot === undefined) {
     throw new Error(
-      "Cannot resolve store root: pass opts.storeRoot, set AGENT_TRAIL_HOME, or set HOME.",
+      "Cannot resolve store root: pass opts.storeRoot, set AGENT_TRAIL_HOME, or configure a home/data directory.",
     );
   }
-  return join(home, DEFAULT_RELATIVE);
+  return defaultRoot;
 }
 
 /**

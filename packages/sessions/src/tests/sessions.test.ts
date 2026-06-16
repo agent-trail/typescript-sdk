@@ -20,6 +20,7 @@ import {
   exportSession,
   listSessions,
   loadSession,
+  type SessionsOptions,
   type SessionsShareTransport,
   shareSession,
 } from "../index.ts";
@@ -29,6 +30,23 @@ const SESSION_ID = "session-a";
 const SESSION_UID = "11111111-1111-4111-8111-111111111111";
 const SESSION_TS = "2026-05-17T14:00:00.000Z";
 const SESSION_PATH = "/tmp/source/session-a.jsonl";
+
+test("SessionsDefaultAdapterOptions accepts custom adapter paths", () => {
+  const options = {
+    defaultAdapterOptions: {
+      "claude-code": { configDir: "/custom/claude", projectsRoot: "/custom/claude-projects" },
+      codex: {
+        codexHome: "/custom/codex",
+        sessionsDir: "/custom/codex-sessions",
+        sessionIndexPath: "/custom/codex-index.jsonl",
+      },
+      opencode: { storageDir: "/custom/opencode-storage", dbPath: "/custom/opencode.db" },
+      pi: { agentDir: "/custom/pi", sessionsDir: "/custom/pi-sessions" },
+    },
+  } satisfies Pick<SessionsOptions, "defaultAdapterOptions">;
+
+  expect(options.defaultAdapterOptions.codex.sessionsDir).toBe("/custom/codex-sessions");
+});
 
 type Harness = {
   catalogDb: CatalogDb;

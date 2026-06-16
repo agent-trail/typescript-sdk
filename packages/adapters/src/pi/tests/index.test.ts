@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, win32 } from "node:path";
 import { validateAdapterTrail } from "../../shared/trail-file.js";
 import { cleanGitEnv } from "../../shared/vcs.js";
 import { ID_PATTERN } from "../../tests/test-helpers.js";
@@ -591,6 +591,12 @@ test("isAvailable() falls back to USERPROFILE when HOME is unset", async () => {
   expect(await piAdapter.isAvailable()).toBe(true);
 });
 
+test("piAgentDir falls back to HOMEDRIVE and HOMEPATH on Windows", () => {
+  expect(piAgentDir({ HOMEDRIVE: "C:", HOMEPATH: "\\Users\\tester" }, "win32")).toBe(
+    win32.join("C:\\Users\\tester", ".pi", "agent"),
+  );
+});
+
 test("piAgentDir() defaults to $HOME/.pi/agent (matches pi-mono getAgentDir())", () => {
   expect(piAgentDir()).toBe(join(tmpHome, ".pi", "agent"));
 });
@@ -657,6 +663,53 @@ test("createPiAdapter env override discovers sessions without mutating process e
     const sessions = await adapter.detectSessions({ cwd: "/factory/pi" });
     expect(sessions).toHaveLength(1);
     expect(sessions[0]).toMatchObject({ id: "sess-env", adapter: "pi" });
+  } finally {
+    rmSync(customSessionsDir, { recursive: true, force: true });
+  }
+});
+
+test("createPiAdapter agentDir option discovers sessions without mutating process env", async () => {
+  const customAgentDir = mkdtempSync(join(tmpdir(), "pi-adapter-agent-option-"));
+  try {
+    const sessionsDir = join(customAgentDir, "sessions");
+    const dir = piProjectDir({ sessionsDir, cwd: "/factory/pi" });
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "sess-agent-option.jsonl"), "");
+    const adapter = createPiAdapter({ agentDir: customAgentDir });
+    const sessions = await adapter.detectSessions({ cwd: "/factory/pi" });
+    expect(sessions.map((session) => session.id)).toEqual(["sess-agent-option"]);
+  } finally {
+    rmSync(customAgentDir, { recursive: true, force: true });
+  }
+});
+
+test("createPiAdapter sessionsDir option drives availability, health, and version", async () => {
+  const customSessionsDir = mkdtempSync(join(tmpdir(), "pi-adapter-sessions-option-"));
+  try {
+    const dir = piProjectDir({ sessionsDir: customSessionsDir, cwd: process.cwd() });
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "sess-sessions-option.jsonl"),
+      `${JSON.stringify({
+        type: "session",
+        version: 4,
+        id: "sess-sessions-option",
+        timestamp: "2026-05-21T15:00:00.000Z",
+        cwd: process.cwd(),
+      })}\n`,
+    );
+    const adapter = createPiAdapter({ sessionsDir: customSessionsDir });
+
+    expect(await adapter.isAvailable()).toBe(true);
+    expect(await adapter.sourceVersion()).toBe("4");
+    expect(await adapter.sourceHealth()).toMatchObject({
+      adapter: "pi",
+      path: customSessionsDir,
+      present: true,
+      readable: true,
+      sessionCount: 1,
+      sourceVersion: "4",
+    });
   } finally {
     rmSync(customSessionsDir, { recursive: true, force: true });
   }

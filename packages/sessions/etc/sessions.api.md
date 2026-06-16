@@ -59,11 +59,16 @@ export type CatalogValue = string | number | null | Uint8Array;
 // @public
 export type ClaudeCodeAdapterOptions = {
     env?: NodeJS.ProcessEnv;
+    configDir?: string;
+    projectsRoot?: string;
 };
 
 // @public
 export type CodexAdapterOptions = {
     env?: NodeJS.ProcessEnv;
+    codexHome?: string;
+    sessionsDir?: string;
+    sessionIndexPath?: string;
 };
 
 // @public
@@ -195,6 +200,8 @@ export type OpenCodeAdapterOptions = {
 // @public
 export type PiAdapterOptions = {
     env?: NodeJS.ProcessEnv;
+    agentDir?: string;
+    sessionsDir?: string;
 };
 
 // @public
@@ -294,21 +301,10 @@ export type SessionsClient = {
 
 // @public
 export type SessionsDefaultAdapterOptions = {
-    "claude-code"?: {
-        env?: NodeJS.ProcessEnv;
-    };
-    codex?: {
-        env?: NodeJS.ProcessEnv;
-    };
-    opencode?: {
-        env?: NodeJS.ProcessEnv;
-        storageDir?: string;
-        dbPath?: string;
-        sqliteDriver?: SqliteDriver;
-    };
-    pi?: {
-        env?: NodeJS.ProcessEnv;
-    };
+    "claude-code"?: ClaudeCodeAdapterOptions;
+    codex?: CodexAdapterOptions;
+    opencode?: OpenCodeAdapterOptions;
+    pi?: PiAdapterOptions;
 };
 
 // @public

@@ -17,5 +17,17 @@
       "default": "./dist/index.js"
     },
     "./package.json": "./package.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agent-trail/typescript-sdk.git",
+    "directory": "packages/catalog"
+  },
+  "bugs": {
+    "url": "https://github.com/agent-trail/typescript-sdk/issues"
+  },
+  "homepage": "https://github.com/agent-trail/typescript-sdk#readme",
+  "engines": {
+    "node": ">=20"
   }
 }

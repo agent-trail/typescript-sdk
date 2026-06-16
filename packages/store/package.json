@@ -21,5 +21,17 @@
   "dependencies": {
     "@agent-trail/catalog": "workspace:*",
     "@agent-trail/core": "workspace:*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agent-trail/typescript-sdk.git",
+    "directory": "packages/store"
+  },
+  "bugs": {
+    "url": "https://github.com/agent-trail/typescript-sdk/issues"
+  },
+  "homepage": "https://github.com/agent-trail/typescript-sdk#readme",
+  "engines": {
+    "node": ">=20"
   }
 }

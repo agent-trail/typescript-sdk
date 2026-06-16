@@ -31,5 +31,17 @@
     "@agent-trail/types": "workspace:*",
     "ajv": "8.20.0",
     "json-canonicalize": "2.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agent-trail/typescript-sdk.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/agent-trail/typescript-sdk/issues"
+  },
+  "homepage": "https://github.com/agent-trail/typescript-sdk#readme",
+  "engines": {
+    "node": ">=20"
   }
 }

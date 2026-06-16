@@ -13,6 +13,7 @@
 - [ ] No public contract change
 - [ ] Spec or schema change
 - [ ] Public package API change
+- [ ] Changeset added or explicitly not needed
 - [ ] CLI behavior change
 - [ ] Public URL or docs behavior change
 

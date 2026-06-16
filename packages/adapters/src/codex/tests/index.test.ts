@@ -280,6 +280,17 @@ test("codexSessionsDir is <codexHome>/sessions", () => {
   expect(codexSessionsDir()).toBe(join(tmpHome, ".codex", "sessions"));
 });
 
+test("codex path helpers ignore lowercase override-shaped keys on raw env objects", () => {
+  const rawEnv = {
+    CODEX_HOME: "/tmp/custom-codex",
+    sessionsDir: "/tmp/ignored-sessions",
+    sessionIndexPath: "/tmp/ignored-index.jsonl",
+    platform: "win32",
+  };
+  expect(codexHomeDir(rawEnv)).toBe("/tmp/custom-codex");
+  expect(codexSessionsDir(rawEnv)).toBe(join("/tmp/custom-codex", "sessions"));
+});
+
 test("parseSession summarizes clean parse fidelity on the header", async () => {
   const trail = await parseDesktopFixture();
   expect(trail.groups[0]!.header.parse_fidelity).toEqual({ quarantined_count: 0 });

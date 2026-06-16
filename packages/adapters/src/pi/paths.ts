@@ -14,7 +14,7 @@ type NormalizedPiPathOptions = PiPathOptions & {
 };
 
 function isPiPathOptions(input: NodeJS.ProcessEnv | PiPathOptions): input is PiPathOptions {
-  return "env" in input || "agentDir" in input || "sessionsDir" in input || "platform" in input;
+  return "env" in input;
 }
 
 function normalizeOptions(

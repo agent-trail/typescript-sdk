@@ -617,6 +617,17 @@ test("piSessionsDir() honors PI_CODING_AGENT_SESSION_DIR override independently 
   expect(piSessionsDir()).toBe("/elsewhere/sessions");
 });
 
+test("pi path helpers ignore lowercase override-shaped keys on raw env objects", () => {
+  const rawEnv = {
+    PI_CODING_AGENT_DIR: "/tmp/custom-pi-agent",
+    agentDir: "/tmp/ignored-agent",
+    sessionsDir: "/tmp/ignored-sessions",
+    platform: "win32",
+  };
+  expect(piAgentDir(rawEnv)).toBe("/tmp/custom-pi-agent");
+  expect(piSessionsDir(rawEnv)).toBe(join("/tmp/custom-pi-agent", "sessions"));
+});
+
 test("detectSessions() honors PI_CODING_AGENT_DIR override", async () => {
   const customAgentDir = mkdtempSync(join(tmpdir(), "pi-adapter-agent-"));
   process.env.PI_CODING_AGENT_DIR = customAgentDir;

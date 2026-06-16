@@ -1,0 +1,24 @@
+packages/store/src/tests/paths.test.ts
+  s_b375036ea046e2::t_b47b530e0dfecc 31-37,62-75,77
+  s_b375036ea046e2::t_8bead23ba612bd 2,76
+.changeset/cross-platform-sdk-paths.md
+  s_b375036ea046e2::t_b47b530e0dfecc 1-7
+.github/workflows/guardrails.yml
+  s_b375036ea046e2::t_b47b530e0dfecc 46-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "90a65f1a79ec04376a832c0388d91e2c58fbc144",
+  "prompts": {},
+  "sessions": {
+    "s_b375036ea046e2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ecf3c-a326-7523-88e9-9e9a50146fa8",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

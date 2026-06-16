@@ -341,6 +341,109 @@ test("sequential fallback does not pair child branch results to parent calls", (
   expect(items[0].items[2]?.result?.id).toBe("01HEVTA0000000000000000003");
 });
 
+test("matches ported viewer transcript oracle cases", () => {
+  expect(
+    transcriptSummary(
+      filterTranscriptItems(
+        buildTranscriptItems([
+          toolCallEvent(2, "01HEVTA0000000000000000001", "file_search"),
+          toolResultEvent(3, "01HEVTA0000000000000000002", "01HEVTA0000000000000000001"),
+          toolCallEvent(4, "01HEVTA0000000000000000003", "file_read"),
+          toolResultEvent(5, "01HEVTA0000000000000000004", "01HEVTA0000000000000000003"),
+        ]),
+        DEFAULT_FILTERS,
+      ),
+    ),
+  ).toEqual([
+    {
+      kind: "tool_group",
+      items: [
+        {
+          abortId: null,
+          callId: "01HEVTA0000000000000000001",
+          callTool: "file_search",
+          resultId: "01HEVTA0000000000000000002",
+          resultForId: "01HEVTA0000000000000000001",
+        },
+        {
+          abortId: null,
+          callId: "01HEVTA0000000000000000003",
+          callTool: "file_read",
+          resultId: "01HEVTA0000000000000000004",
+          resultForId: "01HEVTA0000000000000000003",
+        },
+      ],
+    },
+  ]);
+
+  expect(
+    transcriptSummary(
+      filterTranscriptItems(
+        buildTranscriptItems([
+          toolCallEvent(2, "01HEVTA0000000000000000001", "file_search", {
+            semanticCallId: "call-1",
+          }),
+          toolResultEvent(3, "01HEVTA0000000000000000002", undefined, {
+            semanticCallId: "call-1",
+          }),
+        ]),
+        DEFAULT_FILTERS,
+      ),
+    ),
+  ).toEqual([
+    {
+      abortId: null,
+      callId: "01HEVTA0000000000000000001",
+      callTool: "file_search",
+      kind: "tool",
+      resultForId: null,
+      resultId: "01HEVTA0000000000000000002",
+    },
+  ]);
+
+  expect(
+    transcriptSummary(
+      filterTranscriptItems(
+        buildTranscriptItems([
+          toolCallEvent(2, "01HEVTA0000000000000000001", "subagent_invoke"),
+          toolCallEvent(3, "01HEVTA0000000000000000002", "file_read"),
+          toolResultEvent(4, "01HEVTA0000000000000000003", undefined, {
+            parentId: "01HEVTA0000000000000000001",
+          }),
+        ]),
+        DEFAULT_FILTERS,
+      ),
+    ),
+  ).toEqual([
+    {
+      kind: "tool_group",
+      items: [
+        {
+          abortId: null,
+          callId: "01HEVTA0000000000000000001",
+          callTool: "subagent_invoke",
+          resultForId: null,
+          resultId: null,
+        },
+        {
+          abortId: null,
+          callId: "01HEVTA0000000000000000002",
+          callTool: "file_read",
+          resultForId: null,
+          resultId: null,
+        },
+        {
+          abortId: null,
+          callId: null,
+          callTool: null,
+          resultForId: null,
+          resultId: "01HEVTA0000000000000000003",
+        },
+      ],
+    },
+  ]);
+});
+
 test("summary notices and fallback events stay out of transcript but remain in full events", async () => {
   const model = await renderModel([
     {
@@ -477,6 +580,38 @@ function toolItemAt(
     throw new Error(message);
   }
   return item as ToolTranscriptItem;
+}
+
+function transcriptSummary(items: ReturnType<typeof buildTranscriptItems>): object[] {
+  return items.map((item) => {
+    if (item.kind === "tool_group") {
+      return { kind: item.kind, items: item.items.map(toolSummary) };
+    }
+    if (item.kind === "tool") return { kind: item.kind, ...toolSummary(item) };
+    return { kind: item.kind, id: item.event.id, title: item.event.title };
+  });
+}
+
+function toolSummary(item: ToolTranscriptItem): object {
+  return {
+    abortId: eventId(item.abort),
+    callId: eventId(item.call),
+    callTool: toolName(item.call),
+    resultId: eventId(item.result),
+    resultForId: toolForId(item.result),
+  };
+}
+
+function eventId(event: RenderEvent | undefined): string | null {
+  return event?.id ?? null;
+}
+
+function toolName(event: RenderEvent | undefined): string | null {
+  return event?.tool?.name ?? null;
+}
+
+function toolForId(event: RenderEvent | undefined): string | null {
+  return event?.tool?.forId ?? null;
 }
 
 function toolCallRecord(

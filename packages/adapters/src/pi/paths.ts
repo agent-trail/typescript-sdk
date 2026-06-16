@@ -14,7 +14,10 @@ type NormalizedPiPathOptions = PiPathOptions & {
 };
 
 function isPiPathOptions(input: NodeJS.ProcessEnv | PiPathOptions): input is PiPathOptions {
-  return "env" in input;
+  return (
+    "env" in input &&
+    (input.env === undefined || (typeof input.env === "object" && input.env !== null))
+  );
 }
 
 function normalizeOptions(

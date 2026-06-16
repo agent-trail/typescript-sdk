@@ -16,7 +16,10 @@ type NormalizedCodexPathOptions = CodexPathOptions & {
 function isCodexPathOptions(
   input: NodeJS.ProcessEnv | CodexPathOptions,
 ): input is CodexPathOptions {
-  return "env" in input;
+  return (
+    "env" in input &&
+    (input.env === undefined || (typeof input.env === "object" && input.env !== null))
+  );
 }
 
 function normalizeOptions(

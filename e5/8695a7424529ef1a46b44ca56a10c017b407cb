@@ -1,0 +1,83 @@
+packages/adapters/src/shared/platform-paths.ts
+  s_b375036ea046e2::t_43086943062843 1-46
+packages/adapters/src/claude-code/index.ts
+  s_b375036ea046e2::t_1607c24a29c52e 54-73,79,81,87,91,93,326-329,335,339-341,345,368-369,372-373,376
+  s_b375036ea046e2::t_b01cc53ebd3185 77
+packages/sessions/src/types.ts
+  s_b375036ea046e2::t_8847162689f5fa 1-8,35-38
+packages/store/src/platform-paths.ts
+  s_b375036ea046e2::t_5196f900aa539f 1-14,25-26,28,31-33,36
+  s_b375036ea046e2::t_1c8e1646da8a51 15,18-20,23-24,27,29-30,34-35
+  s_b375036ea046e2::t_671ce03747432b 16-17,21-22
+packages/adapters/src/pi/paths.ts
+  s_b375036ea046e2::t_9dfcc24a661dad 2-10,16-22,24-29,34-40,42-47,53-63,65-66
+  s_b375036ea046e2::t_23933d8a8f3595 11-15,23
+packages/store/etc/store.api.md
+  s_b375036ea046e2::t_1d5eadfa945a41 76,78-84
+  s_b375036ea046e2::t_5355293bbb2e3b 77,85
+packages/adapters/src/claude-code/tests/index.test.ts
+  s_b375036ea046e2::t_f8bba3ed6b48d1 6,110-115,134-175
+packages/adapters/src/pi/tests/index.test.ts
+  s_b375036ea046e2::t_574cd6ba0832e8 671-717
+  s_b375036ea046e2::t_1ed8bf3916b8ac 594-599
+  s_b375036ea046e2::t_e2339169def406 6
+packages/sessions/src/tests/sessions.test.ts
+  s_b375036ea046e2::t_7898c1fd08ba22 23,34-49
+packages/adapters/src/claude-code/paths.ts
+  s_b375036ea046e2::t_3f0730e0c5bc93 29-32
+  s_b375036ea046e2::t_54b705d840a590 2,4-10,12-13,22,25-26,33
+packages/adapters/src/codex/paths.ts
+  s_b375036ea046e2::t_6d8c64abffef6a 11-15,31
+  s_b375036ea046e2::t_642c76c2fc9dfb 16-18,83-85
+  s_b375036ea046e2::t_72761b9cd7e963 3-10,19-30,32-37,43-50,54,58-71,74-82
+  s_b375036ea046e2::t_ab21d517f64c65 1
+packages/store/src/index.ts
+  s_b375036ea046e2::t_84c8b1a88271f2 24
+packages/adapters/src/codex/index.ts
+  s_b375036ea046e2::t_60748290b4af9e 15-20,26,31,38,46,52,55
+packages/store/src/tests/paths.test.ts
+  s_b375036ea046e2::t_32af03f1046689 2,9-14,17,21-31,37-58,61
+packages/adapters/src/codex/assembly.ts
+  s_b375036ea046e2::t_50bd67cbf32123 2
+  s_b375036ea046e2::t_7440e9e01141a0 20,25,78,85,222,232,239,241,271,273,290,292,299,307-312,323,325,391-393
+packages/adapters/src/opencode/paths.ts
+  s_b375036ea046e2::t_1c55810ff2649f 2,4-10,12,16-18
+packages/adapters/src/opencode/tests/index.test.ts
+  s_b375036ea046e2::t_b14dd3fe53062b 7,13,89,93-95
+  s_b375036ea046e2::t_864bf4445ed4c1 90-92
+packages/adapters/src/pi/index.ts
+  s_b375036ea046e2::t_9e0df48b1e1bbb 24,41,43,47-48,62,64,78-81,97-100,106,110,134,139,141
+packages/sessions/etc/sessions.api.md
+  s_b375036ea046e2::t_5355293bbb2e3b 62-63,69-71,203-204,304-307
+packages/adapters/etc/adapters.api.md
+  s_b375036ea046e2::t_046a1b1a342e2c 21-22,28-30,74-75
+packages/adapters/src/codex/tests/index.test.ts
+  s_b375036ea046e2::t_9f758aaababd8a 504-610
+  s_b375036ea046e2::t_5d614efd52412b 273-278
+  s_b375036ea046e2::t_ec07c1cb6bb94b 6
+packages/adapters/src/codex/health.ts
+  s_b375036ea046e2::t_bab076556b0df6 4,7,9,13-14
+packages/adapters/src/codex/discovery.ts
+  s_b375036ea046e2::t_512f8f62fa1d37 7,190,192,205,207
+packages/store/src/paths.ts
+  s_b375036ea046e2::t_ea831d7df78573 4,7-17,19-20,26,32-37,39,42,46-47,50-51,53,56
+  s_b375036ea046e2::t_09b74267d294c0 2
+  s_b375036ea046e2::t_0964c2b29c6c8e 18,27-31
+  s_b375036ea046e2::t_c3cbc735c43700 40-41,43-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "e58695a7424529ef1a46b44ca56a10c017b407cb",
+  "prompts": {},
+  "sessions": {
+    "s_b375036ea046e2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ecf3c-a326-7523-88e9-9e9a50146fa8",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

@@ -59,6 +59,7 @@ This repo owns the TypeScript SDK for Agent Trail libraries and generated/public
 - Run `mise run check` before opening or updating a PR.
 - When public API changes, run `bun run check:api` and update API reports deliberately.
 - API Extractor public exports need useful TSDoc. Avoid leaving `@public (undocumented)` entries in API reports for hand-written packages.
+- Do not add `@internal` TSDoc to implementation helpers solely because they are exported between package-local modules. Use visibility tags for deliberate API Extractor/public-surface needs, not local lint appeasement.
 
 ## Pull Requests
 

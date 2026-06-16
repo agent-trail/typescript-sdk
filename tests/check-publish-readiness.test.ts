@@ -65,16 +65,22 @@ function createWorkspace(): string {
 
 test("discovers public workspace packages and marks typed packages", () => {
   const root = createWorkspace();
+  const packages = discoverPublishPackages(root);
 
   expect(
-    discoverPublishPackages(root).map(({ name, shouldCheckTypes }) => ({
+    packages.map(({ attwIgnoreRules, name, shouldCheckTypes }) => ({
+      attwIgnoreRules,
       name,
       shouldCheckTypes,
     })),
   ).toEqual([
-    { name: "@agent-trail/runtime", shouldCheckTypes: true },
-    { name: "@agent-trail/schema", shouldCheckTypes: false },
-    { name: "@agent-trail/source-schemas", shouldCheckTypes: false },
+    { attwIgnoreRules: [], name: "@agent-trail/runtime", shouldCheckTypes: true },
+    { attwIgnoreRules: [], name: "@agent-trail/schema", shouldCheckTypes: false },
+    {
+      attwIgnoreRules: ["false-export-default"],
+      name: "@agent-trail/source-schemas",
+      shouldCheckTypes: true,
+    },
   ]);
 });
 
@@ -110,7 +116,10 @@ test("packs every public package and runs type checks only for typed packages", 
     "@agent-trail/schema:/tmp/packs/@agent-trail-schema.tgz",
     "@agent-trail/source-schemas:/tmp/packs/@agent-trail-source-schemas.tgz",
   ]);
-  expect(typeChecked).toEqual(["@agent-trail/runtime:/tmp/packs/@agent-trail-runtime.tgz"]);
+  expect(typeChecked).toEqual([
+    "@agent-trail/runtime:/tmp/packs/@agent-trail-runtime.tgz",
+    "@agent-trail/source-schemas:/tmp/packs/@agent-trail-source-schemas.tgz",
+  ]);
 });
 
 test("reports package-scoped tool failures", async () => {

@@ -23,7 +23,7 @@
     "build:declarations": "bun run scripts/build-api-declarations.ts",
     "generate:source-types": "bun run scripts/generate-source-types.ts",
     "generate:types": "bun run scripts/generate-types.ts",
-    "preview:packages": "pkg-pr-new publish './packages/*'",
+    "preview:packages": "pkg-pr-new publish './packages/*' --bun --packageManager bun,npm",
     "vendor:spec": "bun run scripts/vendor-spec.ts",
     "test": "bun test --parallel=4"
   },

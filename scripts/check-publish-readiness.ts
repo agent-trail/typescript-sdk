@@ -11,12 +11,15 @@ export type PublishPackage = {
   name: string;
   dir: string;
   shouldCheckTypes: boolean;
+  attwIgnoreRules: AttwIgnoreRule[];
 };
 
 export type CommandResult = {
   ok: boolean;
   output?: string;
 };
+
+export type AttwIgnoreRule = "false-export-default";
 
 export type PublishReadinessRunner = {
   packPackage: (packageInfo: PublishPackage, destinationDir: string) => string;
@@ -46,6 +49,7 @@ export function discoverPublishPackages(root: string): PublishPackage[] {
           name: packageJson.name,
           dir,
           shouldCheckTypes: hasTypeEntrypoint(packageJson),
+          attwIgnoreRules: attwIgnoreRules(packageJson),
         },
       ];
     })
@@ -122,7 +126,43 @@ function hasTypeEntrypoint(packageJson: PackageJson): boolean {
   const exportsMap = asRecord(packageJson.exports);
   if (exportsMap === undefined) return false;
 
-  return exportsContainTypes(exportsMap["."]);
+  if (exportsMap["."] === undefined) return exportsContainTypes(exportsMap);
+
+  return Object.entries(exportsMap).some(
+    ([specifier, exportTarget]) =>
+      specifier !== "./package.json" && exportsContainTypes(exportTarget),
+  );
+}
+
+function attwIgnoreRules(packageJson: PackageJson): AttwIgnoreRule[] {
+  const exportsMap = asRecord(packageJson.exports);
+  if (exportsMap === undefined) return [];
+
+  const exportTargets =
+    exportsMap["."] === undefined
+      ? [exportsMap]
+      : Object.entries(exportsMap)
+          .filter(([specifier]) => specifier !== "./package.json")
+          .map(([, exportTarget]) => exportTarget);
+
+  return exportTargets.some(hasTypedJsonDefaultExport) ? ["false-export-default"] : [];
+}
+
+function hasTypedJsonDefaultExport(value: unknown): boolean {
+  return exportsContainTypes(value) && hasJsonDefaultExport(value);
+}
+
+function hasJsonDefaultExport(value: unknown): boolean {
+  if (typeof value === "string") return value.endsWith(".json");
+
+  const record = asRecord(value);
+  if (record === undefined) return false;
+
+  return Object.entries(record).some(
+    ([key, nested]) =>
+      (key === "default" && typeof nested === "string" && nested.endsWith(".json")) ||
+      hasJsonDefaultExport(nested),
+  );
 }
 
 function exportsContainTypes(value: unknown): boolean {
@@ -189,9 +229,21 @@ const defaultRunner: PublishReadinessRunner = {
     };
   },
   runAttw(_packageInfo, tarballPath) {
-    return runCommand(["bun", attwBinPath(), tarballPath, "--profile", "esm-only", "--no-emoji"]);
+    return runCommand([
+      "bun",
+      attwBinPath(),
+      tarballPath,
+      "--profile",
+      "esm-only",
+      ...attwIgnoreArgs(_packageInfo.attwIgnoreRules),
+      "--no-emoji",
+    ]);
   },
 };
+
+function attwIgnoreArgs(ignoreRules: AttwIgnoreRule[]): string[] {
+  return ignoreRules.length === 0 ? [] : ["--ignore-rules", ...ignoreRules];
+}
 
 function runCommand(args: string[]): CommandResult {
   const result = Bun.spawnSync(args, {

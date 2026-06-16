@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "check": "bun run --parallel check:biome check:types test check:exports check:spec check:source-types check:declaration-dependent check:fallow",
+    "check": "bun run build:declarations && bun run --parallel check:biome check:types test check:exports check:spec check:source-types check:api:reports check:publish:packed check:fallow",
     "check:api": "bun run build:declarations && bun run check:api:reports",
     "check:api:reports": "bun run scripts/check-api.ts",
     "check:biome": "biome check .",

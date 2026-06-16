@@ -19,12 +19,18 @@ import type {
   SourceSessionSelector,
 } from "./types.js";
 
+/**
+ * @internal
+ */
 export function resolveAdapters(
   options: Pick<SessionsOptions, "adapters" | "defaultAdapterOptions">,
 ): readonly TrailAdapter[] {
   return options.adapters ?? createDefaultTrailAdapters(options.defaultAdapterOptions);
 }
 
+/**
+ * @internal
+ */
 export function listCatalogOptions(options: ListSessionsOptions) {
   const catalogOptions: Parameters<typeof listCatalogEntries>[1] = {};
   setDefined(catalogOptions, "include_missing", options.includeMissing);
@@ -40,6 +46,9 @@ export function listCatalogOptions(options: ListSessionsOptions) {
   return catalogOptions;
 }
 
+/**
+ * @internal
+ */
 export function discoveredCatalogRow(agentName: string, ref: SessionRef) {
   if (ref.path === undefined) return [];
   return [
@@ -55,6 +64,9 @@ export function discoveredCatalogRow(agentName: string, ref: SessionRef) {
   ];
 }
 
+/**
+ * @internal
+ */
 export function discoveredSessionFromCatalogRow(
   row: ReturnType<typeof discoveredCatalogRow>[number],
 ): DiscoveredSession {
@@ -67,6 +79,9 @@ export function discoveredSessionFromCatalogRow(
   };
 }
 
+/**
+ * @internal
+ */
 export async function healthWarnings(adapter: TrailAdapter): Promise<SessionsWarning[]> {
   const health = await adapter.sourceHealth();
   return health.warnings.map((message) => ({
@@ -76,6 +91,9 @@ export async function healthWarnings(adapter: TrailAdapter): Promise<SessionsWar
   }));
 }
 
+/**
+ * @internal
+ */
 export async function findSourceRow(
   options: SessionsOptions & SourceSessionSelector,
 ): Promise<CatalogEntryRow | undefined> {
@@ -87,6 +105,9 @@ export async function findSourceRow(
   return rows.find((row) => row.source_id === options.sourceId);
 }
 
+/**
+ * @internal
+ */
 export async function findGeneratedTrail(
   options: SessionsOptions & SourceSessionSelector,
 ): Promise<
@@ -127,15 +148,24 @@ async function verifyLinkedSessionObject(
   return linked?.contentHash === row.content_hash ? linked : undefined;
 }
 
+/**
+ * @internal
+ */
 export function trailFileJsonl(trail: TrailFile): string {
   return `${Array.from(trailFileRecords(trail), (record) => JSON.stringify(record)).join("\n")}\n`;
 }
 
+/**
+ * @internal
+ */
 export function headerString(trail: TrailFile, key: string): string | null {
   const value = trail.groups[0]?.header[key as keyof (typeof trail.groups)[number]["header"]];
   return typeof value === "string" ? value : null;
 }
 
+/**
+ * @internal
+ */
 export function headerBranch(trail: TrailFile): string | null {
   const vcs = trail.groups[0]?.header.vcs;
   if (typeof vcs !== "object" || vcs === null || Array.isArray(vcs)) return null;
@@ -143,10 +173,16 @@ export function headerBranch(trail: TrailFile): string | null {
   return typeof branch === "string" ? branch : null;
 }
 
+/**
+ * @internal
+ */
 export async function stampTrailJsonl(jsonl: string): Promise<string> {
   return stampContentHashes(await parseTrailJsonl(jsonl)).jsonl;
 }
 
+/**
+ * @internal
+ */
 export async function linkedSessionObject(
   jsonl: string,
   storeRoot: string,
@@ -158,6 +194,9 @@ export async function linkedSessionObject(
     : undefined;
 }
 
+/**
+ * @internal
+ */
 export async function registerGeneratedTrail(
   jsonl: string,
   sourcePath: string,
@@ -180,6 +219,9 @@ export async function registerGeneratedTrail(
   }
 }
 
+/**
+ * @internal
+ */
 export function missingLoadResult(
   status: Exclude<LoadSessionResult["status"], "loaded">,
   options: SourceSessionSelector,
@@ -192,6 +234,9 @@ export function missingLoadResult(
   };
 }
 
+/**
+ * @internal
+ */
 export function reconcileWarnings(
   reconciled: Awaited<ReturnType<typeof reconcileIncomingSegment>>,
 ): SessionsWarning[] {

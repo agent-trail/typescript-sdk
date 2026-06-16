@@ -1,75 +1,50 @@
 # @agent-trail/adapters
 
-Per-source-agent parsers that convert native session files into Agent Trail
-entries. Verified adapters: `claude-code`, `codex`, `opencode`, `pi`.
-Pending: Cursor, Aider (see `docs/parser-source-matrix.md`).
+> [!NOTE]
+> Concrete adapters are factory-first. There are no singleton adapter exports.
 
-For the end-to-end checklist for adding a new adapter, see
-[`docs/adapter-authoring.md`](../../docs/adapter-authoring.md).
+Concrete source-agent adapters that convert native coding-agent session storage
+into Agent Trail records.
 
-## Public API
+Verified adapters: `claude-code`, `codex`, `opencode`, and `pi`.
 
-The package root is factory-first. It exports adapter contracts, session and
-health result types, factory options, `createClaudeCodeAdapter`,
-`createCodexAdapter`, `createOpenCodeAdapter`, `createPiAdapter`, and
-`createDefaultTrailAdapters`.
+## Public Surface
+
+The package root exports:
+
+- adapter contracts and result types
+- `createClaudeCodeAdapter`
+- `createCodexAdapter`
+- `createOpenCodeAdapter`
+- `createPiAdapter`
+- `createDefaultTrailAdapters`
+- option types for each adapter factory
 
 Parser internals, registry helpers, concurrency helpers, trail-envelope builders,
 and validation conveniences are not public root exports.
 
-## Shared seam
+## Boundaries
 
-All adapters build on a single internal seam:
+Concrete adapters are factory-first. Callers provide source roots, environment
+overrides, and optional drivers through factory options. Default exports support
+Node 20+ and Bun and must not import Bun globals or `bun:*`.
 
-- [`src/entries.ts`](./src/entries.ts) — `createEntryId`, `createSourceFor`,
-  `pickBlockId`. Adapter-neutral entry construction.
-- [`src/parenting.ts`](./src/parenting.ts) — `resolveEntryParents`. Walks the
-  source-id chain to map adapter-native parent references to trail entry ids.
-- [`src/source-raw.ts`](./src/source-raw.ts) — `enforceSourceRawSize`,
-  `redactValue`. Size enforcement and credential redaction for `source.raw`.
+Adapter-specific mapping policy belongs in this package. Reusable authoring
+primitives belong in `@agent-trail/adapter-kit`. Format parsing and validation
+belong in `@agent-trail/core`.
 
-## Boundaries with `@agent-trail/core`
+## Source Raw
 
-`enforceSourceRawSize` and `redactValue` are **adapter-internal**. They moved
-out of `@agent-trail/core` so the core package stays focused on the trail
-file contract (parsing, validation, hashing, reconciliation) and does not
-ship adapter-specific raw-handling code.
+SDK adapters redact known credential patterns in `source.raw` before writing raw
+trail artifacts. They do not perform broad path or PII normalization during
+parse; that belongs to share-time redaction in `@agent-trail/redact`.
 
-Credential pattern primitives live in `@agent-trail/core` and the
-`@agent-trail/core/credential-patterns` subpath. For adapter `source.raw`
-credential-only handling, use `CREDENTIAL_PATTERNS` and the credential key helper
-predicates:
-
-- `BEARER_TOKEN`, `CREDENTIAL_PATTERNS`, `CREDENTIAL_CONTEXT_PLACEHOLDER`,
-  `RedactionPattern`, `isCredentialKey`, `isSafeCredentialContextValue`, and
-  `isOpaqueTokenValue`
-
-`DEFAULT_PATTERNS` also includes path normalization rules and is intended for
-redaction/share-time behavior, not adapter parsing.
-
-Source raw size limits remain adapter-internal. If you are writing an adapter
-outside this workspace, import credential patterns from core and implement your
-own size/redaction policy, or copy the helpers in `src/source-raw.ts`.
-
-## `SourceForOptions.schemaVersion`
-
-`createSourceFor` accepts an optional `schemaVersion` on `SourceForOptions`.
-It is plumbed uniformly through both verified adapters:
-
-- **pi** uses it as a fallback when the envelope's own version field is
-  missing.
-- **claude-code** currently passes `undefined` (envelopes always carry their
-  own version), but the option is available so future call sites can supply
-  one without touching the shared factory.
-
-If a future adapter needs a different resolution strategy, override
-`resolveSchemaVersion` in its `CreateSourceForConfig` rather than special-
-casing the option.
+The source-raw helpers in `src/shared` are internal to this package.
 
 ## Path Resolution
 
-Adapters resolve source roots from explicit factory options first, then the
-source agent's environment variables, then platform defaults. Home lookup uses
+Adapters resolve source roots from explicit factory options first, then
+source-agent environment variables, then platform defaults. Home lookup uses
 `HOME`, then `USERPROFILE`, then `HOMEDRIVE` plus `HOMEPATH`.
 
 | Adapter | Factory options | Environment variables | Default |
@@ -79,53 +54,35 @@ source agent's environment variables, then platform defaults. Home lookup uses
 | Pi | `agentDir`, `sessionsDir` | `PI_CODING_AGENT_DIR`, `PI_CODING_AGENT_SESSION_DIR` | `<home>/.pi/agent/sessions` |
 | OpenCode | `storageDir`, `dbPath` | `OPENCODE_DATA_DIR`, `OPENCODE_DB` | Linux/macOS: `$XDG_DATA_HOME/opencode` or `<home>/.local/share/opencode`; Windows: `%LOCALAPPDATA%\\opencode`, `%APPDATA%\\opencode`, or `%USERPROFILE%\\AppData\\Local\\opencode` |
 
-`@agent-trail/sessions` forwards the same adapter-specific options through
-`defaultAdapterOptions`.
+## Fixtures And Smoke Tests
 
-## Tests
+> [!WARNING]
+> Real local sessions stay out of git. Use only synthetic or manually redacted
+> committed fixtures.
 
-- `bun test` (from repo root or this package) runs the adapter test suite,
-  including the shared-seam unit tests in `src/parenting.test.ts` and
-  `src/source-raw.test.ts`.
-- `tests/fixtures/real-sessions` contains manually redacted real source-session
-  fixtures and matching expected Agent Trail JSONL output. The fixture test
-  parses each committed source file and byte-compares the emitted trail to the
-  matching golden file, so source-schema drift is caught without needing local
-  real sessions.
-- Real-session smoke tests are local checks only. They are hard-skipped whenever
-  `CI` is set, even if a real-session env var is present. Locally, they use
-  the path resolution rules above unless a test-specific real-session env var
-  points at an exact session file. Real local session files must stay out of git.
+Committed fixtures are synthetic or manually redacted. Real local sessions stay
+out of git and are used only by opt-in smoke tests.
 
-  From the repository root:
+Run committed adapter coverage with:
 
-  ```bash
-  bun test packages/adapters/src/pi/real-session.test.ts \
-    packages/adapters/src/codex/real-session.test.ts \
-    packages/adapters/src/claude-code/real-session.test.ts \
-    packages/adapters/src/opencode/real-session.test.ts
-  ```
+```sh
+bun test packages/adapters
+```
 
-  From `packages/adapters`:
+Optional real-session smoke tests use explicit environment variables documented
+in [`docs/parser-source-matrix.md`](../../docs/parser-source-matrix.md#real-session-smoke-tests).
 
-  ```bash
-  bun test src/pi/real-session.test.ts \
-    src/codex/real-session.test.ts \
-    src/claude-code/real-session.test.ts \
-    src/opencode/real-session.test.ts
-  ```
+## Docs
 
-  Use `AGENT_TRAIL_REAL_*_SESSION` only when testing a specific custom session
-  file:
+- [`docs/adapter-authoring.md`](../../docs/adapter-authoring.md)
+- [`docs/parser-source-matrix.md`](../../docs/parser-source-matrix.md)
+- [`docs/implementation-semantics.md`](../../docs/implementation-semantics.md)
 
-  ```bash
-  AGENT_TRAIL_REAL_PI_SESSION=/abs/path/to/pi-session.jsonl bun test packages/adapters
-  AGENT_TRAIL_REAL_CODEX_SESSION=/abs/path/to/rollout-...jsonl bun test packages/adapters
-  AGENT_TRAIL_REAL_CLAUDE_CODE_SESSION=/abs/path/to/claude-session.jsonl bun test packages/adapters
-  AGENT_TRAIL_REAL_OPENCODE_ROOT=/abs/path/to/opencode bun test packages/adapters
-  AGENT_TRAIL_REAL_OPENCODE_DB_SESSION=/abs/path/to/opencode.db#ses_... bun test packages/adapters
-  ```
+## Checks
 
-  Smoke tests parse the real session, validate emitted Agent Trail records, and
-  check broad feature invariants when event families are present. They do not
-  require a specific transcript shape.
+```sh
+bun test packages/adapters
+bun run check:types
+bun run check:api
+bun run check:exports
+```

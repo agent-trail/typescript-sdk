@@ -1,70 +1,50 @@
 # @agent-trail/source-schemas
 
-Bundled JSON Schemas describing upstream coding-agent source formats. Consumed by
-[`@agent-trail/adapter-kit`](../adapter-kit) (`selectSchemaVersion`, `validateSourceRecord`) to
-quarantine records that drift from a known shape before they reach the trail mapper.
+Bundled JSON Schemas for upstream coding-agent source records consumed by SDK
+adapters.
 
-These schemas describe the **adapter source records** (codex rollout JSONL lines, claude-code
-session JSONL lines, OpenCode records normalized from file storage / SQLite rows, etc.) — not the
-trail format. The trail format contract lives in the root
-[`schema.json`](../../schema.json) / [`@agent-trail/schema`](../schema).
+These schemas describe adapter inputs such as Codex rollout JSONL lines, Claude
+Code session JSONL lines, Pi session JSONL lines, and OpenCode records
+normalized from file storage or SQLite rows. They do not describe Agent Trail
+output. The trail format contract is exposed by `@agent-trail/schema`.
 
-## Layout
+## Public Surface
 
-```text
-codex/
-  meta.json       — agent metadata + version → schema mapping
-  v0.128.json     — JSON Schema (draft 2020-12) for v0.128.x records
-  v0.128.d.ts     — generated TypeScript types (do not edit)
-  v0.135.json     — JSON Schema (draft 2020-12) for v0.129+ records
-  v0.135.d.ts     — generated TypeScript types (do not edit)
-pi/
-  meta.json
-  v1.json
-  v1.d.ts
-claude-code/
-  meta.json
-  v1.json
-  v1.d.ts
-opencode/
-  meta.json
-  v1.json
-  v1.d.ts
+The package exports JSON assets and generated import declarations:
+
+- `./codex/v0.128`, `./codex/v0.135`, `./codex/meta`
+- `./pi/v1`, `./pi/meta`
+- `./claude-code/v1`, `./claude-code/meta`
+- `./opencode/v1`, `./opencode/meta`
+- `./package.json`
+
+There is no root runtime TypeScript export.
+
+## Boundaries
+
+`source-schemas` owns upstream evidence schemas. It does not own mapping logic,
+source discovery, Agent Trail validation, or generated Agent Trail record types.
+
+`@agent-trail/adapter-kit` loads these schemas through its static registry.
+`@agent-trail/adapters` uses them while parsing concrete source-agent storage.
+
+## Adding A Version
+
+1. Add or update `<agent>/meta.json` and the versioned schema JSON.
+2. Register new package exports.
+3. Run `bun run generate:source-types`.
+4. Register the schema in `packages/adapter-kit/src/source-schemas/registry.ts`.
+5. Update adapter tests and `docs/parser-source-matrix.md`.
+
+## Docs
+
+- [`docs/parser-source-matrix.md`](../../docs/parser-source-matrix.md)
+- [`docs/adapter-authoring.md`](../../docs/adapter-authoring.md#source-schemas)
+- [`docs/implementation-semantics.md`](../../docs/implementation-semantics.md#source-schemas)
+
+## Checks
+
+```sh
+bun run check:source-types
+bun test packages/adapter-kit/src/source-schemas
 ```
-
-Each schema validates one adapter source record. For JSONL-backed agents that usually means one
-JSONL line; for OpenCode it means one normalized record produced from file storage or SQLite.
-Validation is intentionally lenient on additive field drift and strict on record-type drift — a
-brand-new top-level `type`, `event_msg` subtype, or OpenCode `part_type` fails validation and is
-quarantined.
-
-## `meta.json` shape
-
-```json
-{
-  "agent": "codex",
-  "upstream": "openai/codex",
-  "version_ranges": [
-    { "schemaVersion": "v0.128", "range": ">=0.128.0 <0.129.0" },
-    { "schemaVersion": "v0.135", "range": ">=0.129.0" }
-  ],
-  "fallback": "v0.135"
-}
-```
-
-| Field | Purpose |
-|---|---|
-| `agent` | Stable agent identifier. Matches the `agent` argument to `selectSchemaVersion` / `validateSourceRecord`. |
-| `upstream` | Informational reference to the source repo or project. Not used at runtime. |
-| `version_ranges` | Ordered list of semver-range → schema-version mappings. First match wins. |
-| `fallback` | Schema version used when an upstream version is provided but matches no range. Omit to refuse fallback. |
-
-## Adding a new agent / version
-
-1. Add the agent directory and write `meta.json` + `vX.json` (JSON Schema 2020-12, `$id` set to
-   `https://agent-trail.dev/source/<agent>/<version>.json`).
-2. Register the new exports in this package's [`package.json`](./package.json) under `exports`.
-3. Run `bun run generate:source-types` from the repo root to regenerate `.d.ts` files.
-4. Register the schema in
-   [`packages/adapter-kit/src/source-schemas/registry.ts`](../adapter-kit/src/source-schemas/registry.ts).
-5. `bun run check:source-types` verifies generated types are not stale.

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, win32 } from "node:path";
+import { fileURLToPath } from "node:url";
 import { validateAdapterTrail } from "../../shared/trail-file.js";
 import { cleanGitEnv } from "../../shared/vcs.js";
 import { ID_PATTERN } from "../../tests/test-helpers.js";
@@ -75,50 +76,42 @@ function createProjectDir(): string {
   return dir;
 }
 
-const FIXTURE_PATH = new URL("../../../tests/fixtures/pi/linear-flow.jsonl", import.meta.url)
-  .pathname;
-const BRANCH_FIXTURE_PATH = new URL("../../../tests/fixtures/pi/branch-flow.jsonl", import.meta.url)
-  .pathname;
-const REASONING_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/reasoning-and-interrupt.jsonl",
-  import.meta.url,
-).pathname;
-const COMPACT_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/compaction-and-model-change.jsonl",
-  import.meta.url,
-).pathname;
-const USAGE_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/usage-and-cost.jsonl",
-  import.meta.url,
-).pathname;
-const USAGE_FIRST_ENTRY_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/usage-first-entry.jsonl",
-  import.meta.url,
-).pathname;
-const TOOL_RESULT_ERROR_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/tool-result-error.jsonl",
-  import.meta.url,
-).pathname;
-const QUARANTINE_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/quarantine.jsonl",
-  import.meta.url,
-).pathname;
-const SYSTEM_EVENTS_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/system-events.jsonl",
-  import.meta.url,
-).pathname;
-const LEAF_AND_LABEL_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/leaf-and-label.jsonl",
-  import.meta.url,
-).pathname;
-const BASH_EXECUTION_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/bash-execution.jsonl",
-  import.meta.url,
-).pathname;
-const CUSTOM_VARIANTS_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/custom-message-variants.jsonl",
-  import.meta.url,
-).pathname;
+const FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/linear-flow.jsonl", import.meta.url),
+);
+const BRANCH_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/branch-flow.jsonl", import.meta.url),
+);
+const REASONING_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/reasoning-and-interrupt.jsonl", import.meta.url),
+);
+const COMPACT_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/compaction-and-model-change.jsonl", import.meta.url),
+);
+const USAGE_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/usage-and-cost.jsonl", import.meta.url),
+);
+const USAGE_FIRST_ENTRY_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/usage-first-entry.jsonl", import.meta.url),
+);
+const TOOL_RESULT_ERROR_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/tool-result-error.jsonl", import.meta.url),
+);
+const QUARANTINE_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/quarantine.jsonl", import.meta.url),
+);
+const SYSTEM_EVENTS_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/system-events.jsonl", import.meta.url),
+);
+const LEAF_AND_LABEL_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/leaf-and-label.jsonl", import.meta.url),
+);
+const BASH_EXECUTION_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/bash-execution.jsonl", import.meta.url),
+);
+const CUSTOM_VARIANTS_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/custom-message-variants.jsonl", import.meta.url),
+);
 
 async function parseFixture() {
   return piAdapter.parseSession({

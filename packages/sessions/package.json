@@ -1,0 +1,43 @@
+{
+  "name": "@agent-trail/sessions",
+  "version": "0.1.0",
+  "description": "Agent Trail workflow orchestration for source sessions.",
+  "type": "module",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "package.json"
+  ],
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agent-trail/typescript-sdk.git",
+    "directory": "packages/sessions"
+  },
+  "bugs": {
+    "url": "https://github.com/agent-trail/typescript-sdk/issues"
+  },
+  "homepage": "https://github.com/agent-trail/typescript-sdk#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@agent-trail/adapter-kit": "workspace:*",
+    "@agent-trail/adapters": "workspace:*",
+    "@agent-trail/catalog": "workspace:*",
+    "@agent-trail/core": "workspace:*",
+    "@agent-trail/redact": "workspace:*",
+    "@agent-trail/store": "workspace:*",
+    "@agent-trail/types": "workspace:*"
+  }
+}

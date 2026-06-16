@@ -1,0 +1,19 @@
+.changeset/sour-grapes-switch.md
+  s_be2237702d6b1c::t_6202686f752520 1-2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "eba18a65df98da28acfe3238a54e587be4f5bd8b",
+  "prompts": {},
+  "sessions": {
+    "s_be2237702d6b1c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ecffb-b3c8-7900-b1f0-987bc549c6a2",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

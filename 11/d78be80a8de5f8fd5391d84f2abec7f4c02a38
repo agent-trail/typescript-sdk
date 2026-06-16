@@ -1,0 +1,19 @@
+AGENTS.md
+  s_4bbd91c57aaaad::t_22a6c7c56b97e1 62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "11d78be80a8de5f8fd5391d84f2abec7f4c02a38",
+  "prompts": {},
+  "sessions": {
+    "s_4bbd91c57aaaad": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ecca9-c454-7d10-ade3-fe5e2bc0bbd1",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

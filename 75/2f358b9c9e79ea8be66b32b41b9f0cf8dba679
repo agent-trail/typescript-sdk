@@ -1,0 +1,31 @@
+packages/adapters/src/codex/paths.ts
+  s_b375036ea046e2::t_29754939a85af9 19
+packages/adapters/src/pi/paths.ts
+  s_b375036ea046e2::t_a7c01a7ad8368e 17
+docs/parser-source-matrix.md
+  s_b375036ea046e2::t_447864baf89742 19-21,24-27
+.github/workflows/guardrails.yml
+  s_b375036ea046e2::t_447864baf89742 33-47
+packages/adapters/src/codex/tests/index.test.ts
+  s_b375036ea046e2::t_84a494c9e978f2 283-293
+packages/adapters/README.md
+  s_b375036ea046e2::t_447864baf89742 69-84,96-98
+packages/adapters/src/pi/tests/index.test.ts
+  s_b375036ea046e2::t_447864baf89742 620-630
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "752f358b9c9e79ea8be66b32b41b9f0cf8dba679",
+  "prompts": {},
+  "sessions": {
+    "s_b375036ea046e2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ecf3c-a326-7523-88e9-9e9a50146fa8",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Somasundaram Ayyappan <1802828+somus@users.noreply.github.com>"
+    }
+  }
+}

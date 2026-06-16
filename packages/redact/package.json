@@ -23,5 +23,17 @@
     "@redactpii/node": "1.0.17",
     "safe-regex2": "5.1.1",
     "yaml": "2.9.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agent-trail/typescript-sdk.git",
+    "directory": "packages/redact"
+  },
+  "bugs": {
+    "url": "https://github.com/agent-trail/typescript-sdk/issues"
+  },
+  "homepage": "https://github.com/agent-trail/typescript-sdk#readme",
+  "engines": {
+    "node": ">=20"
   }
 }

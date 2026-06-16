@@ -9,7 +9,11 @@ import type { CatalogDb } from "@agent-trail/catalog";
 import { listCatalogEntries } from "@agent-trail/catalog";
 import { parseTrailJsonl, stampContentHashes } from "@agent-trail/core";
 import { BunCatalogDb } from "../../../catalog/src/tests/helpers.ts";
-import { objectPath, registerTrail } from "../../../store/src/index.ts";
+import {
+  objectPath,
+  type ReconcileIncomingResult,
+  registerTrail,
+} from "../../../store/src/index.ts";
 import {
   createSessionsClient,
   discoverSessions,
@@ -19,6 +23,7 @@ import {
   type SessionsShareTransport,
   shareSession,
 } from "../index.ts";
+import { reconcileWarnings } from "../shared.ts";
 
 const SESSION_ID = "session-a";
 const SESSION_UID = "11111111-1111-4111-8111-111111111111";
@@ -83,6 +88,30 @@ sessionsTest("list can refresh discovery before returning rows", async (harness)
   expect(result.rows.map((row) => row.source_id)).toEqual([SESSION_ID]);
 });
 
+sessionsTest(
+  "discover skips source refs without paths and surfaces health warnings",
+  async (harness) => {
+    const adapter = fakeAdapter([{ ...sourceRef(), path: undefined }], trailFile, [
+      "missing source directory",
+    ]);
+
+    const result = await discoverSessions({
+      catalogDb: harness.catalogDb,
+      adapters: [adapter],
+    });
+
+    expect(result.sessions).toEqual([]);
+    expect(await listCatalogEntries(harness.catalogDb, { include_missing: true })).toEqual([]);
+    expect(result.warnings).toEqual([
+      {
+        adapter: "test-agent",
+        code: "source_health_warning",
+        message: "missing source directory",
+      },
+    ]);
+  },
+);
+
 sessionsTest("load parses, reconciles, stores, and links generated trail", async (harness) => {
   await discoverSessions({
     catalogDb: harness.catalogDb,
@@ -110,6 +139,28 @@ sessionsTest("load parses, reconciles, stores, and links generated trail", async
     content_hash: result.contentHash,
     agent_name: "test-agent",
     name: "Test Session",
+  });
+});
+
+sessionsTest("load surfaces reconcile passthrough warnings", async (harness) => {
+  const adapter = fakeAdapter([sourceRef()], trailFileWithoutSessionUid);
+  await discoverSessions({
+    catalogDb: harness.catalogDb,
+    adapters: [adapter],
+  });
+
+  const result = await loadSession({
+    catalogDb: harness.catalogDb,
+    storeRoot: harness.storeRoot,
+    adapters: [adapter],
+    adapter: "test-agent",
+    sourceId: SESSION_ID,
+  });
+
+  expect(result).toMatchObject({
+    status: "loaded",
+    reconciliation: "passthrough",
+    warnings: [{ code: "no_session_uid", message: "reconcile passthrough: no_session_uid" }],
   });
 });
 
@@ -339,6 +390,22 @@ sessionsTest("share and export return typed missing-state statuses", async (harn
   ).toMatchObject({ status: "source_not_found" });
 });
 
+test("reconcileWarnings maps merged diagnostics and quiet passthroughs", () => {
+  const merged: ReconcileIncomingResult = {
+    kind: "merged",
+    canonical: "",
+    sessionUid: SESSION_UID,
+    segmentCount: 2,
+    warnings: ["segment_chain_mismatch", "duplicate_sequence"],
+  };
+
+  expect(reconcileWarnings(merged)).toEqual([
+    { code: "segment_chain_mismatch", message: "reconcile warning: segment_chain_mismatch" },
+    { code: "duplicate_sequence", message: "reconcile warning: duplicate_sequence" },
+  ]);
+  expect(reconcileWarnings({ kind: "passthrough" })).toEqual([]);
+});
+
 function sourceRef(): SessionRef {
   return {
     id: SESSION_ID,
@@ -352,6 +419,7 @@ function sourceRef(): SessionRef {
 function fakeAdapter(
   sessions: SessionRef[],
   trailFactory: () => TrailFile = trailFile,
+  warnings: string[] = [],
 ): TrailAdapter {
   return {
     name: "test-agent",
@@ -376,7 +444,7 @@ function fakeAdapter(
         readable: true,
         sessionCount: sessions.length,
         sourceVersion: "1.0.0",
-        warnings: [],
+        warnings,
       };
     },
   };
@@ -413,6 +481,15 @@ function trailFile(): TrailFile {
       },
     ],
   };
+}
+
+function trailFileWithoutSessionUid(): TrailFile {
+  const trail = trailFile();
+  const group = trail.groups[0];
+  if (group === undefined) throw new Error("missing test group");
+  const header = { ...group.header };
+  delete header.session_uid;
+  return { groups: [{ ...group, header }] };
 }
 
 function trailFileWithEnvelope(): TrailFile {

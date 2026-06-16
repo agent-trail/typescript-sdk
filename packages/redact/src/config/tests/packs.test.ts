@@ -4,6 +4,7 @@ import { mkdir, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { resolveRedactionConfig } from "../../index.ts";
+import { assertSafeRegexSource } from "../regex-safety.ts";
 
 test("resolveRedactionConfig loads project packs and ignores project weakening settings", async () => {
   const root = mkdtempSync(join(tmpdir(), "trail-redact-"));
@@ -282,4 +283,35 @@ test("resolveRedactionConfig rejects symlinked settings", async () => {
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test("assertSafeRegexSource rejects unsupported or unsafe regex forms", () => {
+  expect(() => assertSafeRegexSource("(token)-\\1", "custom")).toThrow(
+    "custom regex backreferences are not supported",
+  );
+  expect(() => assertSafeRegexSource("(?<token>abc)\\k<token>", "custom")).toThrow(
+    "custom regex backreferences are not supported",
+  );
+  expect(() => assertSafeRegexSource("token(?=secret)", "custom")).toThrow(
+    "custom regex lookaround is not supported",
+  );
+  expect(() => assertSafeRegexSource("(?<!safe)token", "custom")).toThrow(
+    "custom regex lookaround is not supported",
+  );
+  expect(() => assertSafeRegexSource("(a+)+", "custom")).toThrow(
+    "custom regex has nested unbounded quantifiers",
+  );
+  expect(() => assertSafeRegexSource("(token|secret)+", "custom")).toThrow(
+    "custom regex has quantified alternation",
+  );
+  expect(() => assertSafeRegexSource("[", "custom")).toThrow("custom regex is invalid");
+  expect(() => assertSafeRegexSource("a".repeat(513), "custom")).toThrow(
+    "custom regex exceeds 512 characters",
+  );
+});
+
+test("assertSafeRegexSource allows escaped syntax and character-class tokens", () => {
+  expect(() => assertSafeRegexSource("\\(token\\|secret\\)\\+", "custom")).not.toThrow();
+  expect(() => assertSafeRegexSource("[()|+*?{}\\\\]+-token", "custom")).not.toThrow();
+  expect(() => assertSafeRegexSource("token-[A-Za-z0-9_]{8,64}", "custom")).not.toThrow();
 });

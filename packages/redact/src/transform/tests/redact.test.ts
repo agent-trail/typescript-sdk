@@ -665,3 +665,71 @@ test("redactTrailJsonl redacts non-object parse error values", async () => {
   expect(result.jsonl).not.toContain(key);
   expect(result.summary.counts.openai_api_key).toBe(1);
 });
+
+test("redactTrailJsonl redacts high entropy tokens only when explicitly enabled", async () => {
+  const secret = "Z9mK2qL8sT5vW3xY7pR4nB6cD0fG1hJ";
+  const result = await redactTrailJsonl(
+    jsonl([
+      header,
+      {
+        type: "tool_result",
+        id: "01HEVTA0000000000000000201",
+        ts: "2026-05-17T14:02:01.000Z",
+        payload: { for_id: "01HEVTA0000000000000000200", ok: true, output: secret },
+      },
+    ]),
+  );
+  const enabled = await redactTrailJsonl(
+    jsonl([
+      header,
+      {
+        type: "tool_result",
+        id: "01HEVTA0000000000000000201",
+        ts: "2026-05-17T14:02:01.000Z",
+        payload: { for_id: "01HEVTA0000000000000000200", ok: true, output: secret },
+      },
+    ]),
+    { enableEntropyRedaction: true },
+  );
+
+  expect(result.jsonl).toContain(secret);
+  expect(enabled.jsonl).not.toContain(secret);
+  expect(enabled.jsonl).toContain("[HIGH_ENTROPY_SECRET]");
+  expect(enabled.summary.counts.high_entropy_token).toBe(1);
+  expect(enabled.summary.samples).toEqual([
+    expect.objectContaining({
+      patternId: "high_entropy_token",
+      location: "records[1].payload.output",
+      after: "[HIGH_ENTROPY_SECRET]",
+    }),
+  ]);
+});
+
+test("redactTrailJsonl entropy redaction skips allowlisted and opaque token shapes", async () => {
+  const secret = "Z9mK2qL8sT5vW3xY7pR4nB6cD0fG1hJ";
+  const allowed = "Q1w2E3r4T5y6U7i8O9p0A1s2D3f4G5h6J7k8";
+  const prefixed = "M9n8B7v6C5x4Z3a2S1d0F9g8H7j6K5l4";
+  const uuid = "a987fbc9-4bed-4078-8f07-9141ba07c9f3";
+  const result = await redactTrailJsonl(
+    jsonl([
+      header,
+      {
+        type: "agent_message",
+        id: "01HEVTA0000000000000000202",
+        ts: "2026-05-17T14:02:02.000Z",
+        payload: {
+          text: [secret, allowed, `sha256:${prefixed}`, uuid, "[ALREADY_REDACTED]"].join(" "),
+        },
+      },
+    ]),
+    { allowedSecrets: [allowed], enableEntropyRedaction: true },
+  );
+
+  expect(result.jsonl).not.toContain(secret);
+  expect(result.jsonl).toContain(allowed);
+  expect(result.jsonl).toContain(`sha256:${prefixed}`);
+  expect(result.jsonl).toContain(uuid);
+  expect(result.jsonl).toContain("[ALREADY_REDACTED]");
+  expect(result.summary.counts.high_entropy_token).toBe(1);
+  expect(result.summary.counts.allowlisted_skip).toBe(1);
+});

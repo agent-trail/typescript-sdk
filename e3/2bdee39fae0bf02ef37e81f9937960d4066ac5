@@ -1,0 +1,29 @@
+tests/check-publish-readiness.test.ts
+  s_860c2b865c91a0::t_437d916abe10c0 68,71-72
+  s_860c2b865c91a0::t_9b48b493515437 77-83
+  s_860c2b865c91a0::t_0d07d229877c1f 119-122
+package.json
+  s_860c2b865c91a0::t_8703baf317f0d9 26
+scripts/check-publish-readiness.ts
+  s_860c2b865c91a0::t_b749b8cd0d4480 14,22-23,52,134-164,232-240,244-246
+  s_860c2b865c91a0::t_5ee7b77faafcfb 247
+  s_860c2b865c91a0::t_c14ba54ca2864b 129-133,165
+.github/workflows/guardrails.yml
+  s_860c2b865c91a0::t_d53ae7a68dff54 25-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "e32bdee39fae0bf02ef37e81f9937960d4066ac5",
+  "prompts": {},
+  "sessions": {
+    "s_860c2b865c91a0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ece8d-024b-7cd2-baa2-2c02c6a64c8f",
+        "model": "gpt-5.5"
+      },
+      "human_author": null
+    }
+  }
+}

@@ -4,7 +4,7 @@ import type { DetectOptions, SessionRef } from "../index.js";
 import { readJsonlHead as readJsonLinesHead, readJsonlHeadObjects } from "../shared/jsonl-head.js";
 import { canonicalizeIdentityString } from "../shared/session-uid.js";
 import { isRecord } from "../shared/type-guards.js";
-import { codexSessionsDir } from "./paths.js";
+import { type CodexPathOptions, codexSessionsDir } from "./paths.js";
 
 export async function dirExists(path: string): Promise<boolean> {
   try {
@@ -187,9 +187,9 @@ function deriveIdFromFilename(filePath: string): string | undefined {
 
 export async function detectCodexSessions(
   opts?: DetectOptions,
-  env: NodeJS.ProcessEnv = process.env,
+  pathOptions: NodeJS.ProcessEnv | CodexPathOptions = process.env,
 ): Promise<SessionRef[]> {
-  const sessionsDir = codexSessionsDir(env);
+  const sessionsDir = codexSessionsDir(pathOptions);
   if (sessionsDir === undefined) return [];
   const files = await walkRolloutFiles(sessionsDir);
   const refs = await Promise.all(files.map(buildSessionRef));
@@ -202,9 +202,9 @@ export async function detectCodexSessions(
 // version is absent). Mirrors the Pi adapter precedent — pick the file
 // most recently touched in the current cwd's session tree.
 export async function newestCodexSourceVersion(
-  env: NodeJS.ProcessEnv = process.env,
+  pathOptions: NodeJS.ProcessEnv | CodexPathOptions = process.env,
 ): Promise<string | null> {
-  const dir = codexSessionsDir(env);
+  const dir = codexSessionsDir(pathOptions);
   if (dir === undefined) return null;
   if (!(await dirExists(dir))) return null;
   const files = await walkRolloutFiles(dir);

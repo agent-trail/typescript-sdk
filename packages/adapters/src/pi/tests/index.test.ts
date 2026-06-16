@@ -3,7 +3,8 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, win32 } from "node:path";
+import { fileURLToPath } from "node:url";
 import { validateAdapterTrail } from "../../shared/trail-file.js";
 import { cleanGitEnv } from "../../shared/vcs.js";
 import { ID_PATTERN } from "../../tests/test-helpers.js";
@@ -75,50 +76,42 @@ function createProjectDir(): string {
   return dir;
 }
 
-const FIXTURE_PATH = new URL("../../../tests/fixtures/pi/linear-flow.jsonl", import.meta.url)
-  .pathname;
-const BRANCH_FIXTURE_PATH = new URL("../../../tests/fixtures/pi/branch-flow.jsonl", import.meta.url)
-  .pathname;
-const REASONING_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/reasoning-and-interrupt.jsonl",
-  import.meta.url,
-).pathname;
-const COMPACT_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/compaction-and-model-change.jsonl",
-  import.meta.url,
-).pathname;
-const USAGE_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/usage-and-cost.jsonl",
-  import.meta.url,
-).pathname;
-const USAGE_FIRST_ENTRY_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/usage-first-entry.jsonl",
-  import.meta.url,
-).pathname;
-const TOOL_RESULT_ERROR_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/tool-result-error.jsonl",
-  import.meta.url,
-).pathname;
-const QUARANTINE_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/quarantine.jsonl",
-  import.meta.url,
-).pathname;
-const SYSTEM_EVENTS_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/system-events.jsonl",
-  import.meta.url,
-).pathname;
-const LEAF_AND_LABEL_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/leaf-and-label.jsonl",
-  import.meta.url,
-).pathname;
-const BASH_EXECUTION_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/bash-execution.jsonl",
-  import.meta.url,
-).pathname;
-const CUSTOM_VARIANTS_FIXTURE_PATH = new URL(
-  "../../../tests/fixtures/pi/custom-message-variants.jsonl",
-  import.meta.url,
-).pathname;
+const FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/linear-flow.jsonl", import.meta.url),
+);
+const BRANCH_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/branch-flow.jsonl", import.meta.url),
+);
+const REASONING_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/reasoning-and-interrupt.jsonl", import.meta.url),
+);
+const COMPACT_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/compaction-and-model-change.jsonl", import.meta.url),
+);
+const USAGE_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/usage-and-cost.jsonl", import.meta.url),
+);
+const USAGE_FIRST_ENTRY_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/usage-first-entry.jsonl", import.meta.url),
+);
+const TOOL_RESULT_ERROR_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/tool-result-error.jsonl", import.meta.url),
+);
+const QUARANTINE_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/quarantine.jsonl", import.meta.url),
+);
+const SYSTEM_EVENTS_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/system-events.jsonl", import.meta.url),
+);
+const LEAF_AND_LABEL_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/leaf-and-label.jsonl", import.meta.url),
+);
+const BASH_EXECUTION_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/bash-execution.jsonl", import.meta.url),
+);
+const CUSTOM_VARIANTS_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../tests/fixtures/pi/custom-message-variants.jsonl", import.meta.url),
+);
 
 async function parseFixture() {
   return piAdapter.parseSession({
@@ -591,6 +584,12 @@ test("isAvailable() falls back to USERPROFILE when HOME is unset", async () => {
   expect(await piAdapter.isAvailable()).toBe(true);
 });
 
+test("piAgentDir falls back to HOMEDRIVE and HOMEPATH on Windows", () => {
+  expect(piAgentDir({ HOMEDRIVE: "C:", HOMEPATH: "\\Users\\tester" }, "win32")).toBe(
+    win32.join("C:\\Users\\tester", ".pi", "agent"),
+  );
+});
+
 test("piAgentDir() defaults to $HOME/.pi/agent (matches pi-mono getAgentDir())", () => {
   expect(piAgentDir()).toBe(join(tmpHome, ".pi", "agent"));
 });
@@ -609,6 +608,26 @@ test("piSessionsDir() honors PI_CODING_AGENT_SESSION_DIR override independently 
   process.env.PI_CODING_AGENT_DIR = "/custom/pi-agent";
   process.env.PI_CODING_AGENT_SESSION_DIR = "/elsewhere/sessions";
   expect(piSessionsDir()).toBe("/elsewhere/sessions");
+});
+
+test("pi path helpers ignore lowercase override-shaped keys on raw env objects", () => {
+  const rawEnv = {
+    PI_CODING_AGENT_DIR: "/tmp/custom-pi-agent",
+    agentDir: "/tmp/ignored-agent",
+    sessionsDir: "/tmp/ignored-sessions",
+    platform: "win32",
+  };
+  expect(piAgentDir(rawEnv)).toBe("/tmp/custom-pi-agent");
+  expect(piSessionsDir(rawEnv)).toBe(join("/tmp/custom-pi-agent", "sessions"));
+});
+
+test("pi path helpers treat raw env.env strings as environment variables", () => {
+  const rawEnv = {
+    PI_CODING_AGENT_DIR: "/tmp/custom-pi-agent",
+    env: "production",
+  };
+  expect(piAgentDir(rawEnv)).toBe("/tmp/custom-pi-agent");
+  expect(piSessionsDir(rawEnv)).toBe(join("/tmp/custom-pi-agent", "sessions"));
 });
 
 test("detectSessions() honors PI_CODING_AGENT_DIR override", async () => {
@@ -657,6 +676,53 @@ test("createPiAdapter env override discovers sessions without mutating process e
     const sessions = await adapter.detectSessions({ cwd: "/factory/pi" });
     expect(sessions).toHaveLength(1);
     expect(sessions[0]).toMatchObject({ id: "sess-env", adapter: "pi" });
+  } finally {
+    rmSync(customSessionsDir, { recursive: true, force: true });
+  }
+});
+
+test("createPiAdapter agentDir option discovers sessions without mutating process env", async () => {
+  const customAgentDir = mkdtempSync(join(tmpdir(), "pi-adapter-agent-option-"));
+  try {
+    const sessionsDir = join(customAgentDir, "sessions");
+    const dir = piProjectDir({ sessionsDir, cwd: "/factory/pi" });
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "sess-agent-option.jsonl"), "");
+    const adapter = createPiAdapter({ agentDir: customAgentDir });
+    const sessions = await adapter.detectSessions({ cwd: "/factory/pi" });
+    expect(sessions.map((session) => session.id)).toEqual(["sess-agent-option"]);
+  } finally {
+    rmSync(customAgentDir, { recursive: true, force: true });
+  }
+});
+
+test("createPiAdapter sessionsDir option drives availability, health, and version", async () => {
+  const customSessionsDir = mkdtempSync(join(tmpdir(), "pi-adapter-sessions-option-"));
+  try {
+    const dir = piProjectDir({ sessionsDir: customSessionsDir, cwd: process.cwd() });
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "sess-sessions-option.jsonl"),
+      `${JSON.stringify({
+        type: "session",
+        version: 4,
+        id: "sess-sessions-option",
+        timestamp: "2026-05-21T15:00:00.000Z",
+        cwd: process.cwd(),
+      })}\n`,
+    );
+    const adapter = createPiAdapter({ sessionsDir: customSessionsDir });
+
+    expect(await adapter.isAvailable()).toBe(true);
+    expect(await adapter.sourceVersion()).toBe("4");
+    expect(await adapter.sourceHealth()).toMatchObject({
+      adapter: "pi",
+      path: customSessionsDir,
+      present: true,
+      readable: true,
+      sessionCount: 1,
+      sourceVersion: "4",
+    });
   } finally {
     rmSync(customSessionsDir, { recursive: true, force: true });
   }

@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CODEX_SESSION_UID_NAMESPACE, deriveSessionUid } from "../../shared/session-uid.js";
 import { validateAdapterTrail } from "../../shared/trail-file.js";
@@ -270,8 +270,34 @@ test("codexHomeDir honors CODEX_HOME override", () => {
   expect(codexHomeDir()).toBe("/tmp/custom-codex");
 });
 
+test("codexHomeDir falls back to HOMEDRIVE and HOMEPATH on Windows", () => {
+  expect(codexHomeDir({ HOMEDRIVE: "C:", HOMEPATH: "\\Users\\tester" }, "win32")).toBe(
+    win32.join("C:\\Users\\tester", ".codex"),
+  );
+});
+
 test("codexSessionsDir is <codexHome>/sessions", () => {
   expect(codexSessionsDir()).toBe(join(tmpHome, ".codex", "sessions"));
+});
+
+test("codex path helpers ignore lowercase override-shaped keys on raw env objects", () => {
+  const rawEnv = {
+    CODEX_HOME: "/tmp/custom-codex",
+    sessionsDir: "/tmp/ignored-sessions",
+    sessionIndexPath: "/tmp/ignored-index.jsonl",
+    platform: "win32",
+  };
+  expect(codexHomeDir(rawEnv)).toBe("/tmp/custom-codex");
+  expect(codexSessionsDir(rawEnv)).toBe(join("/tmp/custom-codex", "sessions"));
+});
+
+test("codex path helpers treat raw env.env strings as environment variables", () => {
+  const rawEnv = {
+    CODEX_HOME: "/tmp/custom-codex",
+    env: "production",
+  };
+  expect(codexHomeDir(rawEnv)).toBe("/tmp/custom-codex");
+  expect(codexSessionsDir(rawEnv)).toBe(join("/tmp/custom-codex", "sessions"));
 });
 
 test("parseSession summarizes clean parse fidelity on the header", async () => {
@@ -492,6 +518,113 @@ test("createCodexAdapter env override is used for parse-time session index and c
     expect(trail.groups[1]!.header.id).toBe(childId);
   } finally {
     rmSync(customCodexHome, { recursive: true, force: true });
+  }
+});
+
+test("createCodexAdapter codexHome option drives discovery, health, and version", async () => {
+  const customCodexHome = mkdtempSync(join(tmpdir(), "codex-adapter-home-option-"));
+  try {
+    const sessionsDir = join(customCodexHome, "sessions");
+    const dayDir = join(sessionsDir, "2026", "05", "28");
+    mkdirSync(dayDir, { recursive: true });
+    const id = "019d7909-85dd-7881-aa12-95ffc8ca8ba1";
+    const ts = "2026-05-28T01:46:00.000Z";
+    writeFileSync(
+      join(dayDir, `rollout-${ts.replace(/[:.]/g, "-")}-${id}.jsonl`),
+      `${JSON.stringify({
+        timestamp: ts,
+        type: "session_meta",
+        payload: { id, timestamp: ts, cwd: "/factory", cli_version: "0.135.0-custom" },
+      })}\n`,
+    );
+    const adapter = createCodexAdapter({ codexHome: customCodexHome });
+
+    expect((await adapter.detectSessions({ cwd: "/factory" })).map((ref) => ref.id)).toEqual([id]);
+    expect(await adapter.sourceVersion()).toBe("0.135.0-custom");
+    expect(await adapter.sourceHealth()).toMatchObject({
+      adapter: "codex",
+      path: sessionsDir,
+      present: true,
+      readable: true,
+      sessionCount: 1,
+      sourceVersion: "0.135.0-custom",
+    });
+  } finally {
+    rmSync(customCodexHome, { recursive: true, force: true });
+  }
+});
+
+test("createCodexAdapter sessionsDir and sessionIndexPath options drive parse-time lookup", async () => {
+  const customRoot = mkdtempSync(join(tmpdir(), "codex-adapter-split-option-"));
+  try {
+    const sessionsDir = join(customRoot, "rollouts");
+    const sessionIndexPath = join(customRoot, "custom-session-index.jsonl");
+    const dayDir = join(sessionsDir, "2026", "05", "30");
+    mkdirSync(dayDir, { recursive: true });
+    const parentId = "019d9000-bbbb-7000-a000-000000000081";
+    const childId = "019d9000-bbbb-7000-a000-000000000082";
+    const parentPath = join(dayDir, `rollout-2026-05-30T01-46-00-000Z-${parentId}.jsonl`);
+    const childPath = join(dayDir, `rollout-2026-05-30T01-47-00-000Z-${childId}.jsonl`);
+    writeFileSync(
+      parentPath,
+      `${JSON.stringify({
+        timestamp: "2026-05-30T01:46:00.000Z",
+        type: "session_meta",
+        payload: { id: parentId, timestamp: "2026-05-30T01:46:00.000Z", cwd: "/factory" },
+      })}\n${JSON.stringify({
+        timestamp: "2026-05-30T01:46:01.000Z",
+        type: "response_item",
+        payload: {
+          type: "function_call",
+          call_id: "call-spawn-option",
+          name: "spawn_agent",
+          arguments: JSON.stringify({ agent_type: "reviewer", message: "inspect parser" }),
+        },
+      })}\n${JSON.stringify({
+        timestamp: "2026-05-30T01:46:02.000Z",
+        type: "response_item",
+        payload: {
+          type: "function_call_output",
+          call_id: "call-spawn-option",
+          output: JSON.stringify({ agent_id: childId }),
+        },
+      })}\n`,
+    );
+    writeFileSync(
+      childPath,
+      `${JSON.stringify({
+        timestamp: "2026-05-30T01:47:00.000Z",
+        type: "session_meta",
+        payload: {
+          id: childId,
+          timestamp: "2026-05-30T01:47:00.000Z",
+          cwd: "/factory",
+          thread_source: "subagent",
+          source: { subagent: { thread_spawn: { parent_thread_id: parentId } } },
+        },
+      })}\n`,
+    );
+    writeFileSync(
+      sessionIndexPath,
+      `${JSON.stringify({
+        id: parentId,
+        thread_name: "  Custom split path session  ",
+        updated_at: "2026-06-02T04:51:00.000000Z",
+      })}\n`,
+    );
+
+    const adapter = createCodexAdapter({ sessionsDir, sessionIndexPath });
+    const trail = await adapter.parseSession({ id: parentId, adapter: "codex", path: parentPath });
+    const invoke = trail.groups[0]!.entries.find(
+      (entry) => entry.type === "tool_call" && entry.payload.tool === "subagent_invoke",
+    );
+
+    expect(trail.groups).toHaveLength(2);
+    expect(trail.groups[0]!.header.name).toBe("Custom split path session");
+    expect(invoke?.payload.args).toMatchObject({ session_id: childId });
+    expect(trail.groups[1]!.header.id).toBe(childId);
+  } finally {
+    rmSync(customRoot, { recursive: true, force: true });
   }
 });
 

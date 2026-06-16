@@ -51,29 +51,46 @@ const LOCAL_JSONL = {
     typeof record.version === "string" ? record.version : undefined,
 };
 
-function projectDirForCwd(configDir: string): (cwd: string) => string {
-  return (cwd) => claudeCodeProjectDir({ configDir, cwd });
+function projectDirForCwdFromRoot(projectsRoot: string): (cwd: string) => string {
+  return (cwd) => claudeCodeProjectDir({ projectsRoot, cwd });
+}
+
+function resolveClaudeConfigDir(options: ClaudeCodeAdapterOptions): string | undefined {
+  return options.configDir ?? claudeCodeConfigDir(options.env ?? process.env);
+}
+
+function resolveClaudeProjectsRoot(options: ClaudeCodeAdapterOptions): string | undefined {
+  if (options.projectsRoot !== undefined) return options.projectsRoot;
+  const configDir = resolveClaudeConfigDir(options);
+  return configDir === undefined ? undefined : claudeCodeProjectsRoot(configDir);
+}
+
+function resolveClaudeProjectDir(
+  options: ClaudeCodeAdapterOptions,
+  cwd: string,
+): string | undefined {
+  const projectsRoot = resolveClaudeProjectsRoot(options);
+  return projectsRoot === undefined ? undefined : claudeCodeProjectDir({ projectsRoot, cwd });
 }
 
 async function inspectSourceHealth(
-  env: NodeJS.ProcessEnv = process.env,
+  options: ClaudeCodeAdapterOptions = {},
 ): Promise<AdapterSourceHealth> {
-  const configDir = claudeCodeConfigDir(env);
-  const root = configDir === undefined ? null : claudeCodeProjectsRoot(configDir);
+  const root = resolveClaudeProjectsRoot(options);
   const scan =
-    configDir === undefined || root === null
+    root === undefined
       ? () => Promise.resolve([])
       : () =>
           scanLocalJsonlProjectsRoot(root, {
             ...LOCAL_JSONL,
             allCwds: true,
-            projectDirForCwd: projectDirForCwd(configDir),
+            projectDirForCwd: projectDirForCwdFromRoot(root),
           });
   return inspectLocalJsonlSourceHealth({
     adapter: "claude-code",
-    root,
+    root: root ?? null,
     scan,
-    sourceVersion: () => createClaudeCodeAdapter({ env }).sourceVersion(),
+    sourceVersion: () => createClaudeCodeAdapter(options).sourceVersion(),
   });
 }
 
@@ -306,21 +323,26 @@ function parseLinkedChildGroup(
 export type ClaudeCodeAdapterOptions = {
   /** Environment overrides used for discovery and parsing. */
   env?: NodeJS.ProcessEnv;
+  /** Override for the Claude Code config root. */
+  configDir?: string;
+  /** Override for the Claude Code projects root. */
+  projectsRoot?: string;
 };
 
 /** Create a Claude Code adapter instance. */
 export function createClaudeCodeAdapter(options: ClaudeCodeAdapterOptions = {}): TrailAdapter {
   const env = options.env ?? process.env;
+  const adapterOptions = { ...options, env };
   return {
     name: "claude-code",
     async detectSessions(opts?: DetectOptions): Promise<SessionRef[]> {
-      const configDir = claudeCodeConfigDir(env);
-      if (configDir === undefined) return [];
-      return scanLocalJsonlProjectsRoot(claudeCodeProjectsRoot(configDir), {
+      const projectsRoot = resolveClaudeProjectsRoot(adapterOptions);
+      if (projectsRoot === undefined) return [];
+      return scanLocalJsonlProjectsRoot(projectsRoot, {
         ...LOCAL_JSONL,
         allCwds: opts?.allCwds,
         cwd: opts?.cwd,
-        projectDirForCwd: projectDirForCwd(configDir),
+        projectDirForCwd: projectDirForCwdFromRoot(projectsRoot),
       });
     },
     async parseSession(ref: SessionRef): Promise<TrailFile> {
@@ -343,16 +365,14 @@ export function createClaudeCodeAdapter(options: ClaudeCodeAdapterOptions = {}):
       ]);
     },
     async isAvailable(): Promise<boolean> {
-      const configDir = claudeCodeConfigDir(env);
-      if (configDir === undefined) return false;
-      return dirExists(claudeCodeProjectDir({ configDir, cwd: process.cwd() }));
+      const dir = resolveClaudeProjectDir(adapterOptions, process.cwd());
+      return dir === undefined ? false : dirExists(dir);
     },
     async sourceVersion(): Promise<string | null> {
-      const configDir = claudeCodeConfigDir(env);
-      if (configDir === undefined) return null;
-      const dir = claudeCodeProjectDir({ configDir, cwd: process.cwd() });
+      const dir = resolveClaudeProjectDir(adapterOptions, process.cwd());
+      if (dir === undefined) return null;
       return newestLocalJsonlSourceVersion(dir, LOCAL_JSONL);
     },
-    sourceHealth: () => inspectSourceHealth(env),
+    sourceHealth: () => inspectSourceHealth(adapterOptions),
   };
 }

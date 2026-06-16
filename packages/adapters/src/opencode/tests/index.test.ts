@@ -4,12 +4,13 @@ import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, win32 } from "node:path";
 import { validateSourceRecord } from "@agent-trail/adapter-kit";
 import { bunSqliteDriver } from "../../../../adapter-kit/src/readers/bun-sqlite-driver.js";
 import { trailRecords, validateAdapterTrail } from "../../shared/trail-file.js";
 import { createOpenCodeAdapter } from "../index.js";
 import { tokenTotalsFromSession } from "../metadata.js";
+import { opencodeDataDir } from "../paths.js";
 import { mapTool } from "../tools.js";
 
 const opencodeAdapter = createOpenCodeAdapter({ sqliteDriver: bunSqliteDriver });
@@ -83,6 +84,15 @@ test("opencodeAdapter reports unavailable when no storage exists", async () => {
 test("opencodeAdapter reports available when file storage exists", async () => {
   mkdirSync(join(dataDir, "storage", "session"), { recursive: true });
   expect(await opencodeAdapter.isAvailable()).toBe(true);
+});
+
+test("opencodeDataDir uses Windows data locations when platform is win32", () => {
+  expect(opencodeDataDir({ LOCALAPPDATA: "C:\\Users\\tester\\AppData\\Local" }, "win32")).toBe(
+    win32.join("C:\\Users\\tester\\AppData\\Local", "opencode"),
+  );
+  expect(opencodeDataDir({ HOMEDRIVE: "C:", HOMEPATH: "\\Users\\tester" }, "win32")).toBe(
+    win32.join("C:\\Users\\tester", "AppData", "Local", "opencode"),
+  );
 });
 
 test("createOpenCodeAdapter storageDir override drives health without mutating process env", async () => {

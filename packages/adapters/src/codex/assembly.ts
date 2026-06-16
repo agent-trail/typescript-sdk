@@ -1,5 +1,5 @@
 import { readFile, realpath } from "node:fs/promises";
-import { isAbsolute, join, relative } from "node:path";
+import { isAbsolute, relative } from "node:path";
 import type { Entry, Header } from "@agent-trail/types";
 import type { TrailFile, TrailSessionGroup } from "../index.js";
 import { withLinkedSubagentSessionIds } from "../shared/child-session-links.js";
@@ -17,14 +17,12 @@ import { readGitVcs } from "../shared/vcs.js";
 import { type HeadMetadata, readMetadataFromHead, walkRolloutFiles } from "./discovery.js";
 import { parseCodexSnapshotEntries } from "./kit.js";
 import { AGENT_NAME, buildHeader, turnContextSnapshot } from "./parser.js";
-import { codexHomeDir, codexSessionsDir } from "./paths.js";
+import { type CodexPathOptions, codexSessionIndexPath, codexSessionsDir } from "./paths.js";
 import { isObject, sanitizeSourceRaw, stringValue, timestampToIso } from "./source.js";
 
 type ForkFrom = NonNullable<Header["fork_from"]>;
 type ChildSessionPathIndex = Map<string, string | undefined>;
-type ParseCodexTrailFileOptions = {
-  env?: NodeJS.ProcessEnv;
-};
+type ParseCodexTrailFileOptions = CodexPathOptions;
 
 function parseObjectRecords(text: string): Record<string, unknown>[] {
   const records: Record<string, unknown>[] = [];
@@ -77,14 +75,14 @@ function firstTurnContextValue<T>(
 async function parseSingleGroup(
   path: string,
   forkFrom?: ForkFrom,
-  env: NodeJS.ProcessEnv = process.env,
+  pathOptions: CodexPathOptions = {},
 ): Promise<TrailSessionGroup> {
   const records = parseObjectRecords(await readFile(path, "utf8"));
   const header = await buildHeaderForRecords(records, forkFrom);
   const sessionUid = header.session_uid ?? header.id;
   const entries = await parseCodexSnapshotEntries(records, sessionUid);
   const sessionIndexUpdate = sessionIndexNameUpdate(
-    await readSessionIndexRow(header.id, env),
+    await readSessionIndexRow(header.id, pathOptions),
     sessionUid,
   );
   if (sessionIndexUpdate !== undefined) entries.push(sessionIndexUpdate);
@@ -221,7 +219,7 @@ async function parseLinkedChildGroup(
   candidate: { callEntryId: string; childId: string },
   childSessionPathIndex: ChildSessionPathIndex,
   parentGroup: TrailSessionGroup,
-  env: NodeJS.ProcessEnv,
+  pathOptions: CodexPathOptions,
 ): Promise<TrailSessionGroup | undefined> {
   const childPath = findUniqueSessionPathById(candidate.childId, childSessionPathIndex);
   if (childPath === undefined) return undefined;
@@ -231,16 +229,16 @@ async function parseLinkedChildGroup(
       session_id: parentGroup.header.id,
       entry_id: candidate.callEntryId,
     },
-    env,
+    pathOptions,
   ).catch(() => undefined);
 }
 
 async function buildChildSessionPathIndex(
   parentPath: string,
   parentSessionId: string,
-  env: NodeJS.ProcessEnv = process.env,
+  pathOptions: CodexPathOptions = {},
 ): Promise<ChildSessionPathIndex | undefined> {
-  const sessionsDir = codexSessionsDir(env);
+  const sessionsDir = codexSessionsDir(pathOptions);
   if (sessionsDir === undefined) return undefined;
   const files = await walkRolloutFiles(sessionsDir);
   const index: ChildSessionPathIndex = new Map();
@@ -270,9 +268,9 @@ function findUniqueSessionPathById(
 
 async function isInsideCodexSessionsDir(
   path: string,
-  env: NodeJS.ProcessEnv = process.env,
+  pathOptions: CodexPathOptions = {},
 ): Promise<boolean> {
-  const sessionsDir = codexSessionsDir(env);
+  const sessionsDir = codexSessionsDir(pathOptions);
   if (sessionsDir === undefined) return false;
   let root: string;
   let target: string;
@@ -289,16 +287,16 @@ async function isInsideCodexSessionsDir(
 async function directChildGroups(
   parentGroup: TrailSessionGroup,
   parentPath: string,
-  env: NodeJS.ProcessEnv = process.env,
+  pathOptions: CodexPathOptions = {},
 ): Promise<TrailSessionGroup[]> {
-  if (!(await isInsideCodexSessionsDir(parentPath, env))) return [];
+  if (!(await isInsideCodexSessionsDir(parentPath, pathOptions))) return [];
   const linked = new Map<string, string>();
   const children: TrailSessionGroup[] = [];
   const candidates = spawnChildCandidates(parentGroup.entries);
   const childSessionPathIndex = await buildChildSessionPathIndex(
     parentPath,
     parentGroup.header.id,
-    env,
+    pathOptions,
   );
   if (childSessionPathIndex === undefined) return [];
   const callCounts = countBy(candidates, (candidate) => candidate.callEntryId);
@@ -306,7 +304,12 @@ async function directChildGroups(
   for (const candidate of candidates) {
     // Only link 1:1 relationships: ambiguous repeated calls or child ids stay unlinked.
     if (!isUnambiguousChildCandidate(candidate, callCounts, childCounts)) continue;
-    const child = await parseLinkedChildGroup(candidate, childSessionPathIndex, parentGroup, env);
+    const child = await parseLinkedChildGroup(
+      candidate,
+      childSessionPathIndex,
+      parentGroup,
+      pathOptions,
+    );
     if (child === undefined) continue;
     linked.set(candidate.callEntryId, child.header.id);
     children.push(child);
@@ -315,16 +318,11 @@ async function directChildGroups(
   return children;
 }
 
-function codexSessionIndexPath(env: NodeJS.ProcessEnv = process.env): string | undefined {
-  const home = codexHomeDir(env);
-  return home === undefined ? undefined : join(home, "session_index.jsonl");
-}
-
 async function readSessionIndexRow(
   sessionId: string,
-  env: NodeJS.ProcessEnv = process.env,
+  pathOptions: CodexPathOptions = {},
 ): Promise<Record<string, unknown> | undefined> {
-  const path = codexSessionIndexPath(env);
+  const path = codexSessionIndexPath(pathOptions);
   if (path === undefined) return undefined;
   let text: string;
   try {
@@ -390,8 +388,9 @@ export async function parseCodexTrailFile(
   options: ParseCodexTrailFileOptions = {},
 ): Promise<TrailFile> {
   const env = options.env ?? process.env;
-  const parentGroup = await parseSingleGroup(path, undefined, env);
-  const groups = [parentGroup, ...(await directChildGroups(parentGroup, path, env))];
+  const pathOptions = { ...options, env };
+  const parentGroup = await parseSingleGroup(path, undefined, pathOptions);
+  const groups = [parentGroup, ...(await directChildGroups(parentGroup, path, pathOptions))];
   const envelope = buildTrailEnvelope({ producer, groups });
   return sanitizeTrailFile({ envelope, groups });
 }

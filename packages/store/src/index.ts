@@ -21,7 +21,7 @@
 
 export type { CatalogDb, CatalogParams, CatalogValue } from "@agent-trail/catalog";
 export type { TrailDiagnostic } from "@agent-trail/core";
-export { objectPath, resolveStoreRoot } from "./paths.js";
+export { objectPath, resolveStoreRoot, type StoreRootOptions } from "./paths.js";
 export type { IndexExistingObjectsOptions, IndexExistingObjectsResult } from "./rebuild.js";
 export { indexExistingObjects } from "./rebuild.js";
 export type { ReconcileIncomingResult } from "./reconcile-incoming.js";

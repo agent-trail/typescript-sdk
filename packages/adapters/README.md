@@ -66,6 +66,22 @@ If a future adapter needs a different resolution strategy, override
 `resolveSchemaVersion` in its `CreateSourceForConfig` rather than special-
 casing the option.
 
+## Path Resolution
+
+Adapters resolve source roots from explicit factory options first, then the
+source agent's environment variables, then platform defaults. Home lookup uses
+`HOME`, then `USERPROFILE`, then `HOMEDRIVE` plus `HOMEPATH`.
+
+| Adapter | Factory options | Environment variables | Default |
+| --- | --- | --- | --- |
+| Claude Code | `configDir`, `projectsRoot` | `CLAUDE_CONFIG_DIR` | `<home>/.claude/projects` |
+| Codex | `codexHome`, `sessionsDir`, `sessionIndexPath` | `CODEX_HOME` | `<home>/.codex/sessions`, `<home>/.codex/session_index.jsonl` |
+| Pi | `agentDir`, `sessionsDir` | `PI_CODING_AGENT_DIR`, `PI_CODING_AGENT_SESSION_DIR` | `<home>/.pi/agent/sessions` |
+| OpenCode | `storageDir`, `dbPath` | `OPENCODE_DATA_DIR`, `OPENCODE_DB` | Linux/macOS: `$XDG_DATA_HOME/opencode` or `<home>/.local/share/opencode`; Windows: `%LOCALAPPDATA%\\opencode`, `%APPDATA%\\opencode`, or `%USERPROFILE%\\AppData\\Local\\opencode` |
+
+`@agent-trail/sessions` forwards the same adapter-specific options through
+`defaultAdapterOptions`.
+
 ## Tests
 
 - `bun test` (from repo root or this package) runs the adapter test suite,
@@ -77,11 +93,9 @@ casing the option.
   matching golden file, so source-schema drift is caught without needing local
   real sessions.
 - Real-session smoke tests are local checks only. They are hard-skipped whenever
-  `CI` is set, even if a real-session env var is present. Locally, they use the
-  adapter default session roots (`~/.pi/agent/sessions`, `~/.codex/sessions`,
-  `~/.claude/projects`) and the agents' own root overrides (`PI_CODING_AGENT_DIR`,
-  `PI_CODING_AGENT_SESSION_DIR`, `CODEX_HOME`, `CLAUDE_CONFIG_DIR`). Real local
-  session files must stay out of git.
+  `CI` is set, even if a real-session env var is present. Locally, they use
+  the path resolution rules above unless a test-specific real-session env var
+  points at an exact session file. Real local session files must stay out of git.
 
   From the repository root:
 

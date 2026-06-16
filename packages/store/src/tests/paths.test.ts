@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { join, win32 } from "node:path";
+import { posix, win32 } from "node:path";
 import { objectPath, resolveStoreRoot } from "../index.ts";
 
 test("resolveStoreRoot prefers explicit override", () => {
@@ -28,10 +28,13 @@ test("resolveStoreRoot falls back to AGENT_TRAIL_HOME, XDG_DATA_HOME, and HOME",
       env: { AGENT_TRAIL_HOME: "", XDG_DATA_HOME: "/xdg/data", HOME: "/home/tester" },
       platform: "linux",
     }),
-  ).toBe(join("/xdg/data", "trail"));
-  withStoreEnv({ AGENT_TRAIL_HOME: "", HOME: "/home/tester" }, () => {
-    expect(resolveStoreRoot()).toBe(join("/home/tester", ".local/share/trail"));
-  });
+  ).toBe(posix.join("/xdg/data", "trail"));
+  expect(
+    resolveStoreRoot({
+      env: { AGENT_TRAIL_HOME: "", HOME: "/home/tester" },
+      platform: "linux",
+    }),
+  ).toBe(posix.join("/home/tester", ".local/share/trail"));
 });
 
 test("resolveStoreRoot uses Windows data locations when platform is win32", () => {
@@ -56,11 +59,22 @@ test("resolveStoreRoot uses Windows data locations when platform is win32", () =
 });
 
 test("resolveStoreRoot requires an explicit root, env root, or home/data directory", () => {
-  withStoreEnv({ AGENT_TRAIL_HOME: "", HOME: "" }, () => {
-    expect(() => resolveStoreRoot()).toThrow(
-      "Cannot resolve store root: pass opts.storeRoot, set AGENT_TRAIL_HOME, or configure a home/data directory.",
-    );
-  });
+  expect(() =>
+    resolveStoreRoot({
+      env: {
+        AGENT_TRAIL_HOME: "",
+        HOME: "",
+        USERPROFILE: "",
+        HOMEDRIVE: "",
+        HOMEPATH: "",
+        LOCALAPPDATA: "",
+        APPDATA: "",
+      },
+      platform: "linux",
+    }),
+  ).toThrow(
+    "Cannot resolve store root: pass opts.storeRoot, set AGENT_TRAIL_HOME, or configure a home/data directory.",
+  );
 });
 
 test("objectPath rejects malformed content hashes", () => {

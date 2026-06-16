@@ -43,5 +43,7 @@ jobs:
       - uses: jdx/mise-action@dba19683ed58901619b14f395a24841710cb4925 # v4.1.0
       - name: Install dependencies
         run: mise run install
+      - name: Build declarations
+        run: bun run build:declarations
       - name: Run cross-platform path tests
         run: bun test packages/store/src/tests/paths.test.ts packages/adapters/src/codex/tests/index.test.ts packages/adapters/src/opencode/tests/index.test.ts packages/adapters/src/claude-code/tests/index.test.ts packages/adapters/src/pi/tests/index.test.ts packages/sessions/src/tests/sessions.test.ts
